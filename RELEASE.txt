@@ -1,0 +1,22 @@
+1.0: Initial public version of SCL.
+- Features:
+  - Math:
+    - Finite Field class with two instantiations based on Mersenne primes
+    - Ring modulo 2^K, with support for any K less than or equal to 128
+    - Vectors. This is a thinish wrapper around an STL vector
+    - Matrices
+    - All math types support serialization
+  - Primitives:
+    - PRG based on AES-CTR
+    - IUF Hash based on SHA3
+  - Networking:
+    - Basic support for peer-to-peer communication via TCP. Channels are designed
+      in such a way that writing custom ones (or decorators for existing channels)
+      is easy
+    - Peer discovery functionality to make it easier to setup working networks
+  - Secret Sharing:
+    - Shamir secret sharing with support for both error detection and correction
+    - Additive secret sharing
+- Development:
+  - Decent code coverage
+  - Documentation

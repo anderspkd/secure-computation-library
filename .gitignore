@@ -1,0 +1,15 @@
+scutil.*
+build/
+doc/
+/TAGS
+/GPATH
+/GRTAGS
+/GTAGS
+/.projectile
+examples/build/
+examples/libscl.*
+secure-computation-library.*
+/.cache/
+/compile_commands.json
+/lib/
+/install/

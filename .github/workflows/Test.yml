@@ -1,0 +1,51 @@
+name: Test
+
+on: [push]
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup catch2
+      run: |
+        sudo apt-get install -y lcov
+        curl -L https://github.com/catchorg/Catch2/archive/v2.13.0.tar.gz -o c.tar.gz
+        tar xvf c.tar.gz
+        cd Catch2-2.13.0/
+        cmake -Bbuild -H. -DBUILD_TESTING=OFF
+        sudo cmake --build build/ --target install
+
+    - name: Create build directory
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: ctest -C $BUILD_TYPE
+
+    - name: Coverage
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
+        make coverage
+        lcov --summary coverage.info >> summary.txt
+
+    - name: Check
+      shell: bash
+      run: ./scripts/check_coverage.py ${{runner.workspace}}/build/summary.txt

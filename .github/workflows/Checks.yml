@@ -1,0 +1,27 @@
+name: Checks
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup
+      run: sudo apt-get install -y doxygen clang-format-12
+
+    - name: Documentation
+      shell: bash
+      run: ./scripts/build_documentation.sh
+
+    - name: Copyright
+      run: ./scripts/check_copyright_headers.py
+
+    - name: Style
+      shell: bash
+      run: |
+        find . -type f \( -iname "*.h" -o -iname "*.cc" \) -exec clang-format -n --style=Google {} \; &> checks.txt
+        cat checks.txt
+        test ! -s checks.txt
