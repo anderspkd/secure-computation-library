@@ -64,4 +64,4 @@ class ThreadedSenderChannel final : public Channel {
 
 }  // namespace scl
 
-#endif /* _SCL_NET_THREADED_SENDER_H */
+#endif  // _SCL_NET_THREADED_SENDER_H

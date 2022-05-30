@@ -115,4 +115,5 @@ class Network {
 };
 
 }  // namespace scl
-#endif /* _SCL_NET_NETWORK_H */
+
+#endif  // _SCL_NET_NETWORK_H

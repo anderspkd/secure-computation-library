@@ -26,4 +26,4 @@
 #include "scl/math/vec.h"
 #include "scl/math/z2k.h"
 
-#endif /* _SCL_MATH_H */
+#endif  // _SCL_MATH_H

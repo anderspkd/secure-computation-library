@@ -87,4 +87,4 @@ class InMemoryChannel final : public Channel {
 
 }  // namespace scl
 
-#endif /* _SCL_NET_MEM_CHANNEL_H */
+#endif  // _SCL_NET_MEM_CHANNEL_H

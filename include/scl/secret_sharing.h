@@ -24,4 +24,4 @@
 #include "scl/ss/additive.h"
 #include "scl/ss/shamir.h"
 
-#endif /* _SCL_SECRET_SHARING_H */
+#endif  // _SCL_SECRET_SHARING_H

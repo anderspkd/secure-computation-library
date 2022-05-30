@@ -281,4 +281,4 @@ bool SolveLinearSystem(Vec<T>& x, const Mat<T>& A, const Vec<T>& b) {
 }  // namespace details
 }  // namespace scl
 
-#endif /* _SCL_MATH_LA_H */
+#endif  // _SCL_MATH_LA_H

@@ -230,4 +230,4 @@ class Channel {
 
 }  // namespace scl
 
-#endif /* _SCL_NET_CHANNEL_H */
+#endif  // _SCL_NET_CHANNEL_H

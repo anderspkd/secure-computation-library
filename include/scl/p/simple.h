@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_PROTOCOL_SIMPLE_H
-#define _SCL_PROTOCOL_SIMPLE_H
+#ifndef _SCL_P_SIMPLE_H
+#define _SCL_P_SIMPLE_H
 
 #include <type_traits>
 
@@ -78,4 +78,4 @@ auto Evaluate(S& last, Ctx& context) {
 
 }  // namespace scl
 
-#endif /* _SCL_PROTOCOL_SIMPLE_H */
+#endif  // _SCL_P_SIMPLE_H
