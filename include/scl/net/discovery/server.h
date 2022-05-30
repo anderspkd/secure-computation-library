@@ -143,4 +143,4 @@ class DiscoveryServer::SendNetworkConfig
 
 }  // namespace scl
 
-#endif /* _SCL_NET_DISCOVERY_SERVER_H */
+#endif  // _SCL_NET_DISCOVERY_SERVER_H

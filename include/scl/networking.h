@@ -28,4 +28,4 @@
 #include "scl/net/network.h"
 #include "scl/net/tcp_channel.h"
 
-#endif /* _SCL_NETWORKING_H */
+#endif  // _SCL_NETWORKING_H

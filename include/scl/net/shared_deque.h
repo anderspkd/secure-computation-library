@@ -139,4 +139,4 @@ std::size_t SharedDeque<T, Allocator>::Size() {
 }  // namespace details
 }  // namespace scl
 
-#endif /* _SCL_NET_SHARED_DEQUE_H */
+#endif  // _SCL_NET_SHARED_DEQUE_H

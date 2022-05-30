@@ -143,4 +143,4 @@ class NetworkConfig {
 
 }  // namespace scl
 
-#endif /* _SCL_NET_CONFIG_H */
+#endif  // _SCL_NET_CONFIG_H

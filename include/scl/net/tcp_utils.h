@@ -96,4 +96,4 @@ int WriteToSocket(int socket, const unsigned char* src, std::size_t n);
 }  // namespace details
 }  // namespace scl
 
-#endif /* _SCL_NET_TCP_UTILS_H */
+#endif  // _SCL_NET_TCP_UTILS_H

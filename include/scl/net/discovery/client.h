@@ -112,4 +112,4 @@ class DiscoveryClient::ReceiveNetworkConfig
 
 }  // namespace scl
 
-#endif /* _SCL_NET_DISCOVERY_CLIENT_H */
+#endif  // _SCL_NET_DISCOVERY_CLIENT_H

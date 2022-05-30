@@ -62,4 +62,4 @@ class TcpChannel final : public Channel {
 
 }  // namespace scl
 
-#endif /* _SCL_NET_TCP_CHANNEL_H */
+#endif  // _SCL_NET_TCP_CHANNEL_H

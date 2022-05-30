@@ -18,6 +18,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef _SCL_MATH_FIELDS_H
+#define _SCL_MATH_FIELDS_H
+
 #include <cstdint>
 #include <string>
 #include <type_traits>
@@ -98,3 +101,5 @@ struct FieldSelector {
 
 }  // namespace details
 }  // namespace scl
+
+#endif  // _SCL_MATH_FIELDS_H

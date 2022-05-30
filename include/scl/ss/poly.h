@@ -254,4 +254,4 @@ std::string Polynomial<T>::ToString(const char* pn, const char* vn) const {
 }  // namespace details
 }  // namespace scl
 
-#endif /* _SCL_SS_POLY_H */
+#endif  // _SCL_SS_POLY_H

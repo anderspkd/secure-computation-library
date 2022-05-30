@@ -24,4 +24,4 @@
 #include "scl/hash.h"
 #include "scl/prg.h"
 
-#endif /* _SCL_PRIMITIVES_H */
+#endif  // _SCL_PRIMITIVES_H
