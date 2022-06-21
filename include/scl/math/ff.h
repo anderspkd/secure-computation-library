@@ -26,7 +26,7 @@
 #include <type_traits>
 
 #include "scl/math/bases.h"
-#include "scl/math/fields.h"
+#include "scl/math/field_ops.h"
 #include "scl/math/ring.h"
 #include "scl/prg.h"
 
@@ -34,21 +34,50 @@ namespace scl {
 namespace details {
 
 /**
- * @brief Elements of the finite field \f$\mathbb{F}_p\f$ for prime \f$p\f$.
+ * @brief Elements of the finite field \f$\mathbb{F}\f$.
  *
- * <p>This class defines finite field element that behaves according to some
- * finite field definition as specified by the \p Field template parameter. The
- * \p Bits parameter is used to indicate the number of available bits of the
- * field, but is otherwise ignored.</p>
+ * <p>The FF class provides the high level interface for "finite field elements"
+ * in SCL.</p>
  *
- * <p>FF uses will call a number of static methods on \p Field, so these must be
- * defined in order for FF to work. The interface of these methods can be seen
- * in #DEFINE_FINITE_FIELD or by reading the documentation of the methods on
- * FF.</p>
+ * <p>An instantiation of this template consists of two parameters: A \p Bits
+ * parameter, indicating the number of bits that the field supports, and a \p
+ * Field type which determines the behaviour of the field. The \p Bits parameter
+ * is purely for documenting purposes and can be used to indicate that a
+ * particular field instantiation supports a particular number of bits for
+ * computing.</p>
+ *
+ * <p>The \p Field parameter must be a class of the following form</p>
+ *
+ * \code
+ *   struct SomeField {
+ *     using ValueType = ... // the internal type of a field element
+ *     constexpr static const char* kName = ... // readable name of this field
+ *     constexpr static const std::size_t kByteSize = ... // size in bytes
+ *     constexpr static const std::size_t kBitSize = ... // size in bits
+ *   };
+ * \endcode
+ *
+ * <p>The <code>kBitSize</code> does not need to have any relation to the \p
+ * Bits parameter, although it's assumed that <code>Bits <= kBitSize</code>.</p>
+ *
+ * <p>In order to make a field definition useful, overloads must be defined for
+ * some or all of the functions in field_ops.h. For example, to support addition
+ * operations on the field (that is, the operators <code>+</code> and
+ * <code>+=</code>) we would need to define</p>
+ *
+ * \code
+ *   template <>
+ *   void scl::details::FieldAdd<SomeField>(SomeField::ValueType& out,
+ *                                          const SomeField::ValueType& in) {
+ *     // definition of addition for SomeField
+ *   }
+ * \endcode
+ *
+ * <p>Refer to the documentation for methods on FF to see which specializations
+ * are needed where.</p>
  *
  * @tparam Bits the desired bit size of the field
- * @tparam Field a class defining operations on field elements
- * @see DEFINE_FINITE_FIELD
+ * @tparam Field the field
  */
 template <unsigned Bits, typename Field>
 class FF final : details::RingBase<FF<Bits, Field>> {
@@ -92,16 +121,13 @@ class FF final : details::RingBase<FF<Bits, Field>> {
 
   /**
    * @brief Read a field element from a buffer.
-   *
-   * The de-serialization of field elements are defined by a static method
-   * <code>Field::FromBytes(ValueType&, const unsigned char*)</code>.
-   *
    * @param src the buffer
    * @return a field element.
+   * @see scl::details::FieldFromBytes
    */
   static FF Read(const unsigned char* src) {
     FF e;
-    Field::FromBytes(e.mValue, src);
+    details::FieldFromBytes<Field>(e.mValue, src);
     return e;
   }
 
@@ -118,18 +144,14 @@ class FF final : details::RingBase<FF<Bits, Field>> {
 
   /**
    * @brief Create a field element from a string.
-   *
-   * De-stringification is determined by the static method
-   * <code>Field::FromString(ValueType&, const std::string&, enum
-   * NumberBase)</code>.
-   *
    * @param str the string
    * @param base the base of the string
    * @return a finite field element.
+   * @see scl::details::FieldFromString
    */
   static FF FromString(const std::string& str, enum NumberBase base) {
     FF e;
-    Field::FromString(e.mValue, str, base);
+    details::FieldFromString<Field>(e.mValue, str, base);
     return e;
   };
 
@@ -137,7 +159,6 @@ class FF final : details::RingBase<FF<Bits, Field>> {
    * @brief Create a field element from a base 10 string.
    * @param str the string
    * @return a finite field element.
-   * @see FF::FromString
    */
   static FF FromString(const std::string& str) {
     return FF::FromString(str, NumberBase::DECIMAL);
@@ -145,13 +166,12 @@ class FF final : details::RingBase<FF<Bits, Field>> {
 
   /**
    * @brief Create a new element from an int.
-   *
-   * The resulting field element is created according to the static method
-   * <code>Field::FromInt(int)</code>.
-   *
    * @param value the value to interpret as a field element
+   * @see scl::details::FieldConvertIn
    */
-  explicit constexpr FF(int value) : mValue(Field::FromInt(value)){};
+  explicit constexpr FF(int value) {
+    details::FieldConvertIn<Field>(mValue, value);
+  };
 
   /**
    * @brief Create a new element equal to 0 in the field.
@@ -160,43 +180,34 @@ class FF final : details::RingBase<FF<Bits, Field>> {
 
   /**
    * @brief Add another field element to this.
-   *
-   * Field element addition is defined by the static method
-   * <code>Field::Add(ValueType&, const ValueType&)</code>.
-   *
    * @param other the other element
    * @return this set to this + \p other.
+   * @see scl::details::FieldAdd
    */
   FF& operator+=(const FF& other) {
-    Field::Add(mValue, other.mValue);
+    details::FieldAdd<Field>(mValue, other.mValue);
     return *this;
   };
 
   /**
    * @brief Subtract another field element to this.
-   *
-   * Field element subtraction is defined by the static method
-   * <code>Field::Subtract(ValueType&, const ValueType&)</code>.
-   *
    * @param other the other element
    * @return this set to this - \p other.
+   * @see scl::details::FieldSubtract
    */
   FF& operator-=(const FF& other) {
-    Field::Subtract(mValue, other.mValue);
+    details::FieldSubtract<Field>(mValue, other.mValue);
     return *this;
   };
 
   /**
    * @brief Multiply another field element to this.
-   *
-   * Field element multiplication is defined by the static method
-   * <code>Field::Multiply(ValueType&, const ValueType&)</code>.
-   *
    * @param other the other element
    * @return this set to this * \p other.
+   * @see scl::details::FieldMultiply
    */
   FF& operator*=(const FF& other) {
-    Field::Multiply(mValue, other.mValue);
+    details::FieldMultiply<Field>(mValue, other.mValue);
     return *this;
   };
 
@@ -213,14 +224,11 @@ class FF final : details::RingBase<FF<Bits, Field>> {
 
   /**
    * @brief Negates this element.
-   *
-   * Field element negation is defined by
-   * <code>Field::Negate(ValueType&)</code>.
-   *
    * @return this set to -this.
+   * @see scl::details::FieldNegate
    */
   FF& Negate() {
-    Field::Negate(mValue);
+    details::FieldNegate<Field>(mValue);
     return *this;
   };
 
@@ -232,21 +240,18 @@ class FF final : details::RingBase<FF<Bits, Field>> {
   FF Negated() {
     auto copy = mValue;
     FF r;
-    Field::Negate(copy);
+    details::FieldNegate<Field>(copy);
     r.mValue = copy;
     return r;
   };
 
   /**
    * @brief Inverts this element.
-   *
-   * Computation of field element inverses is defined by
-   * <code>Field::Invert(ValueType)</code>.
-   *
    * @return this set to its inverse.
+   * @see scl::details::FieldInvert
    */
   FF& Invert() {
-    Field::Invert(mValue);
+    details::FieldInvert<Field>(mValue);
     return *this;
   };
 
@@ -264,39 +269,112 @@ class FF final : details::RingBase<FF<Bits, Field>> {
    * @brief Checks if this element is equal to another.
    * @param other the other element
    * @return true if this is equal to \p other.
+   * @see scl::details::FieldEqual
    */
   bool Equal(const FF& other) const {
-    return Field::Equal(mValue, other.mValue);
+    return details::FieldEqual<Field>(mValue, other.mValue);
   };
 
   /**
    * @brief Returns a string representation of this element.
-   *
-   * Stringification of an element is defined by
-   * <code>Field::ToString(ValueType)</code>.
-   *
    * @return a string representation of this field element.
+   * @see scl::details::FieldToString
    */
-  std::string ToString() const { return Field::ToString(mValue); };
+  std::string ToString() const {
+    return details::FieldToString<Field>(mValue);
+  };
 
   /**
    * @brief Write this element to a byte buffer.
-   *
-   * <p>Serializes this field element. Serialization is defined by
-   * <code>Field::ToBytes(unsigned char*, const ValueType&)</code>. In general,
-   * it should be the case that \p dest has space for \ref ByteSize() amount of
-   * bytes, although more may be needed depending on Field.</p>
-   *
-   * <p>For pre-defined fields in SCL, \p dest <i>must</i> have space for \ref
-   * ByteSize() amount of bytes.</p>
-   *
    * @param dest the buffer. Must have space for \ref ByteSize() bytes.
+   * @see scl::details::FieldToBytes
    */
-  void Write(unsigned char* dest) const { Field::ToBytes(dest, mValue); }
+  void Write(unsigned char* dest) const {
+    details::FieldToBytes<Field>(dest, mValue);
+  };
 
  private:
   ValueType mValue;
 };
+
+/**
+ * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{61}-1\f$.
+ */
+struct Mersenne61 {
+  /**
+   * @brief Internal type elements of this field.
+   */
+  using ValueType = std::uint64_t;
+
+  /**
+   * @brief The name of this field.
+   */
+  constexpr static const char* kName = "Mersenne61";
+
+  /**
+   * @brief The size of field elements of this field in bytes.
+   */
+  constexpr static const std::size_t kByteSize = sizeof(ValueType);
+
+  /**
+   * @brief The size of field elements of this field in bits.
+   */
+  constexpr static const std::size_t kBitSize = 61;
+};
+
+/**
+ * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{127}-1\f$.
+ */
+struct Mersenne127 {
+  /**
+   * @brief Internal type elements of this field.
+   */
+  using ValueType = __uint128_t;
+
+  /**
+   * @brief The name of this field.
+   */
+  constexpr static const char* kName = "Mersenne127";
+
+  /**
+   * @brief The size of field elements of this field in bytes.
+   */
+  constexpr static const std::size_t kByteSize = sizeof(ValueType);
+
+  /**
+   * @brief The size of field elements of this field in bits.
+   */
+  constexpr static const std::size_t kBitSize = 127;
+};
+
+#define _SCL_LE(a, b) ((a) <= (b))
+#define _SCL_GE(a, b) ((a) >= (b))
+
+/**
+ * @brief Select a suitable Finite Field based on a provided bitlevel.
+ */
+template <unsigned Bits>
+struct FieldSelector {
+  /**
+   * @brief The field.
+   */
+  // clang-format off
+  using Field =
+      std::conditional_t<
+      _SCL_GE(Bits, 1) && _SCL_LE(Bits, 61),
+      Mersenne61,
+
+      std::conditional_t<
+      _SCL_GE(Bits, 62) && _SCL_LE(Bits, 127),
+      Mersenne127,
+
+      void>>;
+
+  // clang-format on
+};
+
+#undef _SCL_LE
+#undef _SCL_GE
 
 }  // namespace details
 

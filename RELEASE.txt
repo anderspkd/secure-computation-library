@@ -1,3 +1,9 @@
+1.1: Refactoring of finite field internals
+- Finite field operations are now defined by individual specializations of
+  templated functions
+- Remove DEFINE_FINITE_FIELD macro
+- Move Mersenne61 and Mersenne127 definitions into ff.h
+
 1.0: Initial public version of SCL.
 - Features:
   - Math:
@@ -10,9 +16,9 @@
     - PRG based on AES-CTR
     - IUF Hash based on SHA3
   - Networking:
-    - Basic support for peer-to-peer communication via TCP. Channels are designed
-      in such a way that writing custom ones (or decorators for existing channels)
-      is easy
+    - Basic support for peer-to-peer communication via TCP. Channels are
+      designed in such a way that writing custom ones (or decorators for
+      existing channels) is easy
     - Peer discovery functionality to make it easier to setup working networks
   - Secret Sharing:
     - Shamir secret sharing with support for both error detection and correction

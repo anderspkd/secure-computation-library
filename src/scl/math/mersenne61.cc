@@ -23,56 +23,73 @@
 #include <sstream>
 
 #include "./simple_ff.h"
-#include "scl/math/fields.h"
+#include "scl/math/ff.h"
 #include "scl/math/str.h"
 
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
 
 static const u64 p = 0x1FFFFFFFFFFFFFFF;
-using _ = scl::details::Mersenne61;
+using Mersenne61 = scl::details::Mersenne61;
 
-u64 _::FromInt(int v) { return v < 0 ? v + p : v; }
-
-void _::Add(u64& t, const u64& v) { ModAdd(t, v, p); }
-
-void _::Subtract(u64& t, const u64& v) { ModSub(t, v, p); }
-
-void _::Negate(u64& t) { ModNeg(t, p); }
-
-bool _::Equal(const u64& a, const u64& b) {
-  // This is fine since this method should never be called directly, but is
-  // instead called by the surrounding FF object which makes sure to only pass
-  // values that are in a valid range.
-  return a == b;
+template <>
+void scl::details::FieldConvertIn<Mersenne61>(u64& out, const int value) {
+  out = value < 0 ? value + p : value;
 }
 
-void _::Invert(u64& t) { ModInv<u64, std::int64_t>(t, t, p); }
-
-void _::FromString(u64& dest, const std::string& str,
-                   enum scl::NumberBase base) {
-  FromStringSimpleType(dest, str, base);
+template <>
+void scl::details::FieldAdd<Mersenne61>(u64& out, const u64& op) {
+  ModAdd(out, op, p);
 }
 
-void _::Multiply(u64& t, const u64& v) {
-  u128 z = (u128)t * v;
+template <>
+void scl::details::FieldSubtract<Mersenne61>(u64& out, const u64& op) {
+  ModSub(out, op, p);
+}
+
+template <>
+void scl::details::FieldMultiply<Mersenne61>(u64& out, const u64& op) {
+  u128 z = (u128)out * op;
   u64 a = z >> 61;
   u64 b = (u64)z;
 
   a |= b >> 61;
   b &= p;
 
-  Add(a, b);
-  t = a;
+  ModAdd(a, b, p);
+  out = a;
 }
 
-std::string _::ToString(const u64& v) { return scl::details::ToString(v); }
+template <>
+void scl::details::FieldNegate<Mersenne61>(u64& out) {
+  ModNeg(out, p);
+}
 
-void _::FromBytes(u64& dest, const unsigned char* src) {
+template <>
+void scl::details::FieldInvert<Mersenne61>(u64& out) {
+  ModInv<u64, std::int64_t>(out, out, p);
+}
+
+template <>
+bool scl::details::FieldEqual<Mersenne61>(const u64& in1, const u64& in2) {
+  return in1 == in2;
+}
+
+template <>
+void scl::details::FieldFromBytes<Mersenne61>(u64& dest,
+                                              const unsigned char* src) {
   dest = *(const u64*)src;
   dest = dest % p;
 }
 
-void _::ToBytes(unsigned char* dest, const u64& src) {
-  std::memcpy(dest, &src, sizeof(u64));
+template <>
+std::string scl::details::FieldToString<Mersenne61>(const u64& in) {
+  return ToString(in);
+}
+
+template <>
+void scl::details::FieldFromString<Mersenne61>(u64& dest,
+                                               const std::string& str,
+                                               enum scl::NumberBase base) {
+  FromStringSimpleType(dest, str, base);
 }

@@ -22,31 +22,31 @@
 #include <sstream>
 
 #include "./simple_ff.h"
-#include "scl/math/fields.h"
+#include "scl/math/ff.h"
 #include "scl/math/str.h"
 
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
 
 static const u128 p = (((u128)0x7FFFFFFFFFFFFFFF) << 64) | 0xFFFFFFFFFFFFFFFF;
-using _ = scl::details::Mersenne127;
+using Mersenne127 = scl::details::Mersenne127;
 
-u128 _::FromInt(int v) { return v < 0 ? v + p : v; }
-
-void _::Add(u128 &t, const u128 &v) { ModAdd(t, v, p); }
-
-void _::Subtract(u128 &t, const u128 &v) { ModSub(t, v, p); }
-
-void _::Negate(u128 &t) { ModNeg(t, p); }
-
-bool _::Equal(const u128 &a, const u128 &b) { return a == b; }
-
-void _::Invert(u128 &t) { ModInv<u128, __int128_t>(t, t, p); }
-
-void _::FromString(u128 &dest, const std::string &str,
-                   enum scl::NumberBase base) {
-  FromStringSimpleType(dest, str, base);
+template <>
+void scl::details::FieldConvertIn<Mersenne127>(u128& out, const int value) {
+  out = value < 0 ? value + p : value;
 }
+
+template <>
+void scl::details::FieldAdd<Mersenne127>(u128& out, const u128& op) {
+  ModAdd(out, op, p);
+}
+
+template <>
+void scl::details::FieldSubtract<Mersenne127>(u128& out, const u128& op) {
+  ModSub(out, op, p);
+}
+
+namespace {
 
 struct u256 {
   u128 high;
@@ -54,7 +54,7 @@ struct u256 {
 };
 
 //  https://cp-algorithms.com/algebra/montgomery_multiplication.html
-static inline u256 MultiplyFull(const u128 x, const u128 y) {
+u256 MultiplyFull(const u128 x, const u128 y) {
   u64 a = x >> 64, b = x;
   u64 c = y >> 64, d = y;
   // (a*2^64 + b) * (c*2^64 + d) =
@@ -71,24 +71,50 @@ static inline u256 MultiplyFull(const u128 x, const u128 y) {
   return {high, low};
 }
 
-void _::Multiply(u128 &t, const u128 &v) {
-  u256 z = MultiplyFull(t, v);
-  t = z.high << 1;
+}  // namespace
+
+template <>
+void scl::details::FieldMultiply<Mersenne127>(u128& out, const u128& op) {
+  u256 z = MultiplyFull(out, op);
+  out = z.high << 1;
   u128 b = z.low;
 
-  t |= b >> 127;
+  out |= b >> 127;
   b &= p;
 
-  Add(t, b);
+  ModAdd(out, b, p);
 }
 
-std::string _::ToString(const u128 &v) { return scl::details::ToString(v); }
+template <>
+void scl::details::FieldNegate<Mersenne127>(u128& out) {
+  ModNeg(out, p);
+}
 
-void _::FromBytes(u128 &dest, const unsigned char *src) {
-  dest = *(const u128 *)src;
+template <>
+void scl::details::FieldInvert<Mersenne127>(u128& out) {
+  ModInv<u128, __int128_t>(out, out, p);
+}
+
+template <>
+bool scl::details::FieldEqual<Mersenne127>(const u128& in1, const u128& in2) {
+  return in1 == in2;
+}
+
+template <>
+void scl::details::FieldFromBytes<Mersenne127>(u128& dest,
+                                               const unsigned char* src) {
+  dest = *(const u128*)src;
   dest = dest % p;
 }
 
-void _::ToBytes(unsigned char *dest, const u128 &src) {
-  std::memcpy(dest, (unsigned char *)&src, 16);
+template <>
+std::string scl::details::FieldToString<Mersenne127>(const u128& in) {
+  return ToString(in);
+}
+
+template <>
+void scl::details::FieldFromString<Mersenne127>(u128& dest,
+                                                const std::string& str,
+                                                enum scl::NumberBase base) {
+  FromStringSimpleType(dest, str, base);
 }
