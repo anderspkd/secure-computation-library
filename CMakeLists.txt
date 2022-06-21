@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 1.0.1 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 1.1.1 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -74,6 +74,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/test_hash.cc
     test/scl/test_prg.cc
 
+    test/scl/gf7.cc
     test/scl/math/test_mersenne61.cc
     test/scl/math/test_mersenne127.cc
     test/scl/math/test_vec.cc
