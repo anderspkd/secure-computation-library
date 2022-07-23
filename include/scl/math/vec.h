@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_VEC_H
-#define _SCL_MATH_VEC_H
+#ifndef SCL_MATH_VEC_H
+#define SCL_MATH_VEC_H
 
 #include <cstring>
 #include <functional>
@@ -111,7 +111,7 @@ class Vec {
 
   /**
    * @brief Construct a vector from an initializer_list.
-   * @brief values an initializer_list.
+   * @param values an initializer_list
    */
   Vec(std::initializer_list<T> values) : mValues(values){};
 
@@ -482,4 +482,4 @@ void Vec<T>::Write(unsigned char* dest) const {
 
 }  // namespace scl
 
-#endif  // _SCL_MATH_VEC_H
+#endif  // SCL_MATH_VEC_H

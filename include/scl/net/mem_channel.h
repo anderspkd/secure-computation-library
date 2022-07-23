@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_MEM_CHANNEL_H
-#define _SCL_NET_MEM_CHANNEL_H
+#ifndef SCL_NET_MEM_CHANNEL_H
+#define SCL_NET_MEM_CHANNEL_H
 
 #include <array>
 #include <memory>
@@ -76,7 +76,7 @@ class InMemoryChannel final : public Channel {
   };
 
   void Send(const unsigned char* src, std::size_t n) override;
-  void Recv(unsigned char* dst, std::size_t n) override;
+  int Recv(unsigned char* dst, std::size_t n) override;
   void Close() override{};
 
  private:
@@ -87,4 +87,4 @@ class InMemoryChannel final : public Channel {
 
 }  // namespace scl
 
-#endif  // _SCL_NET_MEM_CHANNEL_H
+#endif  // SCL_NET_MEM_CHANNEL_H

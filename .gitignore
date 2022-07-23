@@ -1,15 +1,13 @@
-scutil.*
+# files related to build
 build/
+.cache/
+
+# do not track compiled documentation files
 doc/
-/TAGS
-/GPATH
-/GRTAGS
-/GTAGS
-/.projectile
+
+# build files for examples
 examples/build/
-examples/libscl.*
+
+# misc IDE stuff
 secure-computation-library.*
-/.cache/
-/compile_commands.json
-/lib/
-/install/
+compile_commands.json

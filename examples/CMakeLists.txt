@@ -20,22 +20,25 @@ project( scl_examples VERSION 1.0 DESCRIPTION "SCL example programs" )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O2 -std=gnu++17" )
 
+find_library(GMP gmp libgmp REQUIRED)
+find_library(SCL scl libscl REQUIRED)
+
 ## primitives
 set( primitives "01_primitives" )
 add_executable( "${primitives}" "${primitives}.cc" )
-target_link_libraries( "${primitives}" scl pthread )
+target_link_libraries( "${primitives}" "${SCL}" "${GMP}" pthread )
 
 ## finite fields
 set( finite_fields "02_finite_fields" )
 add_executable( "${finite_fields}" "${finite_fields}.cc" )
-target_link_libraries( "${finite_fields}" scl pthread )
+target_link_libraries( "${finite_fields}" "${SCL}" "${GMP}" pthread )
 
 ## secret sharing
 set( secret_sharing "03_secret_sharing" )
 add_executable( "${secret_sharing}" "${secret_sharing}.cc" )
-target_link_libraries( "${secret_sharing}" scl pthread )
+target_link_libraries( "${secret_sharing}" "${SCL}" "${GMP}" pthread )
 
 ## simple networking
 set( networking "04_networking" )
 add_executable( "${networking}" "${networking}.cc" )
-target_link_libraries( "${networking}" scl pthread )
+target_link_libraries( "${networking}" "${SCL}" "${GMP}" pthread )

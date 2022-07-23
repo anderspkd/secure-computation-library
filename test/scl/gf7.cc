@@ -20,7 +20,7 @@
 
 #include "./gf7.h"
 
-#include "scl/math/field_ops.h"
+#include "scl/math/ff_ops.h"
 
 using GF7 = scl::details::GF7;
 

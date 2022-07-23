@@ -21,13 +21,12 @@
 #include <catch2/catch.hpp>
 
 #include "../gf7.h"
-#include "scl/math/ff.h"
-#include "scl/math/vec.h"
+#include "scl/math.h"
 #include "scl/prg.h"
 #include "scl/ss/shamir.h"
 
 TEST_CASE("Shamir", "[ss]") {
-  using FF = scl::FF<61>;
+  using FF = scl::Fp<61>;
   using Vec = scl::Vec<FF>;
 
   scl::PRG prg;
@@ -81,6 +80,15 @@ TEST_CASE("Shamir", "[ss]") {
     REQUIRE_THROWS_MATCHES(
         scl::ReconstructShamir(shares1, 3), std::logic_error,
         Catch::Matchers::Message("error detected during reconstruction"));
+
+    REQUIRE_THROWS_MATCHES(
+        scl::ReconstructShamir(shares0, 4), std::invalid_argument,
+        Catch::Matchers::Message(
+            "not enough shares to reconstruct with error detection"));
+    REQUIRE_THROWS_MATCHES(
+        scl::ReconstructShamir(shares0, Vec{}, FF(0), 2), std::invalid_argument,
+        Catch::Matchers::Message(
+            "not enough alphas to reconstruct with error detection"));
   }
 
   SECTION("Correction") {
@@ -105,13 +113,22 @@ TEST_CASE("Shamir", "[ss]") {
     REQUIRE_THROWS_MATCHES(
         scl::ReconstructShamirRobust(shares, 2), std::logic_error,
         Catch::Matchers::Message("could not correct shares"));
+
+    REQUIRE_THROWS_MATCHES(
+        scl::ReconstructShamirRobust(shares, 3), std::invalid_argument,
+        Catch::Matchers::Message(
+            "not enough shares to reconstruct with error correction"));
+    REQUIRE_THROWS_MATCHES(
+        scl::ReconstructShamirRobust(shares, Vec{}, 2), std::invalid_argument,
+        Catch::Matchers::Message(
+            "not enough alphas to reconstruct with error correction"));
   }
 }
 
 TEST_CASE("BerlekampWelch", "[ss][math]") {
   // https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Welch_algorithm#Example
 
-  using FF = scl::details::FF<3, scl::details::GF7>;
+  using FF = scl::FF<scl::details::GF7>;
   using Vec = scl::Vec<FF>;
 
   Vec bs = {FF(1), FF(5), FF(3), FF(6), FF(3), FF(2), FF(2)};

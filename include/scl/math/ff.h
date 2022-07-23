@@ -18,104 +18,44 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_FF_H
-#define _SCL_MATH_FF_H
+#ifndef SCL_MATH_FF_H
+#define SCL_MATH_FF_H
 
 #include <algorithm>
 #include <string>
 #include <type_traits>
 
-#include "scl/math/bases.h"
-#include "scl/math/field_ops.h"
+#include "scl/math/ff_ops.h"
 #include "scl/math/ring.h"
 #include "scl/prg.h"
 
 namespace scl {
-namespace details {
 
 /**
  * @brief Elements of the finite field \f$\mathbb{F}\f$.
  *
- * <p>The FF class provides the high level interface for "finite field elements"
- * in SCL.</p>
+ * <p>scl::FF defines the interface for finite field elements used throughout
+ * SCL. Behaviour of a particular finite field is given through the \p Field
+ * template parameter (which acts sort of like a tagging class), combined with
+ * appropriate specializations for the functions in ff_ops.h.</p>
  *
- * <p>An instantiation of this template consists of two parameters: A \p Bits
- * parameter, indicating the number of bits that the field supports, and a \p
- * Field type which determines the behaviour of the field. The \p Bits parameter
- * is purely for documenting purposes and can be used to indicate that a
- * particular field instantiation supports a particular number of bits for
- * computing.</p>
- *
- * <p>The \p Field parameter must be a class of the following form</p>
- *
- * \code
- *   struct SomeField {
- *     using ValueType = ... // the internal type of a field element
- *     constexpr static const char* kName = ... // readable name of this field
- *     constexpr static const std::size_t kByteSize = ... // size in bytes
- *     constexpr static const std::size_t kBitSize = ... // size in bits
- *   };
- * \endcode
- *
- * <p>The <code>kBitSize</code> does not need to have any relation to the \p
- * Bits parameter, although it's assumed that <code>Bits <= kBitSize</code>.</p>
- *
- * <p>In order to make a field definition useful, overloads must be defined for
- * some or all of the functions in field_ops.h. For example, to support addition
- * operations on the field (that is, the operators <code>+</code> and
- * <code>+=</code>) we would need to define</p>
- *
- * \code
- *   template <>
- *   void scl::details::FieldAdd<SomeField>(SomeField::ValueType& out,
- *                                          const SomeField::ValueType& in) {
- *     // definition of addition for SomeField
- *   }
- * \endcode
- *
- * <p>Refer to the documentation for methods on FF to see which specializations
- * are needed where.</p>
- *
- * @tparam Bits the desired bit size of the field
- * @tparam Field the field
+ * @tparam Field the finite field.
  */
-template <unsigned Bits, typename Field>
-class FF final : details::RingBase<FF<Bits, Field>> {
+template <typename Field>
+class FF final : details::RingBase<FF<Field>> {
  public:
   /**
-   * @brief the raw type of a finite field element.
-   *
-   * The internal/raw type of a field element is read from
-   * <code>Field::ValueType</code>.
-   */
-  using ValueType = typename Field::ValueType;
-
-  /**
-   * @brief Size of the field as specified in the \p Bits template parameter.
-   */
-  constexpr static std::size_t SpecifiedBitSize() { return Bits; };
-
-  /**
    * @brief Size in bytes of a field element.
-   *
-   * The byte size of field element is defined as
-   * <code>Field::kByteSize</code>. For pre-defined fields in SCL, this value
-   * will be equal to <code>sizeof(ValueType)</code>.
    */
   constexpr static std::size_t ByteSize() { return Field::kByteSize; };
 
   /**
    * @brief Actual bit size of an element.
-   *
-   * The bit-size of a field element is defined as <code>Field::kBitSize</code>.
    */
   constexpr static std::size_t BitSize() { return Field::kBitSize; };
 
   /**
    * @brief A short string representation of this field.
-   *
-   * The name of finite field instantiation is read from the constant
-   * <code>Field::kName</code>.
    */
   constexpr static const char* Name() { return Field::kName; };
 
@@ -137,31 +77,37 @@ class FF final : details::RingBase<FF<Bits, Field>> {
    * @return a random element.
    */
   static FF Random(PRG& prg) {
-    unsigned char buffer[FF<Bits, Field>::ByteSize()];
-    prg.Next(buffer, FF<Bits, Field>::ByteSize());
-    return FF<Bits, Field>::Read(buffer);
+    unsigned char buffer[FF<Field>::ByteSize()];
+    prg.Next(buffer, FF<Field>::ByteSize());
+    return FF<Field>::Read(buffer);
   };
 
   /**
    * @brief Create a field element from a string.
    * @param str the string
-   * @param base the base of the string
    * @return a finite field element.
    * @see scl::details::FieldFromString
    */
-  static FF FromString(const std::string& str, enum NumberBase base) {
+  static FF FromString(const std::string& str) {
     FF e;
-    details::FieldFromString<Field>(e.mValue, str, base);
+    details::FieldFromString<Field>(e.mValue, str);
     return e;
   };
 
   /**
-   * @brief Create a field element from a base 10 string.
-   * @param str the string
-   * @return a finite field element.
+   * @brief Get the additive identity of this field.
    */
-  static FF FromString(const std::string& str) {
-    return FF::FromString(str, NumberBase::DECIMAL);
+  static FF Zero() {
+    static FF zero;
+    return zero;
+  };
+
+  /**
+   * @brief Get the multiplicative identity of this field.
+   */
+  static FF One() {
+    static FF one(1);
+    return one;
   };
 
   /**
@@ -237,7 +183,7 @@ class FF final : details::RingBase<FF<Bits, Field>> {
    * @return the additive inverse of this.
    * @see FF::Negate
    */
-  FF Negated() {
+  FF Negated() const {
     auto copy = mValue;
     FF r;
     details::FieldNegate<Field>(copy);
@@ -294,103 +240,12 @@ class FF final : details::RingBase<FF<Bits, Field>> {
   };
 
  private:
-  ValueType mValue;
+  typename Field::ValueType mValue;
+
+  template <typename T>
+  friend class SCL_FF_Extras;
 };
-
-/**
- * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{61}-1\f$.
- */
-struct Mersenne61 {
-  /**
-   * @brief Internal type elements of this field.
-   */
-  using ValueType = std::uint64_t;
-
-  /**
-   * @brief The name of this field.
-   */
-  constexpr static const char* kName = "Mersenne61";
-
-  /**
-   * @brief The size of field elements of this field in bytes.
-   */
-  constexpr static const std::size_t kByteSize = sizeof(ValueType);
-
-  /**
-   * @brief The size of field elements of this field in bits.
-   */
-  constexpr static const std::size_t kBitSize = 61;
-};
-
-/**
- * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{127}-1\f$.
- */
-struct Mersenne127 {
-  /**
-   * @brief Internal type elements of this field.
-   */
-  using ValueType = __uint128_t;
-
-  /**
-   * @brief The name of this field.
-   */
-  constexpr static const char* kName = "Mersenne127";
-
-  /**
-   * @brief The size of field elements of this field in bytes.
-   */
-  constexpr static const std::size_t kByteSize = sizeof(ValueType);
-
-  /**
-   * @brief The size of field elements of this field in bits.
-   */
-  constexpr static const std::size_t kBitSize = 127;
-};
-
-#define _SCL_LE(a, b) ((a) <= (b))
-#define _SCL_GE(a, b) ((a) >= (b))
-
-/**
- * @brief Select a suitable Finite Field based on a provided bitlevel.
- */
-template <unsigned Bits>
-struct FieldSelector {
-  /**
-   * @brief The field.
-   */
-  // clang-format off
-  using Field =
-      std::conditional_t<
-      _SCL_GE(Bits, 1) && _SCL_LE(Bits, 61),
-      Mersenne61,
-
-      std::conditional_t<
-      _SCL_GE(Bits, 62) && _SCL_LE(Bits, 127),
-      Mersenne127,
-
-      void>>;
-
-  // clang-format on
-};
-
-#undef _SCL_LE
-#undef _SCL_GE
-
-}  // namespace details
-
-/**
- * @brief A suitable pre-defined field with space for \p Bits computation.
- *
- * <p>scl::FF picks a suitable pre-defined finite field implementation based on
- * the number of bits of computation the user wants. At the moment, there are
- * two different fields supported: One based on a 61-bit Mersenne prime, and one
- * based on a 127-bit mersenne prime. Depending on \p Bits, the smaller of the
- * fields will be picked and a compile-time error is thrown if \p Bits exceed
- * 127.</p>
- */
-template <unsigned Bits>
-using FF = details::FF<Bits, typename details::FieldSelector<Bits>::Field>;
 
 }  // namespace scl
 
-#endif  // _SCL_MATH_FF_H
+#endif  // SCL_MATH_FF_H

@@ -25,13 +25,13 @@
 #include <stdexcept>
 
 int main() {
-  using FF = scl::FF<32>;
-  using Vec = scl::Vec<FF>;
+  using Fp = scl::Fp<32>;
+  using Vec = scl::Vec<Fp>;
   scl::PRG prg;
 
   /* We can easily create an additive secret sharing of some secret value:
    */
-  FF secret(12345);
+  Fp secret(12345);
   Vec shares = scl::CreateAdditiveShares(secret, 5, prg);
 
   std::cout << "additive shares:\n" << shares << "\n";
@@ -59,7 +59,7 @@ int main() {
 
   /* If we introduce an error, then reconstruction fails
    */
-  shamir_shares[2] = FF(123);
+  shamir_shares[2] = Fp(123);
   try {
     std::cout << scl::ReconstructShamir(shamir_shares, 1) << "\n";
   } catch (std::logic_error& e) {
@@ -78,7 +78,7 @@ int main() {
   /* first we need the alphas that were used when generating the shares. By
    * default these are just the field elements 1 through 4.
    */
-  Vec alphas = {FF(1), FF(2), FF(3), FF(4)};
+  Vec alphas = {Fp(1), Fp(2), Fp(3), Fp(4)};
   auto pe = scl::ReconstructShamirRobust(shamir_shares, alphas, 1);
 
   /* pe is a pair of polynomials. The first is the original polynomial used for
@@ -87,16 +87,16 @@ int main() {
    *
    * The secret is embedded in the constant term.
    */
-  std::cout << pe[0].Evaluate(FF(0)) << "\n";
+  std::cout << pe[0].Evaluate(Fp(0)) << "\n";
 
   /* This will be 0, indicating that the share corresponding to party 3 had an
    * error.
    */
-  std::cout << pe[1].Evaluate(FF(3)) << "\n";
+  std::cout << pe[1].Evaluate(Fp(3)) << "\n";
 
   /* Lastly, if there's too many errors, then correction is not possible
    */
-  shamir_shares[1] = FF(22);
+  shamir_shares[1] = Fp(22);
   try {
     scl::ReconstructShamirRobust(shamir_shares, 1);
   } catch (std::logic_error& e) {

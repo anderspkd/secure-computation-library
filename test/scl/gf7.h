@@ -24,8 +24,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "scl/math/bases.h"
-
 namespace scl {
 namespace details {
 

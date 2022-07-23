@@ -21,11 +21,11 @@
 #include <catch2/catch.hpp>
 
 #include "../gf7.h"
-#include "scl/math/ff.h"
+#include "scl/math/fp.h"
 #include "scl/math/la.h"
 #include "scl/math/mat.h"
 
-using F = scl::details::FF<0, scl::details::GF7>;
+using F = scl::FF<scl::details::GF7>;
 using Mat = scl::Mat<F>;
 using Vec = scl::Vec<F>;
 
@@ -46,6 +46,9 @@ TEST_CASE("LinearAlgebra", "[math]") {
     REQUIRE(scl::details::GetPivotInColumn(A, 0) == 0);
     A(2, 2) = one;
     REQUIRE(scl::details::GetPivotInColumn(A, 2) == 2);
+
+    Mat B(2, 2);
+    REQUIRE(scl::details::GetPivotInColumn(B, 0) == -1);
   }
 
   SECTION("FindFirstNonZeroRow") {
@@ -72,6 +75,11 @@ TEST_CASE("LinearAlgebra", "[math]") {
                              F(0), F(0), F(0), F(0)});
     auto y = scl::details::ExtractSolution(B);
     REQUIRE(y.Equals(Vec{F(4), F(4), F(0)}));
+
+    Mat C(3, 4);
+    C(1, 0) = F(2);
+    auto z = scl::details::ExtractSolution(C);
+    REQUIRE(z.Equals(Vec{zero, one, zero}));
   };
 
   SECTION("RandomSolve") {
@@ -84,6 +92,23 @@ TEST_CASE("LinearAlgebra", "[math]") {
     scl::details::SolveLinearSystem(x, A, b);
 
     REQUIRE(A.Multiply(x.ToColumnMatrix()).Equals(b.ToColumnMatrix()));
+  }
+
+  SECTION("Malformed") {
+    Vec x;
+    Mat A(2, 2);
+    Vec b(3);
+    REQUIRE_THROWS_MATCHES(
+        scl::details::SolveLinearSystem(x, A, b), std::invalid_argument,
+        Catch::Matchers::Message("malformed system of equations"));
+  }
+
+  SECTION("Has solution") {
+    Mat A(2, 3);
+    // Has an all zero row, so no unique solution is possible
+    REQUIRE(!scl::details::HasSolution(A, true));
+    // An all zero row implies a free variable, so many solutions exist
+    REQUIRE(scl::details::HasSolution(A, false));
   }
 
   SECTION("Inverse") {

@@ -18,14 +18,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_Z2K_H
-#define _SCL_MATH_Z2K_H
+#ifndef SCL_MATH_Z2K_H
+#define SCL_MATH_Z2K_H
 
 #include <stdexcept>
 
-#include "scl/math/bases.h"
 #include "scl/math/ring.h"
-#include "scl/math/z2k/details.h"
+#include "scl/math/z2k_ops.h"
 #include "scl/prg.h"
 
 namespace scl {
@@ -94,22 +93,12 @@ class Z2k final : public details::RingBase<Z2k<K>> {
   /**
    * @brief Create a ring element from a string.
    * @param str the string
-   * @param base the base of the string
-   * @return a ring element.
-   */
-  static Z2k FromString(const std::string& str, enum NumberBase base) {
-    Z2k e;
-    details::FromStringZ2k<ValueType, BitSize()>(e.mValue, str, base);
-    return e;
-  };
-
-  /**
-   * @brief Create a ring element from a string denoting a base 10 number.
-   * @param str the string
    * @return a ring element.
    */
   static Z2k FromString(const std::string& str) {
-    return Z2k::FromString(str, NumberBase::DECIMAL);
+    Z2k e;
+    details::FromStringZ2k<ValueType, BitSize()>(e.mValue, str);
+    return e;
   };
 
   /**
@@ -233,4 +222,4 @@ class Z2k final : public details::RingBase<Z2k<K>> {
 
 }  // namespace scl
 
-#endif  // _SCL_MATH_Z2K_H
+#endif  // SCL_MATH_Z2K_H

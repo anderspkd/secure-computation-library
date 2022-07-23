@@ -23,11 +23,11 @@
 #include <cstdint>
 #include <sstream>
 
-#include "scl/math/ff.h"
+#include "scl/math/fp.h"
 #include "scl/math/mat.h"
 #include "scl/math/vec.h"
 
-using F = scl::FF<61>;
+using F = scl::Fp<61>;
 using Vec = scl::Vec<F>;
 
 TEST_CASE("Vector", "[math]") {
@@ -101,10 +101,12 @@ TEST_CASE("Vector", "[math]") {
 
   SECTION("ToString") {
     REQUIRE(v0.ToString() == "[1, 2, 3]");
-    REQUIRE(v1.ToString() == "[2, 123, 5]");
+    REQUIRE(v1.ToString() == "[2, 7b, 5]");
     std::stringstream ss;
     ss << v0;
     REQUIRE(ss.str() == "[1, 2, 3]");
+    Vec v;
+    REQUIRE(v.ToString() == "[ EMPTY_VECTOR ]");
   }
 
   SECTION("Incompatible") {

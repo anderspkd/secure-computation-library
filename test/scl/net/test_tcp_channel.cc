@@ -86,4 +86,29 @@ TEST_CASE("TcpChannel", "[network]") {
 
     REQUIRE(scl_tests::BufferEquals(send, recv, 200));
   }
+
+  SECTION("Recv from closed") {
+    auto port = scl_tests::GetPort();
+
+    std::shared_ptr<scl::TcpChannel> client, server;
+    std::thread clt([&]() {
+      int socket = scl::details::ConnectAsClient("0.0.0.0", port);
+      client = std::make_shared<scl::TcpChannel>(socket);
+    });
+
+    std::thread srv([&]() {
+      int ssock = scl::details::CreateServerSocket(port, 1);
+      auto ac = scl::details::AcceptConnection(ssock);
+      server = std::make_shared<scl::TcpChannel>(ac.socket);
+      scl::details::CloseSocket(ssock);
+    });
+
+    clt.join();
+    srv.join();
+
+    client->Close();
+    unsigned char buf[3] = {0};
+    auto r = server->Recv(buf, 3);
+    REQUIRE(r == 0);
+  }
 }

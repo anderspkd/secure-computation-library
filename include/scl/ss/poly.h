@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_SS_POLY_H
-#define _SCL_SS_POLY_H
+#ifndef SCL_SS_POLY_H
+#define SCL_SS_POLY_H
 
 #include <array>
 
@@ -165,25 +165,27 @@ Polynomial<T> Polynomial<T>::Create(const Vec<T>& coefficients) {
     return Polynomial<T>{c};
 }
 
-namespace {
-
+/**
+ * @brief Pads the coefficients of a polynomial with zeros.
+ * @param p the polynomial
+ * @param n the size of the final Vec
+ * @return A scl::Vec of length \p n with coefficients of p and zeros.
+ */
 template <typename T>
-static inline Vec<T> Pad(const Polynomial<T>& p, std::size_t n) {
+Vec<T> PadCoefficients(const Polynomial<T>& p, std::size_t n) {
   Vec<T> c(n);
   for (std::size_t i = 0; i < n; ++i) {
     if (i <= p.Degree()) c[i] = p[i];
   }
   return c;
-}
-
-}  // namespace
+}  // LCOV_EXCL_LINE
 
 template <typename T>
 Polynomial<T> Polynomial<T>::Add(const Polynomial<T>& q) const {
   const auto this_larger = Degree() > q.Degree();
   const auto n = (this_larger ? Degree() : q.Degree()) + 1;
-  const auto pp = Pad(*this, n);
-  const auto qp = Pad(q, n);
+  const auto pp = PadCoefficients(*this, n);
+  const auto qp = PadCoefficients(q, n);
   const auto c = pp.Add(qp);
   return Polynomial<T>::Create(c);
 }
@@ -192,8 +194,8 @@ template <typename T>
 Polynomial<T> Polynomial<T>::Subtract(const Polynomial<T>& q) const {
   const auto this_larger = Degree() > q.Degree();
   const auto n = (this_larger ? Degree() : q.Degree()) + 1;
-  const auto pp = Pad(*this, n);
-  const auto qp = Pad(q, n);
+  const auto pp = PadCoefficients(*this, n);
+  const auto qp = PadCoefficients(q, n);
   const auto c = pp.Subtract(qp);
   return Polynomial<T>::Create(c);
 }
@@ -209,19 +211,18 @@ Polynomial<T> Polynomial<T>::Multiply(const Polynomial<T>& q) const {
   return Polynomial<T>::Create(c);
 }
 
-namespace {
-
+/**
+ * @brief Divide the leading terms of two polynomials.
+ * @note assumes that <code>deg(p) >= deg(q)</code>.
+ */
 template <typename T>
-static inline Polynomial<T> DivideLeadingTerms(const Polynomial<T>& p,
-                                               const Polynomial<T>& q) {
-  // assumes deg(p) >= deg(q)
+Polynomial<T> DivideLeadingTerms(const Polynomial<T>& p,
+                                 const Polynomial<T>& q) {
   const auto deg_out = p.Degree() - q.Degree();
   Vec<T> c(deg_out + 1);
   c[deg_out] = p.LeadingTerm() / q.LeadingTerm();
   return Polynomial<T>::Create(c);
 }
-
-}  // namespace
 
 template <typename T>
 std::array<Polynomial<T>, 2> Polynomial<T>::Divide(
@@ -254,4 +255,4 @@ std::string Polynomial<T>::ToString(const char* pn, const char* vn) const {
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_SS_POLY_H
+#endif  // SCL_SS_POLY_H

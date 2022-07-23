@@ -32,10 +32,11 @@ inline bool BufferCmp(const unsigned char* b0, const unsigned char* b1,
 }
 
 inline bool BufferLooksRandom(const unsigned char* p, unsigned len) {
-  unsigned buckets[0xff] = {0};
+  std::vector<unsigned> buckets(256);
 
-  auto ptr = p;
-  for (std::size_t i = 0; i < len; i++) buckets[*ptr++]++;
+  for (std::size_t i = 0; i < len; i++) {
+    buckets[p[i]]++;
+  }
 
   bool all_in_interval = true;
   for (std::size_t i = 0; i < 256; i++) {

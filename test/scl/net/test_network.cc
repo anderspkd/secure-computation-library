@@ -23,13 +23,14 @@
 
 #include "scl/net/config.h"
 #include "scl/net/network.h"
+#include "scl/net/tcp_channel.h"
 
 TEST_CASE("Network", "[network]") {
   SECTION("Mock") {
-    auto mock = scl::Network::CreateMock(0, 3);
+    auto fake = scl::CreateFakeNetwork(0, 3);
 
-    auto network = std::get<0>(mock);
-    auto remotes = std::get<1>(mock);
+    auto network = fake.my_network;
+    auto remotes = fake.incoming;
 
     REQUIRE(network.Size() == 3);
     REQUIRE(remotes[0] == nullptr);
@@ -48,7 +49,7 @@ TEST_CASE("Network", "[network]") {
   }
 
   SECTION("Full") {
-    auto networks = scl::Network::CreateFullInMemory(3);
+    auto networks = scl::CreateFullyConnectedInMemory(3);
     REQUIRE(networks.size() == 3);
 
     auto network0 = networks[0];
@@ -73,13 +74,16 @@ TEST_CASE("Network", "[network]") {
     scl::Network network0, network1, network2;
 
     std::thread t0([&]() {
-      network0 = scl::Network::Create(scl::NetworkConfig::Localhost(0, 3));
+      network0 = scl::Network::Create<scl::TcpChannel>(
+          scl::NetworkConfig::Localhost(0, 3));
     });
     std::thread t1([&]() {
-      network1 = scl::Network::Create(scl::NetworkConfig::Localhost(1, 3));
+      network1 = scl::Network::Create<scl::TcpChannel>(
+          scl::NetworkConfig::Localhost(1, 3));
     });
     std::thread t2([&]() {
-      network2 = scl::Network::Create(scl::NetworkConfig::Localhost(2, 3));
+      network2 = scl::Network::Create<scl::TcpChannel>(
+          scl::NetworkConfig::Localhost(2, 3));
     });
 
     t0.join();

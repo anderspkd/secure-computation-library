@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_CONFIG_H
-#define _SCL_NET_CONFIG_H
+#ifndef SCL_NET_CONFIG_H
+#define SCL_NET_CONFIG_H
 
 #include <memory>
 #include <sstream>
@@ -143,4 +143,4 @@ class NetworkConfig {
 
 }  // namespace scl
 
-#endif  // _SCL_NET_CONFIG_H
+#endif  // SCL_NET_CONFIG_H

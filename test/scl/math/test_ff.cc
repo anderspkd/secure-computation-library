@@ -21,26 +21,50 @@
 #include <catch2/catch.hpp>
 
 #include "../gf7.h"
-#include "scl/math/ff.h"
+#include "scl/math/curves/secp256k1.h"
+#include "scl/math/fp.h"
 #include "scl/prg.h"
 
-using Field1 = scl::FF<61>;
-using Field2 = scl::FF<127>;
-using Field3 = scl::details::FF<0, scl::details::GF7>;
+using Mersenne61 = scl::Fp<61>;
+using Mersenne127 = scl::Fp<127>;
+using GF7 = scl::FF<scl::details::GF7>;
+
+#ifdef SCL_ENABLE_EC_TESTS
+using Secp256k1_Field = scl::FF<scl::details::Secp256k1::Field>;
+#endif
 
 template <typename T>
-static T RandomNonZero(scl::PRG& prg) {
+T RandomNonZero(scl::PRG& prg) {
   auto a = T::Random(prg);
   for (std::size_t i = 0; i < 10; ++i) {
-    if (a == T{}) a = T::Random(prg);
+    if (a == T::Zero()) a = T::Random(prg);
     break;
   }
-  if (a == T{})
+  if (a == T::Zero())
     throw std::logic_error("could not generate a non-zero random value");
   return a;
 }
 
-TEMPLATE_TEST_CASE("FF", "[math]", Field1, Field2, Field3) {
+// Specialization for the very small field since it's apparently possible to hit
+// zero 10 times in a row...
+template <>
+GF7 RandomNonZero<GF7>(scl::PRG& prg) {
+  auto a = GF7::Random(prg);
+  if (a != GF7(6)) {
+    return a + GF7(1);
+  }
+  return a;
+}
+
+#define REPEAT for (std::size_t i = 0; i < 50; ++i)
+
+#ifdef SCL_ENABLE_EC_TESTS
+#define ARG_LIST Mersenne61, Mersenne127, GF7, Secp256k1_Field
+#else
+#define ARG_LIST Mersenne61, Mersenne127, GF7
+#endif
+
+TEMPLATE_TEST_CASE("FF", "[math]", ARG_LIST) {
   scl::PRG prg;
   auto zero = TestType();
 
@@ -50,69 +74,86 @@ TEMPLATE_TEST_CASE("FF", "[math]", Field1, Field2, Field3) {
   }
 
   SECTION("addition") {
-    auto a = RandomNonZero<TestType>(prg);
-    auto b = RandomNonZero<TestType>(prg);
-    auto c = a + b;
-    REQUIRE(c != a);
-    REQUIRE(c != b);
-    REQUIRE(c == b + a);
-    a += b;
-    REQUIRE(c == a);
-
     auto d = TestType(-1);
     auto e = TestType(1);
     REQUIRE(d + e == TestType(0));
+
+    REPEAT {
+      auto a = RandomNonZero<TestType>(prg);
+      auto b = RandomNonZero<TestType>(prg);
+      auto c = a + b;
+      REQUIRE(c != a);
+      REQUIRE(c != b);
+      REQUIRE(c == b + a);
+      a += b;
+      REQUIRE(c == a);
+      REQUIRE(c + zero == c);
+    }
   }
 
   SECTION("negation") {
-    auto a = RandomNonZero<TestType>(prg);
-    auto a_negated = a.Negated();
-    REQUIRE(a != a_negated);
-    REQUIRE(a + a_negated == zero);
-    REQUIRE(a_negated == -a);
-    a.Negate();
-    REQUIRE(a == a_negated);
+    REPEAT {
+      auto a = RandomNonZero<TestType>(prg);
+      auto a_negated = a.Negated();
+      REQUIRE(a != a_negated);
+      REQUIRE(a + a_negated == zero);
+      REQUIRE(a_negated == -a);
+      a.Negate();
+      REQUIRE(a == a_negated);
+      REQUIRE(a - zero == a);
+    }
   }
 
   SECTION("subtraction") {
-    auto a = RandomNonZero<TestType>(prg);
-    auto b = RandomNonZero<TestType>(prg);
-    REQUIRE(a - b == -(b - a));
-    REQUIRE(a - b == -b + a);
-    auto c = a - b;
-    a -= b;
-    REQUIRE(c == a);
+    REPEAT {
+      auto a = RandomNonZero<TestType>(prg);
+      auto b = RandomNonZero<TestType>(prg);
+      REQUIRE(a - b == -(b - a));
+      REQUIRE(a - b == -b + a);
+      auto c = a - b;
+      a -= b;
+      REQUIRE(c == a);
+      REQUIRE(c * zero == zero);
+    }
   }
 
   SECTION("multiplication") {
-    auto a = RandomNonZero<TestType>(prg);
-    auto b = RandomNonZero<TestType>(prg);
-    REQUIRE(a * b == b * a);
-    auto c = RandomNonZero<TestType>(prg);
-    REQUIRE(c * (a + b) == c * a + c * b);
-    auto d = a * b;
-    a *= b;
-    REQUIRE(a == d);
+    REPEAT {
+      auto a = RandomNonZero<TestType>(prg);
+      auto b = RandomNonZero<TestType>(prg);
+      REQUIRE(a * b == b * a);
+      auto c = RandomNonZero<TestType>(prg);
+      REQUIRE(c * (a + b) == c * a + c * b);
+      auto d = a * b;
+      a *= b;
+      REQUIRE(a == d);
+    }
   }
 
   SECTION("inverses") {
-    auto a = RandomNonZero<TestType>(prg);
-    auto a_inverse = a.Inverse();
-    REQUIRE(a * a_inverse == TestType(1));
     REQUIRE_THROWS_MATCHES(
         zero.Inverse(), std::logic_error,
         Catch::Matchers::Message("0 not invertible modulo prime"));
-    a.Invert();
-    REQUIRE(a == a_inverse);
+
+    REPEAT {
+      auto a = RandomNonZero<TestType>(prg);
+      auto a_inverse = a.Inverse();
+      REQUIRE(a * a_inverse == TestType(1));
+      a.Invert();
+      REQUIRE(a == a_inverse);
+    }
   }
 
   SECTION("divide") {
-    auto a = RandomNonZero<TestType>(prg);
-    auto b = RandomNonZero<TestType>(prg);
-    REQUIRE(a / a == TestType(1));
-    REQUIRE(a / b == (b / a).Inverse());
-    auto c = a / b;
-    a /= b;
-    REQUIRE(c == a);
+    REPEAT {
+      auto a = RandomNonZero<TestType>(prg);
+      auto b = RandomNonZero<TestType>(prg);
+      REQUIRE(a / a == TestType(1));
+      REQUIRE(a / b == (b / a).Inverse());
+      auto c = a / b;
+      a /= b;
+      REQUIRE(c == a);
+      REQUIRE(zero / c == zero);
+    }
   }
 }

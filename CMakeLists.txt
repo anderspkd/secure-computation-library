@@ -16,13 +16,20 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 1.1.1 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 2.0.0 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+option(WITH_EC "Include support for elliptic curves (requires GMP)" ON)
+
 message(STATUS "CMAKE_BUILD_TYPE=" ${CMAKE_BUILD_TYPE})
+message(STATUS "WITH_EC=" ${WITH_EC})
+
+if(WITH_EC MATCHES ON)
+  find_library(GMP gmp libgmp REQUIRED)
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native -Wall -Wextra -pedantic -Werror -std=gnu++17")
@@ -43,6 +50,13 @@ set(SCL_SOURCE_FILES
   src/scl/net/network.cc
   src/scl/net/discovery/server.cc
   src/scl/net/discovery/client.cc)
+
+if(WITH_EC MATCHES ON)
+  set(SCL_SOURCE_FILES ${SCL_SOURCE_FILES}
+    src/scl/math/secp256k1_field.cc
+    src/scl/math/secp256k1_curve.cc
+    src/scl/math/number.cc)
+endif()
 
 set(SCL_HEADERS "${CMAKE_SOURCE_DIR}/include")
 
@@ -65,7 +79,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
     FILES_MATCHING PATTERN "*.h")
 
 endif()
-  
+
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
 
   set(SCL_TEST_SOURCE_FILES
@@ -97,29 +111,40 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
 
     test/scl/p/test_simple.cc)
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-    find_package(Catch2 REQUIRED)
-    include(CTest)
-    include(Catch)
-    include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
+  if(WITH_EC MATCHES ON)
+    set(SCL_TEST_SOURCE_FILES ${SCL_TEST_SOURCE_FILES}
+      test/scl/math/test_secp256k1.cc
+      test/scl/math/test_number.cc)
+    add_compile_definitions(SCL_ENABLE_EC_TESTS)
+  endif()
 
-    # Tests that check bounds for reading/writing are sped up considerably by
-    # lowering said bounds.
-    add_compile_definitions(MAX_VEC_READ_SIZE=1024)
-    add_compile_definitions(MAX_MAT_READ_SIZE=1024)
-    add_compile_definitions(SCL_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test/data/")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+  find_package(Catch2 REQUIRED)
+  include(CTest)
+  include(Catch)
+  include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
 
-    add_executable(scl_test ${SCL_SOURCE_FILES} ${SCL_TEST_SOURCE_FILES})
-    target_link_libraries(scl_test Catch2::Catch2 pthread)
-    catch_discover_tests(scl_test)
+  # Lower the max size of Vec/Mat reads to speed up tests
+  add_compile_definitions(MAX_VEC_READ_SIZE=1024)
+  add_compile_definitions(MAX_MAT_READ_SIZE=1024)
+  add_compile_definitions(SCL_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test/data/")
 
-    append_coverage_compiler_flags()
+  add_executable(scl_test ${SCL_SOURCE_FILES} ${SCL_TEST_SOURCE_FILES})
+  target_link_libraries(scl_test Catch2::Catch2 pthread)
 
-    # Tell lcov to ignore system STL headers in order to make the coverage
-    # output more precise.
-    setup_target_for_coverage_lcov(
-      NAME coverage
-      EXECUTABLE scl_test
-      EXCLUDE "/usr/include/*" "test/*" "/usr/lib/*" "/usr/local/*")
+  if(WITH_EC MATCHES ON)
+    target_link_libraries(scl_test ${GMP})
+  endif()
+
+  catch_discover_tests(scl_test)
+
+  append_coverage_compiler_flags()
+
+  # Tell lcov to ignore system STL headers in order to make the coverage
+  # output more precise.
+  setup_target_for_coverage_lcov(
+    NAME coverage
+    EXECUTABLE scl_test
+    EXCLUDE "/usr/include/*" "test/*" "/usr/lib/*" "/usr/local/*")
 
 endif()

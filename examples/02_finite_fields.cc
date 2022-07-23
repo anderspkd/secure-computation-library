@@ -33,7 +33,7 @@ int main() {
    * which returns the actual size of a field element (so 61 bits in the below
    * case).
    */
-  using FF = scl::FF<32>;
+  using Fp = scl::Fp<32>;
 
   /* FF supports constructing an element from an int constant. The value input
    * is interpreted "modulo p" where p is the prime. This makes it possible to
@@ -42,9 +42,9 @@ int main() {
    * The default construtor of FF can be used to construct an element equal to
    * 0.
    */
-  auto a = FF(1);
-  auto b = FF(1234);
-  auto c = FF(555);
+  auto a = Fp(1);
+  auto b = Fp(1234);
+  auto c = Fp(555);
 
   /* FF supports all operations required for a field, so addition, subtraction,
    * multiplication and "division". Division is defined as multiplication by the
@@ -71,16 +71,16 @@ int main() {
 
   /* Using a PRG (see the PRG example), we can generate random field elements.
    */
-  std::cout << FF::Random(prg) << "\n";
-  std::cout << FF::Random(prg) << "\n";
-  std::cout << FF::Random(prg) << "\n";
+  std::cout << Fp::Random(prg) << "\n";
+  std::cout << Fp::Random(prg) << "\n";
+  std::cout << Fp::Random(prg) << "\n";
 
   /* Serialization is also supported.
    */
-  unsigned char buffer[FF::ByteSize()];
+  unsigned char buffer[Fp::ByteSize()];
 
   a.Write(buffer);
-  auto a_ = FF::Read(buffer);
+  auto a_ = Fp::Read(buffer);
 
   std::cout << (a_ == a) << "\n";
 }

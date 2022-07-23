@@ -27,8 +27,8 @@ namespace scl_tests {
 /**
  * @brief The default starting point for ports.
  */
-#ifndef _SCL_DEFAULT_TEST_PORT
-#define _SCL_DEFAULT_TEST_PORT 14421
+#ifndef SCL_DEFAULT_TEST_PORT
+#define SCL_DEFAULT_TEST_PORT 14421
 #endif
 
 /**

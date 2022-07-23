@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_TCP_CHANNEL_H
-#define _SCL_NET_TCP_CHANNEL_H
+#ifndef SCL_NET_TCP_CHANNEL_H
+#define SCL_NET_TCP_CHANNEL_H
 
 #include <cstring>
 #include <memory>
@@ -52,7 +52,7 @@ class TcpChannel final : public Channel {
   bool Alive() const { return mAlive; };
 
   void Send(const unsigned char* src, std::size_t n) override;
-  void Recv(unsigned char* dst, std::size_t n) override;
+  int Recv(unsigned char* dst, std::size_t n) override;
   void Close() override;
 
  private:
@@ -62,4 +62,4 @@ class TcpChannel final : public Channel {
 
 }  // namespace scl
 
-#endif  // _SCL_NET_TCP_CHANNEL_H
+#endif  // SCL_NET_TCP_CHANNEL_H

@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_P_SIMPLE_H
-#define _SCL_P_SIMPLE_H
+#ifndef SCL_P_SIMPLE_H
+#define SCL_P_SIMPLE_H
 
 #include <type_traits>
 
@@ -49,20 +49,12 @@ struct LastProtocolStep {
   };
 };
 
-namespace {
-template <typename S, typename Ctx>
-using IsStep =
-    std::enable_if_t<std::is_base_of_v<ProtocolStep<S, Ctx>, S>, bool>;
-
-template <typename S, typename Ctx>
-using IsLastStep =
-    std::enable_if_t<std::is_base_of_v<LastProtocolStep<S, Ctx>, S>, bool>;
-}  // namespace
-
 /**
  * @brief Recursively evaluate all internal steps of a protocol.
  */
-template <typename S, typename Ctx, IsStep<S, Ctx> = true>
+template <
+    typename S, typename Ctx,
+    std::enable_if_t<std::is_base_of_v<ProtocolStep<S, Ctx>, S>, bool> = true>
 auto Evaluate(S& step, Ctx& context) {
   auto next = step.Run(context);
   return Evaluate(next, context);
@@ -71,11 +63,13 @@ auto Evaluate(S& step, Ctx& context) {
 /**
  * @brief Evaluate the last step of a protocol.
  */
-template <typename S, typename Ctx, IsLastStep<S, Ctx> = true>
+template <typename S, typename Ctx,
+          std::enable_if_t<std::is_base_of_v<LastProtocolStep<S, Ctx>, S>,
+                           bool> = true>
 auto Evaluate(S& last, Ctx& context) {
   return last.Finalize(context);
 }
 
 }  // namespace scl
 
-#endif  // _SCL_P_SIMPLE_H
+#endif  // SCL_P_SIMPLE_H

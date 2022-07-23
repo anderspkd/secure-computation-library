@@ -18,10 +18,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_SECRET_SHARING_H
-#define _SCL_SECRET_SHARING_H
+#ifndef SCL_SECRET_SHARING_H
+#define SCL_SECRET_SHARING_H
 
 #include "scl/ss/additive.h"
 #include "scl/ss/shamir.h"
 
-#endif  // _SCL_SECRET_SHARING_H
+#endif  // SCL_SECRET_SHARING_H

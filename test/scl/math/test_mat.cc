@@ -20,10 +20,10 @@
 
 #include <catch2/catch.hpp>
 
-#include "scl/math/ff.h"
+#include "scl/math/fp.h"
 #include "scl/math/mat.h"
 
-using F = scl::FF<61>;
+using F = scl::Fp<61>;
 using Mat = scl::Mat<F>;
 
 inline void Populate(Mat& m, unsigned values[]) {
@@ -61,7 +61,11 @@ TEST_CASE("Matrix", "[math]") {
     Mat m(3, 2);
     unsigned v[] = {1, 2, 44444, 5, 6, 7};
     Populate(m, v);
-    std::string expected = "\n[     1  2 ]\n[ 44444  5 ]\n[     6  7 ]";
+    std::string expected =
+        "\n"
+        "[    1  2 ]\n"
+        "[ ad9c  5 ]\n"
+        "[    6  7 ]";
     REQUIRE(m.ToString() == expected);
 
     std::stringstream ss;
@@ -220,6 +224,9 @@ TEST_CASE("Matrix", "[math]") {
         REQUIRE(m(i, j) == copy(0, c++));
       }
     }
+
+    REQUIRE_THROWS_MATCHES(m.Resize(42, 4), std::invalid_argument,
+                           Catch::Matchers::Message("cannot resize matrix"));
   }
 
   SECTION("IsSquare") {
@@ -269,5 +276,9 @@ TEST_CASE("Matrix", "[math]") {
     REQUIRE(m1(2, 0) == F(1));
     REQUIRE(m1(2, 1) == F(8));
     REQUIRE(m1(2, 2) == F(64));
+
+    xs.emplace_back(F(55));
+    REQUIRE_THROWS_MATCHES(Mat::Vandermonde(3, 3, xs), std::invalid_argument,
+                           Catch::Matchers::Message("|xs| != number of rows"));
   }
 }

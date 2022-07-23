@@ -112,6 +112,14 @@ TEMPLATE_TEST_CASE("Z2k", "[math]", Z2k1, Z2k2) {
     auto b = TestType::Read(buffer);
     REQUIRE(a == b);
   }
+
+  SECTION("ToString") {
+    TestType x(0x7b);
+    REQUIRE(x.ToString() == "7b");
+    std::stringstream ss;
+    ss << x;
+    REQUIRE(ss.str() == "7b");
+  }
 }
 
 TEST_CASE("Z2k sizes", "[math]") {
@@ -148,8 +156,8 @@ TEST_CASE("Z2k truncation", "[math]") {
   REQUIRE(buffer_b[4] == 0xff);
   REQUIRE(buffer_b[5] == 0xff);
 
-  REQUIRE(a.ToString() == "2882400017");
-  REQUIRE(b.ToString() == "2882400017");
+  REQUIRE(a.ToString() == "abcdef11");
+  REQUIRE(b.ToString() == "abcdef11");
 
   std::stringstream ss_a;
   std::stringstream ss_b;
@@ -157,7 +165,7 @@ TEST_CASE("Z2k truncation", "[math]") {
   ss_b << b;
   REQUIRE(ss_a.str() == ss_b.str());
 
-  Z2k c = Z2k::FromString("34abcdef11", scl::NumberBase::HEX);
+  Z2k c = Z2k::FromString("34abcdef11");
   REQUIRE(c == a);
   REQUIRE(c == b);
 }

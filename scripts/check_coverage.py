@@ -4,7 +4,7 @@ import sys
 import re
 
 line_threshold = 95.0
-function_threshold = 80.0
+function_threshold = 95.0
 
 print(f"Coverage threshold: lines={line_threshold}%, functions={function_threshold}%")
 

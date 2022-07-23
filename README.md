@@ -1,15 +1,16 @@
 # SCL — Secure Computation Library
 
-SCL is a utilities library for prototyping Secure Multiparty Computation (MPC
-for short) protocols. The focus of SCL is usability, both in terms of the
-interfaces provided, but also the build process (SCL has no external
-dependencies, for example). SCL moreover attempts to provide functionality that
-abstracts away all the annoying "boilerplate" code that is needed for
-implementing a new and exciting MPC protocol, such as implementing a finite
-field, getting networking to work, or instantiating a PRG or hash function.
+SCL is a utilities library for prototyping Secure Multiparty Computation (_MPC_
+for short) protocols. The focus of SCL is usability, not necessarily speed. What
+this means is that SCL strives to provide an intuitive, easy to use and
+understand and well documented interface that helps the programmer prototype an
+MPC protocol faster (and nicer) than if they had to write everything themselves.
 
-Hopefully, by using SCL, researches (and hobbyists) will find it a lot easier,
-and quicker!, to implement MPC protocols.
+SCL provides high level interfaces and functionality for working with
+* Secret sharing, additive and Shamir.
+* Finite fields.
+* Networking.
+* Primitives, such as hash functions and PRGs.
 
 ### Disclaimer
 
@@ -20,13 +21,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.
 
-
 # Building SCL
 
-SCL has no external dependencies, except if you want to build the unittests. In
-that case, [catch2](https://github.com/catchorg/Catch2/tree/v2.x) is required as
-that's the framework used for testing, as well as ~lcov~ for generating test
-coverage.
+SCL uses [gmp](https://gmplib.org/) for working with Elliptic Curves, and
+[catch2](https://github.com/catchorg/Catch2/tree/v2.x) for testing and `lcov`
+for test coverage.
 
 The CMake file recongnizes two different build types: `Debug` and `Release`, the
 latter being the default. In either case, building is straight forward and can
@@ -46,6 +45,10 @@ sudo cmake --install build
 after the build command. By default, headers are install in `usr/local/include`
 and the shared library in `/usr/local/lib`. This location can be controlled by
 setting the `CMAKE_INSTALL_PREFIX` accordingly.
+
+Support for Elliptic Curves can be disabled (and thus remove the need to have
+gmp installed) by passing `-DWITH_EC=OFF` to cmake.
+
 
 # Using SCL
 

@@ -1,3 +1,13 @@
+2.0: Elliptic curves and finite field refactoring
+- Make it simpler to define new finite fields
+- Include optional (but enabled by default) support for elliptic curves
+  - Implement secp256k1
+- Include optional (but enabled by default) support for multi-precision integers
+- Significantly increase test coverage
+- Make header guards standard compliant
+- Rename FF<Bits> to Fp<Bits>.
+- Move class FF into scl namespace.
+
 1.1: Refactoring of finite field internals
 - Finite field operations are now defined by individual specializations of
   templated functions

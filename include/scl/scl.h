@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_SCL_H
-#define _SCL_SCL_H
+#ifndef SCL_SCL_H
+#define SCL_SCL_H
 
 #include "scl/math.h"
 #include "scl/networking.h"
@@ -74,4 +74,4 @@ namespace scl {
 namespace details {}
 }  // namespace scl
 
-#endif  // _SCL_SCL_H
+#endif  // SCL_SCL_H

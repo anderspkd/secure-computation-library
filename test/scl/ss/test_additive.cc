@@ -25,7 +25,7 @@
 #include "scl/ss/additive.h"
 
 TEST_CASE("AdditiveSS", "[ss]") {
-  using FF = scl::FF<61>;
+  using FF = scl::Fp<61>;
   scl::PRG prg;
 
   auto secret = FF(12345);

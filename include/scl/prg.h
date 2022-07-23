@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_PRG_H
-#define _SCL_PRG_H
+#ifndef SCL_PRG_H
+#define SCL_PRG_H
 
 #include <wmmintrin.h>
 
@@ -159,4 +159,4 @@ class PRG {
 
 }  // namespace scl
 
-#endif  // _SCL_PRG_H
+#endif  // SCL_PRG_H

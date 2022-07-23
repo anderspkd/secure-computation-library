@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_SHARED_DEQUE_H
-#define _SCL_NET_SHARED_DEQUE_H
+#ifndef SCL_NET_SHARED_DEQUE_H
+#define SCL_NET_SHARED_DEQUE_H
 
 #include <condition_variable>
 #include <mutex>
@@ -67,19 +67,8 @@ class SharedDeque {
   std::size_t Size();
 
  private:
-  /**
-   * @brief Underlying STL deque.
-   */
   std::deque<T, Allocator> mDeck;
-
-  /**
-   * @brief mutex.
-   */
   std::mutex mMutex;
-
-  /**
-   * @brief condition variable.
-   */
   std::condition_variable mCond;
 };
 
@@ -139,4 +128,4 @@ std::size_t SharedDeque<T, Allocator>::Size() {
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_NET_SHARED_DEQUE_H
+#endif  // SCL_NET_SHARED_DEQUE_H

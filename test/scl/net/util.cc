@@ -20,7 +20,7 @@
 
 #include "util.h"
 
-int test_port = _SCL_DEFAULT_TEST_PORT;
+int test_port = SCL_DEFAULT_TEST_PORT;
 
 int scl_tests::GetPort() { return test_port++; }
 
