@@ -34,20 +34,21 @@ def check_guards(path, expected_header_guard):
 
         return good
 
+def check_dir(dirname):
+    to_truncate = len(dirname) + 1
+    all_good = True
+    for path, _, names in os.walk(dirname):
+        for n in names:
+            if (n.endswith('.h')):
+                truncated_path = path[to_truncate:]
+                full_name = os.path.join(truncated_path, n)
+                full_name = full_name.replace('/', '_').replace('.', '_')
+                full_name = full_name.upper()
 
-to_truncate = len('include') + 1
-all_good = True
-for path, _, names in os.walk('include'):
-    for n in names:
-        truncated_path = path[to_truncate:]
-        full_name = os.path.join(truncated_path, n)
-        full_name = full_name.replace('/', '_').replace('.', '_')
-        full_name = '_' + full_name
-        full_name = full_name.upper()
+                if not check_guards(os.path.join(path, n), full_name):
+                    all_good = False
+    return all_good
 
-        # check that there's an include guard with full_name as the symbol.
 
-        if not check_guards(os.path.join(path, n), full_name):
-            all_good = False
-
+all_good = check_dir('include') and check_dir('src')
 exit(0 if all_good else 1)

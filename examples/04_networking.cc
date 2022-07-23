@@ -22,6 +22,8 @@
 
 #include <iostream>
 
+#include "scl/net/tcp_channel.h"
+
 scl::NetworkConfig RunServer(int n) {
   scl::DiscoveryServer server(n);
   scl::Party party{0, "127.0.0.1", 5000};
@@ -63,7 +65,7 @@ int main(int argc, char** argv) {
    * around.
    */
 
-  auto network = scl::Network::Create(config);
+  auto network = scl::Network::Create<scl::TcpChannel>(config);
 
   for (std::size_t i = 0; i < 3; ++i) {
     // similar to the TCP channel example, send our ID to everyone:

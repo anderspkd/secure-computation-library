@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_LA_H
-#define _SCL_MATH_LA_H
+#ifndef SCL_MATH_LA_H
+#define SCL_MATH_LA_H
 
 #include "scl/math/mat.h"
 #include "scl/math/vec.h"
@@ -108,10 +108,13 @@ void RowReduceInPlace(Mat<T>& A) {
   }
 }
 
-namespace {
-
-// Finds and returns the pivot in a given column, or -1, if the column does not
-// have a pivot. The matrix A is assumed to be in RREF.
+/**
+ * @brief Finds the position of a pivot in a column, if any.
+ * @param A a RREF matrix
+ * @param col the column
+ * @return The index of a pivot in \p col, or -1 if non exists
+ * @note No validation is performed on any of the arguments.
+ */
 template <typename T>
 int GetPivotInColumn(const Mat<T>& A, int col) {
   T zero;
@@ -127,9 +130,16 @@ int GetPivotInColumn(const Mat<T>& A, int col) {
   return -1;
 }
 
-// Starting from the bottom, finds the first row that is non-zero in a
-// matrix. This function is used to determine rows that can be skipped when
-// performing back substitution.
+/**
+ * @brief Finds the first non-zero row, starting from the "bottom" of a matrix
+ *
+ * Starting from the bottom, finds the first row that is non-zero in a matrix.
+ * This function is used to determine rows that can be skipped when performing
+ * back substitution.
+ *
+ * @param A the matrix
+ * @return The first non-zero row
+ */
 template <typename T>
 std::size_t FindFirstNonZeroRow(const Mat<T>& A) {
   std::size_t nzr = A.Rows();
@@ -146,8 +156,6 @@ std::size_t FindFirstNonZeroRow(const Mat<T>& A) {
   }
   return nzr;
 }
-
-}  // namespace
 
 /**
  * @brief Extract a solution from a matrix in RREF.
@@ -183,7 +191,7 @@ Vec<T> ExtractSolution(const Mat<T>& A) {
     }
   }
   return x;
-}
+}  // LCOV_EXCL_LINE
 
 /**
  * @brief Check if a linear system has a solution.
@@ -281,4 +289,4 @@ bool SolveLinearSystem(Vec<T>& x, const Mat<T>& A, const Vec<T>& b) {
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_MATH_LA_H
+#endif  // SCL_MATH_LA_H

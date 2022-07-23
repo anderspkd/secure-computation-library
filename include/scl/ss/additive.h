@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_SS_ADDITIVE_H
-#define _SCL_SS_ADDITIVE_H
+#ifndef SCL_SS_ADDITIVE_H
+#define SCL_SS_ADDITIVE_H
 
 #include <stdexcept>
 
@@ -44,7 +44,7 @@ Vec<T> CreateAdditiveShares(const T& secret, std::size_t n, PRG& prg) {
       n, [](std::size_t i) { return i > 0; }, prg);
   shares[0] = secret - shares.Sum();
   return shares;
-}
+}  // LCOV_EXCL_LINE
 
 /**
  * @brief Reconstruct an additive secret-sharing.
@@ -59,4 +59,4 @@ T ReconstructAdditive(const Vec<T>& shares) {
 
 }  // namespace scl
 
-#endif  // _SCL_SS_ADDITIVE_H
+#endif  // SCL_SS_ADDITIVE_H

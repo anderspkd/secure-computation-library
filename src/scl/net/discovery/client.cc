@@ -22,6 +22,7 @@
 
 #include <memory>
 
+#include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
 
 using Client = scl::DiscoveryClient;

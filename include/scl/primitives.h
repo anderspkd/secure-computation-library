@@ -18,10 +18,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_PRIMITIVES_H
-#define _SCL_PRIMITIVES_H
+#ifndef SCL_PRIMITIVES_H
+#define SCL_PRIMITIVES_H
 
 #include "scl/hash.h"
 #include "scl/prg.h"
 
-#endif  // _SCL_PRIMITIVES_H
+#endif  // SCL_PRIMITIVES_H

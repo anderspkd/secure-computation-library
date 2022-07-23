@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_CHANNEL_H
-#define _SCL_NET_CHANNEL_H
+#ifndef SCL_NET_CHANNEL_H
+#define SCL_NET_CHANNEL_H
 
 #include <cstring>
 #include <stdexcept>
@@ -51,16 +51,8 @@ namespace scl {
 #define MAX_MAT_READ_SIZE 1 << 25
 #endif
 
-namespace {
-
-template <typename T>
-using IsCopyable =
-    typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool>;
-
-}  // namespace
-
-#define _SCL_CC(x) reinterpret_cast<const unsigned char*>(x)
-#define _SCL_C(x) reinterpret_cast<unsigned char*>(x)
+#define SCL_CC(x) reinterpret_cast<const unsigned char*>(x)
+#define SCL_C(x) reinterpret_cast<unsigned char*>(x)
 
 /**
  * @brief Abstract channel for communicating between two peers.
@@ -91,16 +83,18 @@ class Channel {
    * @brief Receive data from the remote party.
    * @param dst where to store the received data
    * @param n how much data to receive
+   * @return how many bytes were received.
    */
-  virtual void Recv(unsigned char* dst, std::size_t n) = 0;
+  virtual int Recv(unsigned char* dst, std::size_t n) = 0;
 
   /**
    * @brief Send a trivially copyable item.
    * @param src the thing to send
    */
-  template <typename T, IsCopyable<T> = true>
+  template <typename T, typename std::enable_if_t<
+                            std::is_trivially_copyable_v<T>, bool> = true>
   void Send(const T& src) {
-    Send(_SCL_CC(&src), sizeof(T));
+    Send(SCL_CC(&src), sizeof(T));
   }
 
   /**
@@ -111,9 +105,10 @@ class Channel {
    *
    * @param src an STL vector of things to send
    */
-  template <typename T, IsCopyable<T> = true>
+  template <typename T, typename std::enable_if_t<
+                            std::is_trivially_copyable_v<T>, bool> = true>
   void Send(const std::vector<T>& src) {
-    Send(_SCL_CC(src.data()), sizeof(T) * src.size());
+    Send(SCL_CC(src.data()), sizeof(T) * src.size());
   }
 
   /**
@@ -136,7 +131,7 @@ class Channel {
     // write T to the channel.
     auto buf = std::make_unique<unsigned char[]>(vec.ByteSize());
     vec.Write(buf.get());
-    Send(_SCL_CC(buf.get()), vec.ByteSize());
+    Send(SCL_CC(buf.get()), vec.ByteSize());
   }
 
   /**
@@ -158,16 +153,17 @@ class Channel {
     Send(cols);
     auto buf = std::make_unique<unsigned char[]>(mat.ByteSize());
     mat.Write(buf.get());
-    Send(_SCL_CC(buf.get()), mat.ByteSize());
+    Send(SCL_CC(buf.get()), mat.ByteSize());
   }
 
   /**
    * @brief Receive a trivially copyable item.
    * @param dst where to store the received item
    */
-  template <typename T, IsCopyable<T> = true>
+  template <typename T, typename std::enable_if_t<
+                            std::is_trivially_copyable_v<T>, bool> = true>
   void Recv(T& dst) {
-    Recv(_SCL_C(&dst), sizeof(T));
+    Recv(SCL_C(&dst), sizeof(T));
   }
 
   /**
@@ -177,9 +173,10 @@ class Channel {
    *
    * @param dst where to store the received items
    */
-  template <typename T, IsCopyable<T> = true>
+  template <typename T, typename std::enable_if_t<
+                            std::is_trivially_copyable_v<T>, bool> = true>
   void Recv(std::vector<T>& dst) {
-    Recv(_SCL_C(dst.data()), sizeof(T) * dst.size());
+    Recv(SCL_C(dst.data()), sizeof(T) * dst.size());
   }
 
   /**
@@ -195,8 +192,8 @@ class Channel {
       throw std::logic_error("received vector exceeds size limit");
     auto n = vec_size * T::ByteSize();
     auto buf = std::make_unique<unsigned char[]>(n);
-    Recv(_SCL_C(buf.get()), n);
-    vec = Vec<T>::Read(vec_size, _SCL_CC(buf.get()));
+    Recv(SCL_C(buf.get()), n);
+    vec = Vec<T>::Read(vec_size, SCL_CC(buf.get()));
   }
 
   /**
@@ -213,8 +210,8 @@ class Channel {
       throw std::logic_error("received matrix exceeds size limit");
     auto n = rows * cols * T::ByteSize();
     auto buf = std::make_unique<unsigned char[]>(n);
-    Recv(_SCL_C(buf.get()), n);
-    mat = Mat<T>::Read(rows, cols, _SCL_CC(buf.get()));
+    Recv(SCL_C(buf.get()), n);
+    mat = Mat<T>::Read(rows, cols, SCL_CC(buf.get()));
   }
 
  private:
@@ -225,9 +222,9 @@ class Channel {
   }
 };
 
-#undef _SCL_C
-#undef _SCL_CC
+#undef SCL_C
+#undef SCL_CC
 
 }  // namespace scl
 
-#endif  // _SCL_NET_CHANNEL_H
+#endif  // SCL_NET_CHANNEL_H

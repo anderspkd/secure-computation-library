@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_HASH_H
-#define _SCL_HASH_H
+#ifndef SCL_HASH_H
+#define SCL_HASH_H
 
 #include <array>
 #include <cstdint>
@@ -214,4 +214,4 @@ std::string DigestToString(const D &digest) {
 
 }  // namespace scl
 
-#endif  // _SCL_HASH_H
+#endif  // SCL_HASH_H

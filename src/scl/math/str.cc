@@ -20,26 +20,21 @@
 
 #include "scl/math/str.h"
 
-#include <iostream>
-#include <sstream>
+#include <cstdint>
 
 template <>
-std::string scl::details::ToString(const std::uint64_t& v) {
-  std::stringstream ss;
-  ss << v;
-  return ss.str();
-}
-
-template <>
-std::string scl::details::ToString(const __uint128_t& v) {
-  if (!v) return "0";
-  auto w = v;
-  std::stringstream ss;
-  while (w) {
-    ss << ((int)(w % 10));
-    w /= 10;
+std::string scl::details::ToHexString(const __uint128_t& v) {
+  if (v == 0) {
+    return "0";
+  } else {
+    std::stringstream ss;
+    auto top = static_cast<std::uint64_t>(v >> 64);
+    auto bot = static_cast<std::uint64_t>(v);
+    ss << std::hex;
+    if (top > 0) {
+      ss << top;
+    }
+    ss << bot;
+    return ss.str();
   }
-  auto s = ss.str();
-  // s contains the number, but in reverse order
-  return std::string(s.rbegin(), s.rend());
 }

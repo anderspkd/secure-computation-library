@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_THREADED_SENDER_H
-#define _SCL_NET_THREADED_SENDER_H
+#ifndef SCL_NET_THREADED_SENDER_H
+#define SCL_NET_THREADED_SENDER_H
 
 #include <cstddef>
 #include <future>
@@ -52,8 +52,8 @@ class ThreadedSenderChannel final : public Channel {
     mSendBuffer.PushBack({src, src + n});
   };
 
-  void Recv(unsigned char* dst, std::size_t n) override {
-    mChannel.Recv(dst, n);
+  int Recv(unsigned char* dst, std::size_t n) override {
+    return mChannel.Recv(dst, n);
   };
 
  private:
@@ -64,4 +64,4 @@ class ThreadedSenderChannel final : public Channel {
 
 }  // namespace scl
 
-#endif  // _SCL_NET_THREADED_SENDER_H
+#endif  // SCL_NET_THREADED_SENDER_H

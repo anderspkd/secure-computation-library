@@ -18,10 +18,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_RING_H
-#define _SCL_MATH_RING_H
+#ifndef SCL_MATH_RING_H
+#define SCL_MATH_RING_H
 
-#include <iostream>
+#include <ostream>
 #include <type_traits>
 
 namespace scl {
@@ -107,4 +107,4 @@ struct EnableIfRing {
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_MATH_RING_H
+#endif  // SCL_MATH_RING_H

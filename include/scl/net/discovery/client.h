@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_DISCOVERY_CLIENT_H
-#define _SCL_NET_DISCOVERY_CLIENT_H
+#ifndef SCL_NET_DISCOVERY_CLIENT_H
+#define SCL_NET_DISCOVERY_CLIENT_H
 
 #include <memory>
 #include <string>
@@ -112,4 +112,4 @@ class DiscoveryClient::ReceiveNetworkConfig
 
 }  // namespace scl
 
-#endif  // _SCL_NET_DISCOVERY_CLIENT_H
+#endif  // SCL_NET_DISCOVERY_CLIENT_H

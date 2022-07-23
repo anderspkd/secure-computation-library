@@ -26,6 +26,7 @@
 #include "scl/net/discovery/client.h"
 #include "scl/net/discovery/server.h"
 #include "scl/net/mem_channel.h"
+#include "scl/net/network.h"
 
 static inline bool VerifyParty(scl::Party& party, unsigned id,
                                std::string hostname, int port) {
@@ -42,8 +43,8 @@ TEST_CASE("Discovery Server", "[network]") {
     std::vector<std::string> hostnames = {"1.2.3.4", "4.4.4.4", "127.0.0.1"};
     scl::Party me{1, "4.4.4.4", 1234};
     scl::DiscoveryServer::CollectIdsAndPorts prot(hostnames);
-    auto mock = scl::Network::CreateMock(me.id, hostnames.size());
-    auto chls = std::get<1>(mock);
+    auto fake = scl::CreateFakeNetwork(me.id, hostnames.size());
+    auto chls = fake.incoming;
 
     chls[0]->Send((unsigned)0);
     chls[0]->Send((int)5555);
@@ -51,7 +52,7 @@ TEST_CASE("Discovery Server", "[network]") {
     chls[2]->Send((unsigned)2);
     chls[2]->Send((int)2222);
 
-    scl::DiscoveryServer::Ctx ctx{me, std::get<0>(mock)};
+    scl::DiscoveryServer::Ctx ctx{me, fake.my_network};
     auto next = prot.Run(ctx);
     auto cfg = next.Finalize(ctx);
 
@@ -67,8 +68,8 @@ TEST_CASE("Discovery Server", "[network]") {
     std::vector<std::string> hostnames = {"1.2.3.4", "4.4.4.4", "127.0.0.1"};
     scl::Party me{1, "4.4.4.4", 1234};
     scl::DiscoveryServer::CollectIdsAndPorts prot(hostnames);
-    auto mock = scl::Network::CreateMock(me.id, hostnames.size());
-    auto chls = std::get<1>(mock);
+    auto fake = scl::CreateFakeNetwork(me.id, hostnames.size());
+    auto chls = fake.incoming;
 
     chls[0]->Send((unsigned)2);
     chls[0]->Send((int)5555);
@@ -76,7 +77,7 @@ TEST_CASE("Discovery Server", "[network]") {
     chls[2]->Send((unsigned)0);
     chls[2]->Send((int)2222);
 
-    scl::DiscoveryServer::Ctx ctx{me, std::get<0>(mock)};
+    scl::DiscoveryServer::Ctx ctx{me, fake.my_network};
     auto next = prot.Run(ctx);
     auto cfg = next.Finalize(ctx);
 
@@ -92,22 +93,22 @@ TEST_CASE("Discovery Server", "[network]") {
     std::vector<std::string> hostnames = {"1.2.3.4", "4.4.4.4", "127.0.0.1"};
     scl::Party me{1, "4.4.4.4", 1234};
     scl::DiscoveryServer::CollectIdsAndPorts prot(hostnames);
-    auto mock = scl::Network::CreateMock(me.id, hostnames.size());
-    auto chls = std::get<1>(mock);
+    auto fake = scl::CreateFakeNetwork(me.id, hostnames.size());
+    auto chls = fake.incoming;
 
     chls[0]->Send((unsigned)42);
     chls[0]->Send((int)5555);
 
-    scl::DiscoveryServer::Ctx ctx{me, std::get<0>(mock)};
+    scl::DiscoveryServer::Ctx ctx{me, fake.my_network};
     REQUIRE_THROWS_MATCHES(
         prot.Run(ctx), std::logic_error,
         Catch::Matchers::Message("received invalid party ID"));
   }
 
   SECTION("SendNetworkConfig") {
-    auto mock = scl::Network::CreateMock(1, 4);
-    auto network = std::get<0>(mock);
-    auto channels = std::get<1>(mock);
+    auto fake = scl::CreateFakeNetwork(1, 4);
+    auto network = fake.my_network;
+    auto channels = fake.incoming;
 
     auto cfg = scl::NetworkConfig::Localhost(1, 4);
     auto me = cfg.Parties()[1];

@@ -1,5 +1,5 @@
 /**
- * @file field_ops.h
+ * @file ff_ops.h
  *
  * SCL --- Secure Computation Library
  * Copyright (C) 2022 Anders Dalskov
@@ -18,15 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_FIELD_OPS_H
-#define _SCL_MATH_FIELD_OPS_H
+#ifndef SCL_MATH_FF_OPS_H
+#define SCL_MATH_FF_OPS_H
 
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <type_traits>
 
-#include "scl/math/bases.h"
 #include "scl/math/str.h"
 
 namespace scl {
@@ -124,13 +123,11 @@ std::string FieldToString(const typename F::ValueType& in);
  * @brief Read a field element from a string.
  * @param out where to store the resulting element
  * @param src the string
- * @param base the base that the string is in
  */
 template <typename F>
-void FieldFromString(typename F::ValueType& out, const std::string& src,
-                     enum NumberBase base);
+void FieldFromString(typename F::ValueType& out, const std::string& src);
 
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_MATH_FIELD_OPS_H
+#endif  // SCL_MATH_FF_OPS_H

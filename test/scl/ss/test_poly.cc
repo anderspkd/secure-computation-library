@@ -20,11 +20,11 @@
 
 #include <catch2/catch.hpp>
 
-#include "scl/math/ff.h"
+#include "scl/math.h"
 #include "scl/prg.h"
 #include "scl/ss/poly.h"
 
-using FF = scl::FF<61>;
+using FF = scl::Fp<61>;
 using Poly = scl::details::Polynomial<FF>;
 using Vec = scl::Vec<FF>;
 

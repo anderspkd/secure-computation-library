@@ -110,7 +110,7 @@ TEST_CASE("InMemoryChannel", "[network]") {
     REQUIRE(data == recv);
   }
 
-  using FF = scl::FF<61>;
+  using FF = scl::Fp<61>;
   using Vec = scl::Vec<FF>;
 
   chl0->Flush();

@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_MAT_H
-#define _SCL_MATH_MAT_H
+#ifndef SCL_MATH_MAT_H
+#define SCL_MATH_MAT_H
 
 #include <cstdint>
 #include <cstring>
@@ -130,8 +130,11 @@ class Mat {
     Mat<T> I(n);
     for (std::size_t i = 0; i < n; ++i) I(i, i) = T(1);
     return I;
-  }
+  }  // LCOV_EXCL_LINE
 
+  /**
+   * @brief Construct an empty 0-by-0 matrix.
+   */
   Mat() : mRows(0), mCols(0){};
 
   /**
@@ -315,7 +318,7 @@ class Mat {
    */
   Mat& Resize(std::size_t rows, std::size_t cols) {
     if (rows * cols != Rows() * Cols())
-      throw std::invalid_argument("Cannot resize matrix");
+      throw std::invalid_argument("cannot resize matrix");
     mRows = rows;
     mCols = cols;
     return *this;
@@ -441,10 +444,13 @@ Mat<T> Mat<T>::Vandermonde(std::size_t n, std::size_t m,
     }
   }
   return v;
-}
+}  // LCOV_EXCL_LINE
 
-namespace {
+namespace details {
 
+/**
+ * @brief Compute a particular Lagrange coefficient.
+ */
 template <typename T>
 T LagrangeCoefficient(std::size_t i, std::size_t j, std::size_t n) {
   const T b(i);
@@ -458,7 +464,7 @@ T LagrangeCoefficient(std::size_t i, std::size_t j, std::size_t n) {
   return lm;
 }
 
-}  // namespace
+}  // namespace details
 
 template <typename T>
 Mat<T> Mat<T>::HyperInvertible(std::size_t n, std::size_t m) {
@@ -467,7 +473,7 @@ Mat<T> Mat<T>::HyperInvertible(std::size_t n, std::size_t m) {
 
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < m; ++j) {
-      him(i, j) = LagrangeCoefficient<T>(i, j, mx);
+      him(i, j) = details::LagrangeCoefficient<T>(i, j, mx);
     }
   }
 
@@ -491,7 +497,7 @@ Mat<T> Mat<T>::Multiply(const Mat<T>& other) const {
     }
   }
   return result;
-}
+}  // LCOV_EXCL_LINE
 
 template <typename T>
 Mat<T> Mat<T>::Transpose() const {
@@ -567,4 +573,4 @@ std::string Mat<T>::ToString() const {
 
 }  // namespace scl
 
-#endif  // _SCL_MATH_MAT_H
+#endif  // SCL_MATH_MAT_H

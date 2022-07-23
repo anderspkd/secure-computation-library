@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_TCP_UTILS_H
-#define _SCL_NET_TCP_UTILS_H
+#ifndef SCL_NET_TCP_UTILS_H
+#define SCL_NET_TCP_UTILS_H
 
 #include <sys/socket.h>
 
@@ -29,12 +29,8 @@
 namespace scl {
 namespace details {
 
-/**
- * @brief Throw an error message.
- */
-inline void ThrowError(const char* errmsg) {
-  throw std::system_error(errno, std::generic_category(), errmsg);
-}
+#define SCL_THROW_SYS_ERROR(error_msg) \
+  throw std::system_error(errno, std::generic_category(), (error_msg))
 
 /**
  * @brief Create a socket that listens on some port.
@@ -96,4 +92,4 @@ int WriteToSocket(int socket, const unsigned char* src, std::size_t n);
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_NET_TCP_UTILS_H
+#endif  // SCL_NET_TCP_UTILS_H

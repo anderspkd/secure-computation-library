@@ -1,5 +1,5 @@
 /**
- * @file bases.h
+ * @file mersenne127.h
  *
  * SCL --- Secure Computation Library
  * Copyright (C) 2022 Anders Dalskov
@@ -18,21 +18,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_BASES_H
-#define _SCL_MATH_BASES_H
+#ifndef SCL_MATH_FIELDS_MERSENNE127_H
+#define SCL_MATH_FIELDS_MERSENNE127_H
+
+#include <cstdint>
 
 namespace scl {
+namespace details {
 
 /**
- * @brief Number bases. Used when converting strings to values.
+ * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{127}-1\f$.
  */
-enum class NumberBase {
-  BINARY = 2,
-  DECIMAL = 10,
-  HEX = 16,
-  BASE64 = 64,
+struct Mersenne127 {
+  /**
+   * @brief Internal type elements of this field.
+   */
+  using ValueType = __uint128_t;
+
+  /**
+   * @brief The name of this field.
+   */
+  constexpr static const char* kName = "Mersenne127";
+
+  /**
+   * @brief The size of field elements of this field in bytes.
+   */
+  constexpr static const std::size_t kByteSize = sizeof(ValueType);
+
+  /**
+   * @brief The size of field elements of this field in bits.
+   */
+  constexpr static const std::size_t kBitSize = 127;
 };
 
+}  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_MATH_BASES_H
+#endif  // SCL_MATH_FIELDS_MERSENNE127_H

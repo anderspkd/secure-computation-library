@@ -18,12 +18,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_H
-#define _SCL_MATH_H
+#ifndef SCL_MATH_H
+#define SCL_MATH_H
 
-#include "scl/math/ff.h"
+#include "scl/math/fp.h"
 #include "scl/math/mat.h"
 #include "scl/math/vec.h"
 #include "scl/math/z2k.h"
 
-#endif  // _SCL_MATH_H
+#endif  // SCL_MATH_H

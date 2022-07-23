@@ -21,11 +21,12 @@
 #include <catch2/catch.hpp>
 
 #include "scl/math.h"
+#include "scl/net/network.h"
 #include "scl/networking.h"
 #include "scl/p/simple.h"
 #include "scl/secret_sharing.h"
 
-using FF = scl::FF<61>;
+using FF = scl::Fp<61>;
 
 struct Triple {
   Triple(FF a, FF b, FF c) : a(a), b(b), c(c){};
@@ -103,7 +104,7 @@ TEST_CASE("protocol") {
   auto xs = scl::CreateAdditiveShares(FF(42), 2, prg);
   auto ys = scl::CreateAdditiveShares(FF(11), 2, prg);
   auto ts = RandomTriple();
-  auto networks = scl::Network::CreateFullInMemory(2);
+  auto networks = scl::CreateFullyConnectedInMemory(2);
 
   Context ctx0{0, networks[0]};
   Context ctx1{1, networks[1]};

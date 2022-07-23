@@ -23,6 +23,7 @@
 #include <memory>
 #include <vector>
 
+#include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
 
 using Server = scl::DiscoveryServer;

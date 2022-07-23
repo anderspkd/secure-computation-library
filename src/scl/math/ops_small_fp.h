@@ -1,5 +1,5 @@
 /**
- * @file simple_ff.h
+ * @file ops_small_fp.h
  *
  * SCL --- Secure Computation Library
  * Copyright (C) 2022 Anders Dalskov
@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_FIELDS_DETAILS_H
-#define _SCL_MATH_FIELDS_DETAILS_H
+#ifndef SCL_MATH_OPS_SMALL_FP_H
+#define SCL_MATH_OPS_SMALL_FP_H
 
 #include <stdexcept>
 
@@ -59,11 +59,11 @@ void ModNeg(T& t, const T& m) {
  */
 template <typename T, typename S>
 void ModInv(T& t, const T& v, const T& m) {
-#define _SCL_PARALLEL_ASSIGN(v1, v2, q) \
-  do {                                  \
-    const auto __temp = v2;             \
-    v2 = v1 - q * __temp;               \
-    v1 = __temp;                        \
+#define SCL_PARALLEL_ASSIGN(v1, v2, q) \
+  do {                                 \
+    const auto __temp = v2;            \
+    v2 = v1 - q * __temp;              \
+    v1 = __temp;                       \
   } while (0)
 
   if (v == 0) {
@@ -77,11 +77,11 @@ void ModInv(T& t, const T& v, const T& m) {
 
   while (new_r != 0) {
     const auto q = r / new_r;
-    _SCL_PARALLEL_ASSIGN(k, new_k, q);
-    _SCL_PARALLEL_ASSIGN(r, new_r, q);
+    SCL_PARALLEL_ASSIGN(k, new_k, q);
+    SCL_PARALLEL_ASSIGN(r, new_r, q);
   }
 
-#undef _SCL_PARALLEL_ASSIGN
+#undef SCL_PARALLEL_ASSIGN
 
   if (k < 0) {
     k = k + m;
@@ -93,4 +93,4 @@ void ModInv(T& t, const T& v, const T& m) {
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_MATH_FIELDS_DETAILS_H
+#endif  // SCL_MATH_OPS_SMALL_FP_H

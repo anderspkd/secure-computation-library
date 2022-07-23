@@ -20,6 +20,7 @@
 
 #include <catch2/catch.hpp>
 #include <iostream>
+#include <stdexcept>
 
 #include "scl/net/config.h"
 
@@ -37,6 +38,28 @@ TEST_CASE("Config", "[network]") {
     REQUIRE(parties[1].port == 5000);
     REQUIRE(parties[2].hostname == "5.5.5.5");
     REQUIRE(parties[2].port == 3000);
+  }
+
+  SECTION("Invalid file") {
+    auto invalid_empty = SCL_TEST_DATA_DIR "invalid_no_entries.txt";
+    REQUIRE_THROWS_MATCHES(scl::NetworkConfig::Load(0, invalid_empty),
+                           std::invalid_argument,
+                           Catch::Matchers::Message("n cannot be zero"));
+
+    auto valid = SCL_TEST_DATA_DIR "3_parties.txt";
+    REQUIRE_THROWS_MATCHES(scl::NetworkConfig::Load(4, valid),
+                           std::invalid_argument,
+                           Catch::Matchers::Message("invalid id"));
+
+    auto invalid_entry = SCL_TEST_DATA_DIR "invalid_entry.txt";
+    REQUIRE_THROWS_MATCHES(
+        scl::NetworkConfig::Load(0, invalid_entry), std::invalid_argument,
+        Catch::Matchers::Message("invalid entry in config file"));
+
+    auto invalid_non_existing_file = "";
+    REQUIRE_THROWS_MATCHES(
+        scl::NetworkConfig::Load(0, invalid_non_existing_file),
+        std::invalid_argument, Catch::Matchers::Message("could not open file"));
   }
 
   SECTION("All local") {

@@ -26,7 +26,7 @@ void scl::InMemoryChannel::Send(const unsigned char* src, std::size_t n) {
   mOut->PushBack(std::vector<unsigned char>(src, src + n));
 }
 
-void scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
+int scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
   std::size_t rem = n;
 
   // if there's any leftovers from previous calls to recv, then we retrieve
@@ -57,4 +57,6 @@ void scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
                        data.end());
     }
   }
+
+  return n;
 }

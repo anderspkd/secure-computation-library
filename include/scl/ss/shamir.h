@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_SS_SHAMIR_H
-#define _SCL_SS_SHAMIR_H
+#ifndef SCL_SS_SHAMIR_H
+#define SCL_SS_SHAMIR_H
 
 #include <array>
 #include <iostream>
@@ -93,7 +93,7 @@ Vec<T> CreateShamirShares(const details::Polynomial<T>& sharing_polynomial,
     shares[i] = sharing_polynomial.Evaluate(alphas[i]);
   }
   return shares;
-}
+}  // LCOV_EXCL_LINE
 
 /**
  * @brief Return the list of canonical evaluation points
@@ -106,7 +106,7 @@ Vec<T> CanonicalAlphas(std::size_t n) {
   Vec<T> alphas(n);
   for (std::size_t i = 0; i < n; i++) alphas[i] = T{(int)(i + 1)};
   return alphas;
-}
+}  // LCOV_EXCL_LINE
 
 /**
  * @brief Create a shamir secret-sharing.
@@ -269,4 +269,4 @@ T ReconstructShamirRobust(const Vec<T>& shares, std::size_t t) {
 
 }  // namespace scl
 
-#endif  // _SCL_SS_SHAMIR_H
+#endif  // SCL_SS_SHAMIR_H

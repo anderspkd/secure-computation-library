@@ -1,5 +1,5 @@
 /**
- * @file details.h
+ * @file z2k_ops.h
  *
  * SCL --- Secure Computation Library
  * Copyright (C) 2022 Anders Dalskov
@@ -18,10 +18,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_MATH_Z2K_DETAILS_H
-#define _SCL_MATH_Z2K_DETAILS_H
+#ifndef SCL_MATH_Z2K_OPS_H
+#define SCL_MATH_Z2K_OPS_H
 
 #include <cstring>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -94,14 +95,14 @@ void InvertZ2k(T& v) {
   v = z;
 }
 
-#define _SCL_MASK(T, K) ((static_cast<T>(1) << K) - 1)
+#define SCL_MASK(T, K) ((static_cast<T>(1) << K) - 1)
 
 /**
  * @brief Compute equality modulo a power of 2.
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
 bool EqualZ2k(const T& a, const T& b) {
-  return (a & _SCL_MASK(T, K)) == (b & _SCL_MASK(T, K));
+  return (a & SCL_MASK(T, K)) == (b & SCL_MASK(T, K));
 }
 
 /**
@@ -110,7 +111,7 @@ bool EqualZ2k(const T& a, const T& b) {
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
 void ReadZ2k(T& v, const unsigned char* src) {
   v = *(const T*)src;
-  v &= _SCL_MASK(T, K);
+  v &= SCL_MASK(T, K);
 }
 
 /**
@@ -120,7 +121,7 @@ template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
 void WriteZ2k(const T& v, unsigned char* dest) {
   // normalization is deferred until elements are written somewhere, so we v
   // needs to be normalized before we can write it.
-  auto w = v & _SCL_MASK(T, K);
+  auto w = v & SCL_MASK(T, K);
   std::memcpy(dest, (unsigned char*)&w, (K - 1) / 8 + 1);
 }
 
@@ -128,12 +129,11 @@ void WriteZ2k(const T& v, unsigned char* dest) {
  * @brief Read a value modulo a power of 2 from a string
  * @param v where to store the value read
  * @param str the string
- * @param base the base of the string
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
-void FromStringZ2k(T& v, const std::string& str, enum scl::NumberBase base) {
-  FromStringSimpleType(v, str, base);
-  v &= _SCL_MASK(T, K);
+void FromStringZ2k(T& v, const std::string& str) {
+  v = FromHexString<T>(str);
+  v &= SCL_MASK(T, K);
 }
 
 /**
@@ -142,11 +142,11 @@ void FromStringZ2k(T& v, const std::string& str, enum scl::NumberBase base) {
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
 std::string ToStringZ2k(const T& v) {
-  auto w = v & _SCL_MASK(T, K);
-  return ToString(w);
+  auto w = v & SCL_MASK(T, K);
+  return ToHexString(w);
 }
 
 }  // namespace details
 }  // namespace scl
 
-#endif  // _SCL_MATH_Z2K_DETAILS_H
+#endif  // SCL_MATH_Z2K_OPS_H

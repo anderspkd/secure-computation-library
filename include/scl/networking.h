@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NETWORKING_H
-#define _SCL_NETWORKING_H
+#ifndef SCL_NETWORKING_H
+#define SCL_NETWORKING_H
 
 #include "scl/net/config.h"
 #include "scl/net/discovery/client.h"
@@ -28,4 +28,4 @@
 #include "scl/net/network.h"
 #include "scl/net/tcp_channel.h"
 
-#endif  // _SCL_NETWORKING_H
+#endif  // SCL_NETWORKING_H

@@ -18,12 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "scl/math/fields/mersenne61.h"
+
 #include <cstring>
 #include <iostream>
 #include <sstream>
 
-#include "./simple_ff.h"
-#include "scl/math/ff.h"
+#include "./ops_small_fp.h"
+#include "scl/math/ff_ops.h"
 #include "scl/math/str.h"
 
 using u64 = std::uint64_t;
@@ -84,12 +86,12 @@ void scl::details::FieldFromBytes<Mersenne61>(u64& dest,
 
 template <>
 std::string scl::details::FieldToString<Mersenne61>(const u64& in) {
-  return ToString(in);
+  return ToHexString(in);
 }
 
 template <>
 void scl::details::FieldFromString<Mersenne61>(u64& dest,
-                                               const std::string& str,
-                                               enum scl::NumberBase base) {
-  FromStringSimpleType(dest, str, base);
+                                               const std::string& str) {
+  dest = FromHexString<u64>(str);
+  dest = dest % p;
 }

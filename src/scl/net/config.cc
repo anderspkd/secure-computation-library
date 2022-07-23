@@ -27,13 +27,19 @@
 #include <string>
 
 static inline void ValidateIdAndSize(unsigned id, std::size_t n) {
-  if (n <= id) throw std::invalid_argument("invalid id");
+  if (!n) {
+    throw std::invalid_argument("n cannot be zero");
+  } else if (n <= id) {
+    throw std::invalid_argument("invalid id");
+  }
 }
 
 scl::NetworkConfig scl::NetworkConfig::Load(unsigned id, std::string filename) {
   std::ifstream file(filename);
 
-  if (!file.is_open()) throw std::invalid_argument("could not open file");
+  if (!file.is_open()) {
+    throw std::invalid_argument("could not open file");
+  }
 
   std::string line;
   std::vector<scl::Party> info;
@@ -42,8 +48,9 @@ scl::NetworkConfig scl::NetworkConfig::Load(unsigned id, std::string filename) {
     auto a = line.find(',');
     auto b = line.rfind(',');
 
-    if (a == std::string::npos || b == std::string::npos)
+    if (a == std::string::npos || a == b) {
       throw std::invalid_argument("invalid entry in config file");
+    }
 
     auto id = (unsigned)std::stoul(std::string(line.begin(), line.begin() + a));
     auto hostname = std::string(line.begin() + a + 1, line.begin() + b);
@@ -92,11 +99,14 @@ void scl::NetworkConfig::Validate() {
 
   for (std::size_t i = 0; i < n; ++i) {
     auto pi = mParties[i];
-    if (pi.id >= n) throw std::invalid_argument("invalid ID in config");
+    if (pi.id >= n) {
+      throw std::invalid_argument("invalid ID in config");
+    }
     for (std::size_t j = i + 1; j < n; ++j) {
       auto pj = mParties[j];
-      if (pi.id == pj.id)
+      if (pi.id == pj.id) {
         throw std::invalid_argument("config has duplicate party ids");
+      }
     }
   }
 }

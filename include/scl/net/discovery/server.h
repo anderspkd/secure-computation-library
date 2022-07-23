@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCL_NET_DISCOVERY_SERVER_H
-#define _SCL_NET_DISCOVERY_SERVER_H
+#ifndef SCL_NET_DISCOVERY_SERVER_H
+#define SCL_NET_DISCOVERY_SERVER_H
 
 #include "scl/net/config.h"
 #include "scl/net/network.h"
@@ -143,4 +143,4 @@ class DiscoveryServer::SendNetworkConfig
 
 }  // namespace scl
 
-#endif  // _SCL_NET_DISCOVERY_SERVER_H
+#endif  // SCL_NET_DISCOVERY_SERVER_H
