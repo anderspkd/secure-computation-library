@@ -100,7 +100,8 @@ WARN_LOGFILE           =
 INPUT                  = ./include \
                          ./include/scl \
                          ./include/scl/math \
-                         ./include/scl/math/z2k \
+                         ./include/scl/math/fields \
+			 ./include/scl/math/curves \
                          ./include/scl/ss \
                          ./include/scl/net \
                          ./include/scl/net/discovery \
@@ -111,7 +112,7 @@ RECURSIVE              = NO
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
-EXCLUDE_SYMBOLS        = _SCL_*
+EXCLUDE_SYMBOLS        = SCL_*
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       = *
 EXAMPLE_RECURSIVE      = NO
@@ -133,7 +134,6 @@ VERBATIM_HEADERS       = YES
 CLANG_ASSISTED_PARSING = NO
 CLANG_OPTIONS          =
 ALPHABETICAL_INDEX     = YES
-COLS_IN_ALPHA_INDEX    = 5
 IGNORE_PREFIX          =
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
