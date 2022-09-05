@@ -22,6 +22,7 @@
 
 #include "./secp256k1_extras.h"
 #include "scl/math/curves/secp256k1.h"
+#include "scl/math/ec.h"
 #include "scl/math/ec_ops.h"
 #include "scl/math/fp.h"
 
@@ -203,6 +204,23 @@ void scl::details::CurveScalarMultiply<Curve>(Point& out,
     for (int i = n - 1; i >= 0; --i) {
       CurveDouble<Curve>(res);
       if (scalar.TestBit(i)) {
+        CurveAdd<Curve>(res, out);
+      }
+    }
+    out = res;
+  }
+}
+
+template <>
+void scl::details::CurveScalarMultiply<Curve>(Point& out,
+                                              const FF<Curve::Order>& scalar) {
+  if (!CurveIsPointAtInfinity<Curve>(out)) {
+    const auto n = scl::SCL_FF_Extras<Curve::Order>::HigestSetBit(scalar);
+    Point res;
+    CurveSetPointAtInfinity<Curve>(res);
+    for (int i = n - 1; i >= 0; --i) {
+      CurveDouble<Curve>(res);
+      if (scl::SCL_FF_Extras<Curve::Order>::TestBit(scalar, i)) {
         CurveAdd<Curve>(res, out);
       }
     }

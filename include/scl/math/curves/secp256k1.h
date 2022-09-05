@@ -59,6 +59,31 @@ struct Secp256k1 {
   };
 
   /**
+   * @brief Finite field modulo a Secp256k1 prime order sub-group.
+   */
+  struct Order {
+    /**
+     * @brief Internal type of elements.
+     */
+    using ValueType = std::array<mp_limb_t, 4>;
+
+    /**
+     * @brief Name of the field.
+     */
+    constexpr static const char* kName = "secp256k1_order";
+
+    /**
+     * @brief Size of an element in bytes.
+     */
+    constexpr static const std::size_t kByteSize = 4 * sizeof(mp_limb_t);
+
+    /**
+     * @brief Size of an element in bits.
+     */
+    constexpr static const std::size_t kBitSize = 8 * kByteSize;
+  };
+
+  /**
    * @brief Secp256k1 curve elements are stored in projective coordinates.
    */
   using ValueType = std::array<scl::FF<Field>, 3>;
