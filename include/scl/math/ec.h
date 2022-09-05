@@ -169,6 +169,16 @@ class EC {
   };
 
   /**
+   * @brief Perform a scalar multiplication.
+   * @param scalar the scalar
+   * @return this.
+   */
+  EC& operator*=(const FF<typename Curve::Order>& scalar) {
+    details::CurveScalarMultiply<Curve>(mValue, scalar);
+    return *this;
+  };
+
+  /**
    * @brief Multiply a point with a scalar from the right.
    * @param point the point
    * @param scalar the scalar
@@ -180,12 +190,35 @@ class EC {
   };
 
   /**
+   * @brief Multiply a point with a scalar from the right.
+   * @param point the point
+   * @param scalar the scalar
+   * @return the point multiplied with the scalar.
+   */
+  friend EC operator*(const EC& point,
+                      const FF<typename Curve::Order>& scalar) {
+    EC copy(point);
+    return copy *= scalar;
+  };
+
+  /**
    * @brief Multiply a point with a scalar from the left.
    * @param point the point
    * @param scalar the scalar
    * @return the point multiplied with the scalar.
    */
   friend EC operator*(const Number& scalar, const EC& point) {
+    return point * scalar;
+  };
+
+  /**
+   * @brief Multiply a point with a scalar from the left.
+   * @param point the point
+   * @param scalar the scalar
+   * @return the point multiplied with the scalar.
+   */
+  friend EC operator*(const FF<typename Curve::Order>& scalar,
+                      const EC& point) {
     return point * scalar;
   };
 

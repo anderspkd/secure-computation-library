@@ -22,6 +22,7 @@
 #define SCL_MATH_SECP256K1_EXTRAS_H
 
 #include "scl/math/curves/secp256k1.h"
+#include "scl/math/ec.h"
 
 namespace scl {
 
@@ -30,10 +31,25 @@ namespace scl {
 // which are needed when reading/writing compressed points.
 template <>
 struct SCL_FF_Extras<details::Secp256k1::Field> {
+  // compare two field elements and returns true if lhs < rhs.
   static bool IsSmaller(const scl::FF<details::Secp256k1::Field>& lhs,
                         const scl::FF<details::Secp256k1::Field>& rhs);
+
+  // Compute the square root of x
   static FF<details::Secp256k1::Field> ComputeSqrt(
       const scl::FF<details::Secp256k1::Field>& x);
+};
+
+template <>
+struct SCL_FF_Extras<details::Secp256k1::Order> {
+  // Get position of the highest set bit
+  static std::size_t HigestSetBit(
+      const scl::FF<details::Secp256k1::Order>& element);
+
+  // Check if a particular bit is set. The position is assumed to be at or below
+  // <code>HigestSetBit(element)</code>.
+  static bool TestBit(const scl::FF<details::Secp256k1::Order>& element,
+                      std::size_t pos);
 };
 
 }  // namespace scl

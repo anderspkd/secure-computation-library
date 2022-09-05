@@ -1,3 +1,8 @@
+2.1: More Finite Fields
+- Provide a FF implementation for computations modulo the order of Secp256k1
+- Extend EC with support for scalar multiplications with scalars from a finite
+  field of size the order of a subgroup.
+
 2.0: Elliptic curves and finite field refactoring
 - Make it simpler to define new finite fields
 - Include optional (but enabled by default) support for elliptic curves

@@ -98,6 +98,15 @@ template <typename C>
 void CurveScalarMultiply(typename C::ValueType& out, const Number& scalar);
 
 /**
+ * @brief Scalar multiply an elliptic curve point in-place.
+ * @param out the point
+ * @param scalar the scalar
+ */
+template <typename C>
+void CurveScalarMultiply(typename C::ValueType& out,
+                         const FF<typename C::Order>& scalar);
+
+/**
  * @brief Check if two elliptic curve points are equal.
  * @param in1 the first point
  * @param in2 the second point

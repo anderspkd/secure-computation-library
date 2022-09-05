@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 2.0.0 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 2.1.0 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -53,8 +53,10 @@ set(SCL_SOURCE_FILES
 
 if(WITH_EC MATCHES ON)
   set(SCL_SOURCE_FILES ${SCL_SOURCE_FILES}
+    src/scl/math/ops_gmp_ff.cc
     src/scl/math/secp256k1_field.cc
     src/scl/math/secp256k1_curve.cc
+    src/scl/math/secp256k1_order.cc
     src/scl/math/number.cc)
 endif()
 
