@@ -20,10 +20,15 @@
 
 #include "scl/net/tcp_channel.h"
 
+#include <poll.h>
+#include <sys/poll.h>
+
 #include "scl/net/tcp_utils.h"
 
 void scl::TcpChannel::Close() {
-  if (!mAlive) return;
+  if (!mAlive) {
+    return;
+  }
 
   const auto err = scl::details::CloseSocket(mSocket);
   if (err < 0) {
@@ -46,13 +51,13 @@ void scl::TcpChannel::Send(const unsigned char* src, std::size_t n) {
   }
 }
 
-int scl::TcpChannel::Recv(unsigned char* dst, std::size_t n) {
+std::size_t scl::TcpChannel::Recv(unsigned char* dst, std::size_t n) {
   std::size_t rem = n;
   std::size_t offset = 0;
 
   while (rem > 0) {
     auto recv = scl::details::ReadFromSocket(mSocket, dst + offset, rem);
-    if (!recv) {
+    if (recv == 0) {
       break;
     }
     if (recv < 0) {
@@ -64,4 +69,18 @@ int scl::TcpChannel::Recv(unsigned char* dst, std::size_t n) {
   }
 
   return n - rem;
+}
+
+bool scl::TcpChannel::HasData() {
+  struct pollfd fds {
+    mSocket, POLLIN, 0
+  };
+
+  auto r = poll(&fds, 1, 0);
+
+  if (r < 0) {
+    SCL_THROW_SYS_ERROR("hasData failed");
+  }
+
+  return r > 0 && fds.revents == POLLIN;
 }

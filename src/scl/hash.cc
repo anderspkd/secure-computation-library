@@ -29,13 +29,16 @@ void scl::Keccakf(uint64_t state[25]) {
   uint64_t bc[5];
 
   for (std::size_t round = 0; round < 24; ++round) {
-    for (std::size_t i = 0; i < 5; ++i)
+    for (std::size_t i = 0; i < 5; ++i) {
       bc[i] = state[i] ^ state[i + 5] ^ state[i + 10] ^ state[i + 15] ^
               state[i + 20];
+    }
 
     for (std::size_t i = 0; i < 5; ++i) {
       t = bc[(i + 4) % 5] ^ rotl64(bc[(i + 1) % 5], 1);
-      for (std::size_t j = 0; j < 25; j += 5) state[j + i] ^= t;
+      for (std::size_t j = 0; j < 25; j += 5) {
+        state[j + i] ^= t;
+      }
     }
 
     t = state[1];
@@ -47,9 +50,12 @@ void scl::Keccakf(uint64_t state[25]) {
     }
 
     for (std::size_t j = 0; j < 25; j += 5) {
-      for (std::size_t i = 0; i < 5; ++i) bc[i] = state[j + i];
-      for (std::size_t i = 0; i < 5; ++i)
+      for (std::size_t i = 0; i < 5; ++i) {
+        bc[i] = state[j + i];
+      }
+      for (std::size_t i = 0; i < 5; ++i) {
         state[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
+      }
     }
 
     state[0] ^= keccakf_rndc[round];

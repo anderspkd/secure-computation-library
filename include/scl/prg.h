@@ -120,8 +120,9 @@ class PRG {
    * @param nbytes how many bytes to generate.
    */
   void Next(std::vector<unsigned char> &dest, std::size_t nbytes) {
-    if (dest.size() < nbytes)
+    if (dest.size() < nbytes) {
       throw std::invalid_argument("requested more randomness than dest.size()");
+    }
     Next(dest.data(), nbytes);
   };
 

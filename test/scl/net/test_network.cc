@@ -71,7 +71,9 @@ TEST_CASE("Network", "[network]") {
   }
 
   SECTION("TCP") {
-    scl::Network network0, network1, network2;
+    scl::Network network0;
+    scl::Network network1;
+    scl::Network network2;
 
     std::thread t0([&]() {
       network0 = scl::Network::Create<scl::TcpChannel>(

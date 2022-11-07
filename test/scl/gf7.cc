@@ -38,10 +38,11 @@ void scl::details::FieldAdd<GF7>(unsigned char& out, const unsigned char& op) {
 template <>
 void scl::details::FieldSubtract<GF7>(unsigned char& out,
                                       const unsigned char& op) {
-  if (out < op)
+  if (out < op) {
     out = 7 + out - op;
-  else
+  } else {
     out = out - op;
+  }
 }
 
 template <>
@@ -95,8 +96,8 @@ void scl::details::FieldFromBytes<GF7>(unsigned char& dest,
 }
 
 template <>
-std::string scl::details::FieldToString<GF7>(const unsigned char& value) {
+std::string scl::details::FieldToString<GF7>(const unsigned char& in) {
   std::stringstream ss;
-  ss << (int)value;
+  ss << (int)in;
   return ss.str();
 }

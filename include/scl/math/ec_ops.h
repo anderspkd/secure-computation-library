@@ -60,6 +60,15 @@ void CurveSetAffine(typename C::ValueType& out, const FF<typename C::Field>& x,
                     const FF<typename C::Field>& y);
 
 /**
+ * @brief Convert a point to a pair of affine coordinates.
+ * @param point the point to convert.
+ * @return a set of affine coordinates.
+ */
+template <typename C>
+std::array<scl::FF<typename C::Field>, 2> CurveToAffine(
+    const typename C::ValueType& point);
+
+/**
  * @brief Add two elliptic curve points in-place.
  * @param out the first point and output
  * @param in the second point
@@ -135,11 +144,11 @@ void CurveToBytes(unsigned char* dest, const typename C::ValueType& in,
 
 /**
  * @brief Convert an elliptic curve point to a string
- * @param in the point
+ * @param point the point
  * @return an STL string representation of \p in.
  */
 template <typename C>
-std::string CurveToString(const typename C::ValueType& in);
+std::string CurveToString(const typename C::ValueType& point);
 
 }  // namespace details
 }  // namespace scl

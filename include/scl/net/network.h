@@ -21,6 +21,7 @@
 #ifndef SCL_NET_NETWORK_H
 #define SCL_NET_NETWORK_H
 
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -75,7 +76,9 @@ class Network {
    * @brief Closes all channels in the network.
    */
   void Close() {
-    for (auto c : mChannels) c->Close();
+    for (auto& c : mChannels) {
+      c->Close();
+    }
   };
 
  private:
@@ -153,7 +156,7 @@ Network Network::Create(const scl::NetworkConfig& config) {
   std::thread server(scl::details::SCL_AcceptConnections, std::ref(channels),
                      config);
 
-  for (std::size_t i = 0; i < config.Id(); ++i) {
+  for (std::size_t i = 0; i < static_cast<std::size_t>(config.Id()); ++i) {
     const auto party = config.GetParty(i);
     auto socket = scl::details::ConnectAsClient(party.hostname, party.port);
     std::shared_ptr<scl::Channel> channel = std::make_shared<ChannelT>(socket);

@@ -26,15 +26,22 @@
 #include <stdexcept>
 #include <string>
 
-static inline void ValidateIdAndSize(unsigned id, std::size_t n) {
-  if (!n) {
+namespace {
+
+void ValidateIdAndSize(unsigned id, std::size_t n) {
+  if (n == 0) {
     throw std::invalid_argument("n cannot be zero");
-  } else if (n <= id) {
+  }
+
+  if (n <= id) {
     throw std::invalid_argument("invalid id");
   }
 }
 
-scl::NetworkConfig scl::NetworkConfig::Load(unsigned id, std::string filename) {
+}  // namespace
+
+scl::NetworkConfig scl::NetworkConfig::Load(int id,
+                                            const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
@@ -45,14 +52,17 @@ scl::NetworkConfig scl::NetworkConfig::Load(unsigned id, std::string filename) {
   std::vector<scl::Party> info;
 
   while (std::getline(file, line)) {
-    auto a = line.find(',');
-    auto b = line.rfind(',');
+    auto a_ = line.find(',');
+    auto b_ = line.rfind(',');
 
-    if (a == std::string::npos || a == b) {
+    if (a_ == std::string::npos || a_ == b_) {
       throw std::invalid_argument("invalid entry in config file");
     }
 
-    auto id = (unsigned)std::stoul(std::string(line.begin(), line.begin() + a));
+    auto a = static_cast<std::string::difference_type>(a_);
+    auto b = static_cast<std::string::difference_type>(b_);
+
+    auto id = std::stoi(std::string(line.begin(), line.begin() + a));
     auto hostname = std::string(line.begin() + a + 1, line.begin() + b);
     auto port = std::stoi(std::string(line.begin() + b + 1, line.end()));
     info.emplace_back(Party{id, hostname, port});
@@ -63,14 +73,14 @@ scl::NetworkConfig scl::NetworkConfig::Load(unsigned id, std::string filename) {
   return NetworkConfig(id, info);
 }
 
-scl::NetworkConfig scl::NetworkConfig::Localhost(unsigned id, std::size_t n,
+scl::NetworkConfig scl::NetworkConfig::Localhost(int id, int size,
                                                  int port_base) {
-  ValidateIdAndSize(id, n);
+  ValidateIdAndSize(id, size);
 
   std::vector<scl::Party> info;
-  for (std::size_t i = 0; i < n; ++i) {
+  for (int i = 0; i < size; ++i) {
     int port = port_base + i;
-    info.emplace_back(Party{(unsigned)i, "127.0.0.1", port});
+    info.emplace_back(Party{i, "127.0.0.1", port});
   }
 
   return NetworkConfig(id, info);
@@ -93,13 +103,13 @@ std::string scl::NetworkConfig::ToString() const {
 void scl::NetworkConfig::Validate() {
   auto n = NetworkSize();
 
-  if (Id() >= n) {
+  if (static_cast<std::size_t>(Id()) >= n) {
     throw std::invalid_argument("my ID is invalid in config");
   }
 
   for (std::size_t i = 0; i < n; ++i) {
     auto pi = mParties[i];
-    if (pi.id >= n) {
+    if (static_cast<std::size_t>(pi.id) >= n) {
       throw std::invalid_argument("invalid ID in config");
     }
     for (std::size_t j = i + 1; j < n; ++j) {

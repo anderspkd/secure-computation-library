@@ -85,7 +85,9 @@ class Mat {
   static Mat<T> Vandermonde(std::size_t n, std::size_t m) {
     std::vector<T> xs;
     xs.reserve(n);
-    for (std::size_t i = 0; i < n; ++i) xs.emplace_back(T(i + 1));
+    for (std::size_t i = 0; i < n; ++i) {
+      xs.emplace_back(T(i + 1));
+    }
     return Mat<T>::Vandermonde(n, m, xs);
   }
 
@@ -119,7 +121,9 @@ class Mat {
    */
   static Mat<T> FromVector(std::size_t n, std::size_t m,
                            const std::vector<T>& vec) {
-    if (vec.size() != n * m) throw std::invalid_argument("invalid dimensions");
+    if (vec.size() != n * m) {
+      throw std::invalid_argument("invalid dimensions");
+    }
     return Mat<T>(n, m, vec);
   };
 
@@ -128,7 +132,9 @@ class Mat {
    */
   static Mat<T> Identity(std::size_t n) {
     Mat<T> I(n);
-    for (std::size_t i = 0; i < n; ++i) I(i, i) = T(1);
+    for (std::size_t i = 0; i < n; ++i) {
+      I(i, i) = T(1);
+    }
     return I;
   }  // LCOV_EXCL_LINE
 
@@ -143,7 +149,9 @@ class Mat {
    * @param m the number of columns
    */
   explicit Mat(std::size_t n, std::size_t m) {
-    if (!(n && m)) throw std::invalid_argument("n or m cannot be 0");
+    if (n == 0 || m == 0) {
+      throw std::invalid_argument("n or m cannot be 0");
+    }
     std::vector<T> v(n * m);
     mRows = n;
     mCols = m;
@@ -296,7 +304,9 @@ class Mat {
    * @return this scaled by \p scalar.
    */
   Mat& ScalarMultiplyInPlace(const T& scalar) {
-    for (auto& v : mValues) v *= scalar;
+    for (auto& v : mValues) {
+      v *= scalar;
+    }
     return *this;
   };
 
@@ -317,8 +327,9 @@ class Mat {
    * @param cols the new column count
    */
   Mat& Resize(std::size_t rows, std::size_t cols) {
-    if (rows * cols != Rows() * Cols())
+    if (rows * cols != Rows() * Cols()) {
       throw std::invalid_argument("cannot resize matrix");
+    }
     mRows = rows;
     mCols = cols;
     return *this;
@@ -345,11 +356,14 @@ class Mat {
    * @brief Test if this matrix is equal to another.
    */
   bool Equals(const Mat& other) const {
-    if (Rows() != other.Rows() || Cols() != other.Cols()) return false;
+    if (Rows() != other.Rows() || Cols() != other.Cols()) {
+      return false;
+    }
 
     bool equal = true;
-    for (std::size_t i = 0; i < mValues.size(); i++)
+    for (std::size_t i = 0; i < mValues.size(); i++) {
       equal &= mValues[i] == other.mValues[i];
+    }
     return equal;
   };
 
@@ -378,8 +392,9 @@ class Mat {
       : mRows(r), mCols(c), mValues(v){};
 
   void EnsureCompatible(const Mat& other) {
-    if (mRows != other.mRows || mCols != other.mCols)
+    if (mRows != other.mRows || mCols != other.mCols) {
       throw std::invalid_argument("incompatible matrices");
+    }
   };
 
   std::size_t mRows;
@@ -391,7 +406,7 @@ class Mat {
 
 template <typename T>
 Mat<T> Mat<T>::Read(std::size_t n, std::size_t m, const unsigned char* src) {
-  auto ptr = src;
+  const auto* ptr = src;
   auto total = n * m;
 
   // write all elements now that we know we'll not exceed the maximum read size.
@@ -406,10 +421,9 @@ Mat<T> Mat<T>::Read(std::size_t n, std::size_t m, const unsigned char* src) {
 
 template <typename T>
 void Mat<T>::Write(unsigned char* dest) const {
-  auto ptr = dest;
   for (const auto& v : mValues) {
-    v.Write(ptr);
-    ptr += T::ByteSize();
+    v.Write(dest);
+    dest += T::ByteSize();
   }
 }
 
@@ -421,10 +435,11 @@ Mat<T> Mat<T>::Random(std::size_t n, std::size_t m, PRG& prg) {
 
   std::size_t buffer_size = nelements * T::ByteSize();
   auto buffer = std::make_unique<unsigned char[]>(buffer_size);
-  auto ptr = buffer.get();
+  auto* ptr = buffer.get();
   prg.Next(buffer.get(), buffer_size);
-  for (std::size_t i = 0; i < nelements; i++)
+  for (std::size_t i = 0; i < nelements; i++) {
     elements.emplace_back(T::Read(ptr + i * T::ByteSize()));
+  }
 
   return Mat(n, m, elements);
 }
@@ -482,8 +497,9 @@ Mat<T> Mat<T>::HyperInvertible(std::size_t n, std::size_t m) {
 
 template <typename T>
 Mat<T> Mat<T>::Multiply(const Mat<T>& other) const {
-  if (Cols() != other.Rows())
+  if (Cols() != other.Rows()) {
     throw std::invalid_argument("invalid matrix dimensions for multiply");
+  }
   const auto n = Rows();
   const auto p = Cols();
   const auto m = other.Cols();
@@ -512,15 +528,18 @@ Mat<T> Mat<T>::Transpose() const {
 
 template <typename T>
 bool Mat<T>::IsIdentity() const {
-  if (!IsSquare()) return false;
+  if (!IsSquare()) {
+    return false;
+  }
 
   bool is_ident = true;
   for (std::size_t i = 0; i < Rows(); ++i) {
     for (std::size_t j = 0; j < Cols(); ++j) {
-      if (i == j)
+      if (i == j) {
         is_ident &= operator()(i, j) == T{1};
-      else
+      } else {
         is_ident &= operator()(i, j) == T{0};
+      }
     }
   }
   return is_ident;
@@ -536,13 +555,15 @@ std::string Mat<T>::ToString() const {
   const auto n = Rows();
   const auto m = Cols();
 
-  if (!(n && m)) return "[ EMPTY_MATRIX ]";
+  if (!(n && m)) {
+    return "[ EMPTY_MATRIX ]";
+  }
 
   // convert all elements to strings and find the widest string in each column
   // since that will be used to properly align the final output.
   std::vector<std::string> elements;
   elements.reserve(n * m);
-  std::vector<std::size_t> fills;
+  std::vector<int> fills;
   fills.reserve(m);
   for (std::size_t j = 0; j < m; j++) {
     auto first = operator()(0, j).ToString();
@@ -551,7 +572,9 @@ std::string Mat<T>::ToString() const {
     for (std::size_t i = 1; i < n; i++) {
       auto next = operator()(i, j).ToString();
       auto next_fill = next.size();
-      if (next_fill > fill) fill = next_fill;
+      if (next_fill > fill) {
+        fill = next_fill;
+      }
       elements.push_back(next);
     }
     fills.push_back(fill + 1);
@@ -566,7 +589,9 @@ std::string Mat<T>::ToString() const {
          << " ";
     }
     ss << "]";
-    if (i < n - 1) ss << "\n";
+    if (i < n - 1) {
+      ss << "\n";
+    }
   }
   return ss.str();
 }

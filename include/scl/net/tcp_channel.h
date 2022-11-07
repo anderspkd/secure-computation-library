@@ -52,7 +52,8 @@ class TcpChannel final : public Channel {
   bool Alive() const { return mAlive; };
 
   void Send(const unsigned char* src, std::size_t n) override;
-  int Recv(unsigned char* dst, std::size_t n) override;
+  std::size_t Recv(unsigned char* dst, std::size_t n) override;
+  bool HasData() override;
   void Close() override;
 
  private:

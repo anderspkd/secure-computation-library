@@ -24,6 +24,7 @@
 #include <cstring>
 #include <functional>
 #include <sstream>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -31,6 +32,25 @@
 #include "scl/prg.h"
 
 namespace scl {
+
+namespace details {
+
+/**
+ * @brief Computes an unchecked inner product between two iterators.
+ * @param xb start of the first iterator
+ * @param xe end of the first iterator
+ * @param yb start of the second iterator
+ */
+template <typename T, typename It>
+T UncheckedInnerProd(It xb, It xe, It yb) {
+  T v;
+  while (xb != xe) {
+    v += *xb++ * *yb++;
+  }
+  return v;
+}
+
+}  // namespace details
 
 /**
  * @brief Vector.
@@ -97,6 +117,14 @@ class Vec {
    * @return a Vec with random elements.
    */
   static Vec<T> Random(std::size_t n, PRG& prg);
+
+  /**
+   * @brief Create a vector with values in a range.
+   * @param start the start value, inclusive
+   * @param end the end value, exclusive
+   * @return a vector with values <code>[start, start + 1, ..., end - 1]</code>.
+   */
+  static Vec<T> Range(std::size_t start, std::size_t end);
 
   /**
    * @brief Default constructor that creates an empty Vec.
@@ -212,10 +240,7 @@ class Vec {
    */
   T Dot(const Vec& other) const {
     EnsureCompatible(other);
-    T result;
-    for (std::size_t i = 0; i < Size(); i++)
-      result += mValues[i] * other.mValues[i];
-    return result;
+    return details::UncheckedInnerProd<T>(begin(), end(), other.begin());
   };
 
   /**
@@ -224,7 +249,9 @@ class Vec {
    */
   T Sum() const {
     T sum;
-    for (const auto& v : mValues) sum += v;
+    for (const auto& v : mValues) {
+      sum += v;
+    }
     return sum;
   };
 
@@ -236,7 +263,9 @@ class Vec {
   Vec ScalarMultiply(const T& scalar) const {
     std::vector<T> r;
     r.reserve(Size());
-    for (const auto& v : mValues) r.emplace_back(scalar * v);
+    for (const auto& v : mValues) {
+      r.emplace_back(scalar * v);
+    }
     return Vec(r);
   };
 
@@ -246,7 +275,9 @@ class Vec {
    * @return a scaled version of this vector.
    */
   Vec& ScalarMultiplyInPlace(const T& scalar) {
-    for (auto& v : mValues) v *= scalar;
+    for (auto& v : mValues) {
+      v *= scalar;
+    }
     return *this;
   };
 
@@ -256,6 +287,20 @@ class Vec {
    * @return true if this vector is equal to \p other and false otherwise.
    */
   bool Equals(const Vec& other) const;
+
+  /**
+   * @brief Operator == overload for Vec.
+   */
+  friend bool operator==(const Vec& left, const Vec& right) {
+    return left.Equals(right);
+  };
+
+  /**
+   * @brief Operator != overload for Vec.
+   */
+  friend bool operator!=(const Vec& left, const Vec& right) {
+    return !(left == right);
+  };
 
   /**
    * @brief Convert this vector into a 1-by-N row matrix.
@@ -276,6 +321,29 @@ class Vec {
    * @brief Convert this Vec object to a const std::vector.
    */
   const std::vector<T>& ToStlVector() const { return mValues; };
+
+  /**
+   * @brief Extract a sub-vector
+   * @param start the start index, inclusive
+   * @param end the end index, exclusive
+   * @return a sub-vector.
+   */
+  Vec<T> SubVector(std::size_t start, std::size_t end) {
+    if (start > end) {
+      throw std::logic_error("invalid range");
+    }
+    return Vec<T>(begin() + start, begin() + end);
+  }
+
+  /**
+   * @brief Extract a sub-vector.
+   *
+   * This method is equivalent to <code>Vec#SubVector(0, end)</code>.
+   *
+   * @param end the end index, exclusive
+   * @return a sub-vector.
+   */
+  Vec<T> SubVector(std::size_t end) { return SubVector(0, end); };
 
   /**
    * @brief Return a string representation of this vector.
@@ -362,8 +430,9 @@ class Vec {
 
  private:
   void EnsureCompatible(const Vec& other) const {
-    if (Size() != other.Size())
+    if (Size() != other.Size()) {
       throw std::invalid_argument("Vec sizes mismatch");
+    }
   };
 
   std::vector<T> mValues;
@@ -392,6 +461,23 @@ Vec<T> Vec<T>::PartialRandom(std::size_t n, Pred predicate, PRG& prg) {
     } else {
       v.emplace_back(T{});
     }
+  }
+  return Vec<T>(v);
+}
+
+template <typename T>
+Vec<T> Vec<T>::Range(std::size_t start, std::size_t end) {
+  if (start > end) {
+    throw std::invalid_argument("invalid range");
+  }
+  if (start == end) {
+    return Vec<T>{};
+  }
+
+  std::vector<T> v;
+  v.reserve(end - start);
+  for (std::size_t i = start; i < end; ++i) {
+    v.emplace_back(T{(int)i});
   }
   return Vec<T>(v);
 }
@@ -459,24 +545,27 @@ bool Vec<T>::Equals(const Vec<T>& other) const {
 
 template <typename T>
 std::string Vec<T>::ToString() const {
+  std::string str;
   if (Size()) {
     std::stringstream ss;
     ss << "[";
     std::size_t i = 0;
-    for (; i < Size() - 1; i++) ss << mValues[i] << ", ";
+    for (; i < Size() - 1; i++) {
+      ss << mValues[i] << ", ";
+    }
     ss << mValues[i] << "]";
-    return ss.str();
+    str = ss.str();
   } else {
-    return "[ EMPTY_VECTOR ]";
+    str = "[ EMPTY_VECTOR ]";
   }
+  return str;
 }
 
 template <typename T>
 void Vec<T>::Write(unsigned char* dest) const {
-  unsigned char* p = dest;
   for (const auto& v : mValues) {
-    v.Write(p);
-    p += T::ByteSize();
+    v.Write(dest);
+    dest += T::ByteSize();
   }
 }
 

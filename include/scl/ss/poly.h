@@ -61,7 +61,9 @@ class Polynomial {
     auto it = mCoefficients.rbegin();
     auto end = mCoefficients.rend();
     auto y = *it++;
-    while (it != end) y = *it++ + y * x;
+    while (it != end) {
+      y = *it++ + y * x;
+    }
     return y;
   };
 
@@ -78,23 +80,23 @@ class Polynomial {
   /**
    * @brief Add two polynomials.
    */
-  Polynomial Add(const Polynomial& p) const;
+  Polynomial Add(const Polynomial& q) const;
 
   /**
    * @brief Subtraction two polynomials.
    */
-  Polynomial Subtract(const Polynomial& p) const;
+  Polynomial Subtract(const Polynomial& q) const;
 
   /**
    * @brief Multiply two polynomials.
    */
-  Polynomial Multiply(const Polynomial& p) const;
+  Polynomial Multiply(const Polynomial& q) const;
 
   /**
    * @brief Divide two polynomials.
    * @return A pair \f$(q, r)\f$ such that \f$\mathtt{this} = p * q + r\f$.
    */
-  std::array<Polynomial, 2> Divide(const Polynomial& p) const;
+  std::array<Polynomial, 2> Divide(const Polynomial& q) const;
 
   /**
    * @brief Returns true if this is the 0 polynomial.
@@ -155,14 +157,18 @@ Polynomial<T> Polynomial<T>::Create(const Vec<T>& coefficients) {
   auto cutoff = coefficients.Size();
   T zero;
   for (; it != end; ++it) {
-    if (*it != zero) break;
+    if (*it != zero) {
+      break;
+    }
     --cutoff;
   }
   const auto c = Vec<T>(coefficients.begin(), coefficients.begin() + cutoff);
-  if (!c.Size())
+
+  if (!c.Size()) {
     return Polynomial<T>{};
-  else
-    return Polynomial<T>{c};
+  }
+
+  return Polynomial<T>{c};
 }
 
 /**
@@ -175,7 +181,9 @@ template <typename T>
 Vec<T> PadCoefficients(const Polynomial<T>& p, std::size_t n) {
   Vec<T> c(n);
   for (std::size_t i = 0; i < n; ++i) {
-    if (i <= p.Degree()) c[i] = p[i];
+    if (i <= p.Degree()) {
+      c[i] = p[i];
+    }
   }
   return c;
 }  // LCOV_EXCL_LINE
@@ -226,28 +234,33 @@ Polynomial<T> DivideLeadingTerms(const Polynomial<T>& p,
 
 template <typename T>
 std::array<Polynomial<T>, 2> Polynomial<T>::Divide(
-    const Polynomial<T>& d) const {
-  if (d.IsZero()) throw std::invalid_argument("division by 0");
+    const Polynomial<T>& q) const {
+  if (q.IsZero()) {
+    throw std::invalid_argument("division by 0");
+  }
 
   // https://en.wikipedia.org/wiki/Polynomial_long_division#Pseudocode
 
-  Polynomial q;
+  Polynomial p;
   Polynomial r = *this;
-  while (!r.IsZero() && r.Degree() >= d.Degree()) {
-    const auto t = DivideLeadingTerms(r, d);
-    q = q.Add(t);
-    r = r.Subtract(t.Multiply(d));
+  while (!r.IsZero() && r.Degree() >= q.Degree()) {
+    const auto t = DivideLeadingTerms(r, q);
+    p = p.Add(t);
+    r = r.Subtract(t.Multiply(q));
   }
-  return {q, r};
+  return {p, r};
 }
 
 template <typename T>
-std::string Polynomial<T>::ToString(const char* pn, const char* vn) const {
+std::string Polynomial<T>::ToString(const char* polynomial_name,
+                                    const char* variable_name) const {
   std::stringstream ss;
-  ss << pn << "(" << vn << ") = " << mCoefficients[0];
+  ss << polynomial_name << "(" << variable_name << ") = " << mCoefficients[0];
   for (std::size_t i = 1; i < mCoefficients.Size(); i++) {
-    ss << " + " << mCoefficients[i] << vn;
-    if (i > 1) ss << "^" << i;
+    ss << " + " << mCoefficients[i] << variable_name;
+    if (i > 1) {
+      ss << "^" << i;
+    }
   }
   return ss.str();
 }

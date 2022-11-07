@@ -1,3 +1,17 @@
+3.0: More features, build changes
+- Add method for returning a point as a pair of affine coordinates
+- Add method to check if a channel has data available
+- Allow sending and receiving STL vectors without specifying the size
+- Extend Vec with a SubVector, operator== and operator!= methods
+- Begin Shamir code refactor and move all of it into details namespace
+- bugs:
+  - fix scalar multiplication for secp256k1_order
+  - fix compilation error on g++12
+- build:
+  - build tests with -fsanitize=address
+  - disable actions for master branch
+  - add clang-tidy action
+
 2.1: More Finite Fields
 - Provide a FF implementation for computations modulo the order of Secp256k1
 - Extend EC with support for scalar multiplications with scalars from a finite

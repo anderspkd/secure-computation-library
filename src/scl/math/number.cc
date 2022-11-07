@@ -31,7 +31,7 @@ scl::Number::Number(const Number& number) : Number() {
   mpz_set(mValue, number.mValue);
 }
 
-scl::Number::Number(Number&& number) : Number() {
+scl::Number::Number(Number&& number) noexcept : Number() {
   mpz_set(mValue, number.mValue);
 }
 
@@ -47,7 +47,7 @@ scl::Number scl::Number::Random(std::size_t bits, PRG& prg) {
 
   scl::Number r;
   mpz_import(r.mValue, len - 1, 1, 1, 0, 0, data.get() + 1);
-  if (data[0] & 1) {
+  if ((data[0] & 1) != 0) {
     mpz_neg(r.mValue, r.mValue);
   }
   return r;
@@ -92,23 +92,23 @@ scl::Number scl::Number::operator/(const Number& number) const {
 }  // LCOV_EXCL_LINE
 
 scl::Number scl::Number::operator<<(int shift) const {
+  scl::Number shifted;
   if (shift < 0) {
-    return operator>>(-shift);
+    shifted = operator>>(-shift);
   } else {
-    scl::Number shifted;
     mpz_mul_2exp(shifted.mValue, mValue, shift);
-    return shifted;
   }
+  return shifted;
 }
 
 scl::Number scl::Number::operator>>(int shift) const {
+  scl::Number shifted;
   if (shift < 0) {
-    return operator<<(-shift);
+    shifted = operator<<(-shift);
   } else {
-    scl::Number shifted;
     mpz_tdiv_q_2exp(shifted.mValue, mValue, shift);
-    return shifted;
   }
+  return shifted;
 }
 
 scl::Number scl::Number::operator^(const Number& number) const {

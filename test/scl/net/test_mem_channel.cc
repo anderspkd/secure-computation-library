@@ -26,14 +26,9 @@
 #include "scl/math.h"
 #include "scl/net/mem_channel.h"
 #include "scl/prg.h"
+#include "util.h"
 
-static inline bool Eq(const unsigned char* p, const unsigned char* q, int n) {
-  while (n-- > 0 && *p++ == *q++)
-    ;
-  return n < 0;
-}
-
-static inline void PrintBuf(const unsigned char* b, std::size_t n) {
+void PrintBuf(const unsigned char* b, std::size_t n) {
   for (std::size_t i = 0; i < n; ++i) {
     std::cout << (int)b[i] << " ";
   }
@@ -52,9 +47,12 @@ TEST_CASE("InMemoryChannel", "[network]") {
 
   SECTION("Send and receive") {
     unsigned char data_out[200] = {0};
+    REQUIRE(!chl1->HasData());
     chl0->Send(data_in, 200);
+    REQUIRE(!chl0->HasData());
+    REQUIRE(chl1->HasData());
     chl1->Recv(data_out, 200);
-    REQUIRE(Eq(data_in, data_out, 200));
+    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
   }
 
   chl0->Flush();
@@ -68,7 +66,7 @@ TEST_CASE("InMemoryChannel", "[network]") {
     chl0->Send(data_in + 100, 100);
     chl1->Recv(data_out, 200);
 
-    REQUIRE(Eq(data_in, data_out, 200));
+    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
   }
 
   chl0->Flush();
@@ -81,7 +79,7 @@ TEST_CASE("InMemoryChannel", "[network]") {
     chl1->Recv(data_out, 100);
     chl1->Recv(data_out + 100, 100);
 
-    REQUIRE(Eq(data_in, data_out, 200));
+    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
   }
 
   chl0->Flush();
@@ -105,9 +103,10 @@ TEST_CASE("InMemoryChannel", "[network]") {
     scl::Channel* c1 = chl1.get();
     std::vector<long> data = {1, 2, 3, 4, 11111111};
     c0->Send(data);
-    std::vector<long> recv(data.size());
+    std::vector<long> recv;
     c1->Recv(recv);
     REQUIRE(data == recv);
+    REQUIRE(recv.size() == data.size());
   }
 
   using FF = scl::Fp<61>;
@@ -153,6 +152,6 @@ TEST_CASE("InMemoryChannel", "[network]") {
     c->Recv(data_out + 10, 100);
     c->Recv(data_out + 110, 90);
 
-    REQUIRE(Eq(data_in, data_out, 200));
+    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
   }
 }

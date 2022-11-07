@@ -134,6 +134,13 @@ TEST_CASE("Vector", "[math]") {
     REQUIRE(r[2] != v0[2]);
   }
 
+  SECTION("Range") {
+    auto v = Vec::Range(1, 4);
+    REQUIRE(v[0] == F(1));
+    REQUIRE(v[1] == F(2));
+    REQUIRE(v[2] == F(3));
+  }
+
   SECTION("iterators") {
     auto v2 = Vec{F(1), F(2), F(3)};
     std::size_t i = 0;
@@ -146,5 +153,13 @@ TEST_CASE("Vector", "[math]") {
 
     auto v3 = Vec(v2.begin(), v2.end());
     REQUIRE(v3.Equals(v2));
+  }
+
+  SECTION("subvector") {
+    auto v = Vec{F(1), F(2), F(3), F(4)};
+    REQUIRE(v.SubVector(1, 2) == Vec{F(2)});
+    REQUIRE(v.SubVector(1, 3) == Vec{F(2), F(3)});
+    REQUIRE(v.SubVector(1, 1) == Vec{});
+    REQUIRE(v.SubVector(2) == Vec{F(1), F(2)});
   }
 }

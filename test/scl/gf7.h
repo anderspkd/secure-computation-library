@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCUTIL_MATH_GF7_H
-#define _SCUTIL_MATH_GF7_H
+#ifndef TEST_SCL_GF7_H
+#define TEST_SCL_GF7_H
 
 #include <iostream>
 #include <sstream>
@@ -37,4 +37,4 @@ struct GF7 {
 }  // namespace details
 }  // namespace scl
 
-#endif /* _SCUTIL_MATH_GF7_H */
+#endif /* TEST_SCL_GF7_H */

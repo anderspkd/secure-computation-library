@@ -50,7 +50,9 @@ namespace details {
 template <typename T>
 T FromHexString(const std::string& s) {
   auto n = s.size();
-  if (n % 2) throw std::invalid_argument("odd-length hex string");
+  if (n % 2) {
+    throw std::invalid_argument("odd-length hex string");
+  }
   T t = 0;
   for (std::size_t i = 0; i < n; i += 2) {
     char c0 = s[i];

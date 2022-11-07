@@ -82,8 +82,9 @@ unsigned LsbZ2k(T& v) {
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
 void InvertZ2k(T& v) {
-  if (!LsbZ2k(v))
+  if (!LsbZ2k(v)) {
     throw std::invalid_argument("value not invertible modulo 2^K");
+  }
 
   std::size_t bits = 5;
   T z = ((v * 3) ^ 2);
@@ -95,7 +96,7 @@ void InvertZ2k(T& v) {
   v = z;
 }
 
-#define SCL_MASK(T, K) ((static_cast<T>(1) << K) - 1)
+#define SCL_MASK(T, K) ((static_cast<T>(1) << (K)) - 1)
 
 /**
  * @brief Compute equality modulo a power of 2.

@@ -25,6 +25,7 @@
 #include "scl/math/curves/secp256k1.h"
 #include "scl/math/ec_ops.h"
 #include "scl/math/fp.h"
+#include "scl/math/number.h"
 #include "scl/prg.h"
 
 using Curve = scl::EC<scl::details::Secp256k1>;
@@ -63,13 +64,16 @@ TEST_CASE("secp256k1_field", "[math]") {
   }
 
   SECTION("From affine") {
-    auto g = Curve::FromAffine(
-        Field::FromString("e47b4a1c2e13cf0e97c9adf5a645ce388e04317b7830401aabb4"
-                          "2e188c9883fa"),  //
-        Field::FromString("2aafa6e870684327ec92006e6c601a8b6e0fb9ff06ae120cb330"
-                          "a2eee86009ff")  //
-    );
+    auto x = Field::FromString(
+        "e47b4a1c2e13cf0e97c9adf5a645ce388e04317b7830401aabb42e188c9883fa");
+    auto y = Field::FromString(
+        "2aafa6e870684327ec92006e6c601a8b6e0fb9ff06ae120cb330a2eee86009ff");
+    auto g = Curve::FromAffine(x, y);
     REQUIRE(!g.PointAtInfinity());
+
+    auto as_affine = g.ToAffine();
+    REQUIRE(as_affine[0] == x);
+    REQUIRE(as_affine[1] == y);
 
     REQUIRE_THROWS_MATCHES(
         Curve::FromAffine(Field(0), Field(0)), std::invalid_argument,
@@ -142,6 +146,8 @@ TEST_CASE("secp256k1_field", "[math]") {
   }
 }
 
+using Scalar = scl::FF<scl::details::Secp256k1::Order>;
+
 static Curve RandomPoint(scl::PRG& prg) {
   auto r = scl::Number::Random(100, prg);
   return Curve::Generator() * r;
@@ -201,6 +207,38 @@ TEST_CASE("secp256k1", "[math]") {
     auto a = RandomPoint(prg);
     auto b = -a;
     REQUIRE((a + b).PointAtInfinity());
+  }
+
+  SECTION("Scalar mul order") {
+    auto a = RandomPoint(prg);
+    auto b = Scalar::FromString(
+        "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140");
+    REQUIRE(b + Scalar::One() == Scalar::Zero());
+
+    auto c = a * b;
+    REQUIRE(!c.PointAtInfinity());
+
+    REQUIRE((c + a).PointAtInfinity());
+  }
+
+  SECTION("Scalar mul distributive") {
+    auto a = RandomPoint(prg);
+    auto b = Scalar::Random(prg);
+    auto c = Scalar::Random(prg);
+    REQUIRE((b + c) * a == b * a + c * a);
+  }
+
+  SECTION("Scalar mul assoc") {
+    auto a = Curve::Generator();
+
+    auto v = Scalar::FromString("03");
+    auto u = Scalar::FromString("02");
+    auto w = Scalar::FromString("06");
+
+    auto P = a * w;
+    auto Q = (a * v) * u;
+
+    REQUIRE(P == Q);
   }
 
   SECTION("negation exceptional") {

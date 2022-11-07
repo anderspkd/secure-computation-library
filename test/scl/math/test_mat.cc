@@ -26,7 +26,7 @@
 using F = scl::Fp<61>;
 using Mat = scl::Mat<F>;
 
-inline void Populate(Mat& m, unsigned values[]) {
+inline void Populate(Mat& m, const int* values) {
   for (std::size_t i = 0; i < m.Rows(); i++) {
     for (std::size_t j = 0; j < m.Cols(); j++) {
       m(i, j) = F(values[i * m.Cols() + j]);
@@ -36,10 +36,10 @@ inline void Populate(Mat& m, unsigned values[]) {
 
 TEST_CASE("Matrix", "[math]") {
   Mat m0(2, 2);
-  unsigned v0[] = {1, 2, 5, 6};
+  int v0[] = {1, 2, 5, 6};
   Populate(m0, v0);
   Mat m1(2, 2);
-  unsigned v1[] = {4, 3, 2, 1};
+  int v1[] = {4, 3, 2, 1};
   Populate(m1, v1);
 
   REQUIRE(!m0.Equals(m1));
@@ -59,7 +59,7 @@ TEST_CASE("Matrix", "[math]") {
 
   SECTION("ToString") {
     Mat m(3, 2);
-    unsigned v[] = {1, 2, 44444, 5, 6, 7};
+    int v[] = {1, 2, 44444, 5, 6, 7};
     Populate(m, v);
     std::string expected =
         "\n"
@@ -133,16 +133,16 @@ TEST_CASE("Matrix", "[math]") {
     REQUIRE(m2(1, 1) == F(21));
 
     Mat m3(2, 10);
-    unsigned v3[] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  0,
-                     11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+    int v3[] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  0,
+                11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
     Populate(m3, v3);
 
     auto m5 = m0.Multiply(m3);
     REQUIRE(m5.Rows() == 2);
     REQUIRE(m5.Cols() == 10);
     Mat m4(2, 10);
-    unsigned v4[] = {23, 26, 29, 32,  35,  38,  41,  44,  47,  40,
-                     71, 82, 93, 104, 115, 126, 137, 148, 159, 120};
+    int v4[] = {23, 26, 29, 32,  35,  38,  41,  44,  47,  40,
+                71, 82, 93, 104, 115, 126, 137, 148, 159, 120};
     Populate(m4, v4);
     REQUIRE(m5.Equals(m4));
 
@@ -167,7 +167,7 @@ TEST_CASE("Matrix", "[math]") {
 
   SECTION("Transpose") {
     Mat m3(2, 3);
-    unsigned v3[] = {1, 2, 3, 11, 12, 13};
+    int v3[] = {1, 2, 3, 11, 12, 13};
     Populate(m3, v3);
     auto m4 = m3.Transpose();
     REQUIRE(m4.Rows() == m3.Cols());
@@ -244,10 +244,11 @@ TEST_CASE("Matrix", "[math]") {
     bool good = true;
     for (std::size_t i = 0; i < 10; ++i) {
       for (std::size_t j = 0; j < 10; ++j) {
-        if (i == j)
+        if (i == j) {
           good &= A(i, j) == F(1);
-        else
+        } else {
           good &= A(i, j) == F(0);
+        }
       }
     }
     REQUIRE(good);

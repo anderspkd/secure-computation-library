@@ -37,7 +37,7 @@ namespace details {
  * @param value the integer to convert
  */
 template <typename F>
-void FieldConvertIn(typename F::ValueType& out, const int value);
+void FieldConvertIn(typename F::ValueType& out, int value);
 
 /**
  * @brief Add two field elements in-place.

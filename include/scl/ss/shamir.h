@@ -22,8 +22,11 @@
 #define SCL_SS_SHAMIR_H
 
 #include <array>
-#include <iostream>
+#include <optional>
 #include <stdexcept>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
 
 #include "scl/math/la.h"
 #include "scl/math/vec.h"
@@ -34,200 +37,42 @@ namespace scl {
 namespace details {
 
 /**
- * @brief Create a random polynomial suitable for create Shamir secret-shares.
- * @param secret the secret to embed in the constant term of the polynomial
- * @param t the threshold that this polynomial should support
- * @param prg a PRG used to generate random coefficients
- * @return a Polynomial that can be used to generate degree t shares.
- */
-template <typename T>
-details::Polynomial<T> CreateShamirSharePolynomial(const T& secret,
-                                                   std::size_t t, PRG& prg) {
-  if (!t) throw std::invalid_argument("threshold cannot be 0");
-  auto coeff = Vec<T>::PartialRandom(
-      t + 1, [](std::size_t i) { return i > 0; }, prg);
-  coeff[0] = secret;
-  return details::Polynomial<T>::Create(coeff);
-}
-
-/**
- * @brief Interpolate a polynomial given a list of evaluations (f(x), x).
- * @param ys the evaluation results
- * @param xs the evaluation points
- * @param k the number of points to use
- * @param x the point at which to interpolate
- * @param offset an offset into the \p ys and \p xs
- * @return f(\p x) where f was interpolated from \p k of the provided points.
- */
-template <typename T>
-T InterpolateAt(const Vec<T>& ys, const Vec<T>& xs, std::size_t k, const T& x,
-                std::size_t offset) {
-  T z;
-  for (std::size_t j = 0; j < k; ++j) {
-    T ell(1);
-    auto xj = xs[offset + j];
-    for (std::size_t m = 0; m < k; ++m) {
-      if (m == j) continue;
-      auto xm = xs[offset + m];
-      ell *= (x - xm) / (xj - xm);
-    }
-    z += ys[offset + j] * ell;
-  }
-  return z;
-}
-}  // namespace details
-
-/**
- * @brief Create a collection of shamir shares given a polynomial and points.
- * @param sharing_polynomial the polynomial used to generate the shares
- * @param alphas the evaluation points
- * @tparam T a finite field
- * @return A vector of shamir secret-shares.
- */
-template <typename T>
-Vec<T> CreateShamirShares(const details::Polynomial<T>& sharing_polynomial,
-                          const Vec<T>& alphas) {
-  auto n = alphas.Size();
-  Vec<T> shares(n);
-  for (std::size_t i = 0; i < n; i++) {
-    shares[i] = sharing_polynomial.Evaluate(alphas[i]);
-  }
-  return shares;
-}  // LCOV_EXCL_LINE
-
-/**
- * @brief Return the list of canonical evaluation points
- * @param n the number of points
- * @tparam T a finite field
- * @return the list <code>[1, 2, ..., n]</code> of finite field elements.
- */
-template <typename T>
-Vec<T> CanonicalAlphas(std::size_t n) {
-  Vec<T> alphas(n);
-  for (std::size_t i = 0; i < n; i++) alphas[i] = T{(int)(i + 1)};
-  return alphas;
-}  // LCOV_EXCL_LINE
-
-/**
- * @brief Create a shamir secret-sharing.
- * @param secret the secret
- * @param n the number of shares to create
- * @param t the privacy threshold
- * @param prg a PRG for randomness
- * @return a vector of Shamir secret-shares.
- */
-template <typename T>
-Vec<T> CreateShamirShares(const T& secret, std::size_t n, std::size_t t,
-                          PRG& prg) {
-  return CreateShamirShares(
-      details::CreateShamirSharePolynomial(secret, t, prg),
-      CanonicalAlphas<T>(n));
-}
-
-/**
- * @brief Reconstruct a shamir shared secret with passive security.
- * @param shares the shars
- * @param alphas the alphas
- * @param pos the position of the secret
- * @param t the threshold
- * @return the reconstructed value.
- * @throws std::invalid_argument if less than \f$t+1\f$ shares were given
- * @throws std::invalid_argument if less than \f$t+1\f$ alphas were given
- */
-template <typename T>
-T ReconstructShamirPassive(const Vec<T>& shares, const Vec<T>& alphas,
-                           const T& pos, std::size_t t) {
-  if (t + 1 > shares.Size())
-    throw std::invalid_argument("not enough shares to reconstruct");
-  if (t + 1 > alphas.Size())
-    throw std::invalid_argument("not enough alphas to reconstruct");
-  return InterpolateAt(shares, alphas, t + 1, pos, 0);
-}
-
-/**
- * @brief Reconstruct a Shamir shared secret with passive security.
+ * @brief Robust reconstruction.
  *
- * This method makes no guarantee regarding the reconstructed value. In
- * particular, this method should only be used in a passive security model.
+ * <p>This function performs a robust Shamir secret-share reconstruction. Given
+ * at least \f$3t + 1\f$ pairs \f$(f(x),x)\f$, where each \f$f(x)\f$ is a share
+ * and \f$x\f$ a corresponding evaluation alpha, finds the degree \f$t\f$
+ * polynomial \f$f\f$ that passes through all supplied shares. </p>
  *
- * The shares is assumed to have been generated using alphas as output by \ref
- * scl::CanonicalAlphas, and the secret is assumed to have been placed on the
- * constant term of the sharing polynomial.
+ * <p>The return value is a pair of polynomials \f$(f,e)\f$ where \f$f\f$ is the
+ * reconstructed polynomial and \f$e\f$ a polynomial whose roots indicate which
+ * (if any) of the input shares were invalid. I.e., \f$e(i)=0\f$ if
+ * <code>share[i]</code> had an error.</p>
  *
- * @param shares the shares
- * @param t the threshold
- * @return the reconstructed secret.
- * @see ReconstructShamirPassive
+ * @param shares the shares to use for reconstruction
+ * @param alphas the evaluation alphas
+ * @param t the degree of the polynomial to reconstruct
+ * @return a pair of polynomials.
  */
 template <typename T>
-T ReconstructShamirPassive(const Vec<T>& shares, std::size_t t) {
-  return ReconstructShamirPassive(shares, CanonicalAlphas<T>(shares.Size()),
-                                  T(0), t);
-}
-
-/**
- * @brief Reconstruct a Shamir shared secret with error detection.
- *
- * This method will attempt to reconstruct a degree \f$t\f$ shared secret from
- * at least \f$2t+1\f$ provided points. In case the provided shares do not all
- * lie on a degree \f$t\f$ polynomial, an exception is thrown.
- *
- * @param shares the shares
- * @param alphas the alphas
- * @param pos the position of the secret
- * @param t the threshold
- * @return the correct reconstructed value.
- * @throws std::invalid_argument if less than \f$2t+1\f$ shares were given
- * @throws std::invalid_argument if less than \f$2t+1\f$ alphas were given
- * @throws std::logic_error if one of the shares contained an error
- */
-template <typename T>
-T ReconstructShamir(const Vec<T>& shares, const Vec<T>& alphas, const T& pos,
-                    std::size_t t) {
-  if (2 * t + 1 > shares.Size())
-    throw std::invalid_argument(
-        "not enough shares to reconstruct with error detection");
-  if (2 * t + 1 > alphas.Size())
-    throw std::invalid_argument(
-        "not enough alphas to reconstruct with error detection");
-
-  for (std::size_t k = t + 1; k < 2 * t + 1; ++k) {
-    auto s = InterpolateAt(shares, alphas, t + 1, alphas[k], 0);
-    if (s != shares[k])
-      throw std::logic_error("error detected during reconstruction");
-  }
-  return InterpolateAt(shares, alphas, t + 1, pos, 0);
-}
-
-/**
- * @brief Reconstruct a Shamir shared secret with error detection.
- * @see ReconstructShamir
- */
-template <typename T>
-T ReconstructShamir(const Vec<T>& shares, std::size_t t) {
-  return ReconstructShamir(shares, CanonicalAlphas<T>(shares.Size()), T(0), t);
-}
-
-/**
- * @brief Reconstruct a Shamir shared secret with error correction.
- */
-template <typename T>
-std::array<details::Polynomial<T>, 2> ReconstructShamirRobust(
-    const Vec<T>& shares, const Vec<T>& alphas, std::size_t t) {
+auto ReconstructShamirRobust(const Vec<T>& shares, const Vec<T>& alphas,
+                             std::size_t t) {
   std::size_t n = 3 * t + 1;
-  if (n > shares.Size())
+  if (n > shares.Size()) {
     throw std::invalid_argument(
         "not enough shares to reconstruct with error correction");
-  if (n > alphas.Size())
+  }
+  if (n > alphas.Size()) {
     throw std::invalid_argument(
         "not enough alphas to reconstruct with error correction");
+  }
 
   Mat<T> A(n);
   Vec<T> b(n);
   Vec<T> x(n);
   int e;
   for (std::size_t k = 0; k <= t; ++k) {
-    e = t - k;
+    e = t - k;  // NOLINT
 
     for (std::size_t i = 0; i < n; ++i) {
       b[i] = -shares[i];
@@ -243,7 +88,9 @@ std::array<details::Polynomial<T>, 2> ReconstructShamirRobust(
       }
     }
 
-    if (SolveLinearSystem(x, A, b)) break;
+    if (SolveLinearSystem(x, A, b)) {
+      break;
+    }
   }
 
   Vec<T> cE{x.begin(), x.begin() + e + 1};
@@ -252,21 +99,303 @@ std::array<details::Polynomial<T>, 2> ReconstructShamirRobust(
   auto E = details::Polynomial<T>::Create(cE);
   auto Q = details::Polynomial<T>::Create(Vec<T>{x.begin() + e, x.end()});
   auto qr = Q.Divide(E);
-  if (qr[1].IsZero()) return {qr[0], E};
 
-  throw std::logic_error("could not correct shares");
+  if (!qr[1].IsZero()) {
+    throw std::logic_error("could not correct shares");
+  }
+
+  return std::make_pair(qr[0], E);
 }
 
 /**
- * @brief Reconstruct a Shamir shared secret with error correction.
+ * @brief Robust reconstruction.
+ *
+ * This function is a short-hand for <code>ReconstructShamirRobust(shares,
+ * Vec<T>::Range(1, shares.Size() + 1), t)</code>.
+ *
+ * @param shares the shares
+ * @param t the degree of the polynomial to reconstruct
+ * @return \f$f(0)\f$ where \f$f\f$ is the reconstructed polynomial.
  */
 template <typename T>
 T ReconstructShamirRobust(const Vec<T>& shares, std::size_t t) {
   auto p =
-      ReconstructShamirRobust(shares, CanonicalAlphas<T>(shares.Size()), t);
-  return p[0].Evaluate(T(0));
+      ReconstructShamirRobust(shares, Vec<T>::Range(1, shares.Size() + 1), t);
+  return std::get<0>(p).Evaluate(T(0));
 }
 
+/**
+ * @brief Defines some common security levels.
+ *
+ * These security levels are used to derive some common defaults. For example,
+ * SecurityLevel::DETECT is used to indicate that ShamirSSFactory, when
+ * instantiated with a threshold of \f$t\f$, should generate \f$2t + 1\f$ shares
+ * if no other value is specified.
+ */
+enum class SecurityLevel {
+  /**
+   * @brief \f$t + 1\f$.
+   */
+  PASSIVE,
+
+  /**
+   * @brief \f$2t + 1\f$. Enough shares to detect errors.
+   */
+  DETECT,
+
+  /**
+   * @brief \f$3t + 1\f$. Enough shares to correct errors.
+   */
+  CORRECT
+};
+
+/**
+ * @brief Class for reconstructing secrets from Shamir secret-shares.
+ *
+ * <p>The main purpose of this class is to cache the lagrange coefficients used
+ * when performing interpolation. These coefficients are computed when they are
+ * first needed. The only exception is the coefficients needed to reconstruct
+ * the point at 0, which is usually where the secret is placed.</p>
+ *
+ * <p>A Reconstructor contains essentially two methods for reconstructing:
+ * <ul>
+ * <li>Reconstruct reconstructs a particular evaluation of the implied
+ * polynomial.</li>
+ * <li>ReconstructShare reconstructs a particular share of a party</li>
+ * </ul>
+ * Both methods do effectively the same, and the only difference is how the
+ * index passed to them is interpreted. For the first, the index is interpreted
+ * as-is. I.e., if we pass an index of 3, then it will recover the point
+ * \f$f(3)\f$, where \f$f\f$ is the polynomial implied by the shares we provide.
+ * For the latter method, passing an index of \f$i\f$ implies that we wish to
+ * interpolate the point \f$f(i + 1)\f$. This is because we assume parties are
+ * indexed from 0, but their evaluation indices are indexed from 1 (because the
+ * 0'th index is reserved for the secret).</p>
+ */
+template <typename T>
+class Reconstructor {
+ public:
+  /**
+   * @brief Create a new Reconstructor instance.
+   *
+   * This creator method creates a new instance and pre-computes the
+   * coefficients needed to recover a secret from a set of shamir shares. The
+   * SecurityLevel given is used to infer the default reconstruction method:
+   * <ul>
+   * <li>SecurityLevel::PASSIVE: use passive reconstruction. I.e., reconstruct
+   * the value we ask for, using the minimal amount of \f$t + 1\f$ shares
+   * needed.</li>
+   *
+   * <li>SecurityLevel::DETECT: use the first \f$t+1\f$ shares to reconstruct
+   * the remaning \f$t\f$ shares. If all of these check out, then reconstruct
+   * the value we seek.</li>
+   *
+   * <li>SecurityLevel::CORRECT: use an error correcting
+   * algorithm to recover the polynomial \f$f\f$ from \f$3t+1\f$ shares,
+   * assuming that at most \f$t\f$ shares are faulty.</li>
+   * </ul>
+   *
+   * @param threshold the threshold \f$t\f$
+   * @param default_security_level the default security level
+   */
+  static Reconstructor Create(std::size_t threshold,
+                              SecurityLevel default_security_level);
+
+  /**
+   * @brief Interpolate a set of shares according to a given security level
+   * @param shares the shares
+   * @param security_level the security level
+   * @param index the index to interpolate. Defaults to 0
+   */
+  T Reconstruct(const Vec<T>& shares, SecurityLevel security_level,
+                int index = 0) const;
+
+  /**
+   * @brief Interpolate a set of shares with the default security level
+   * @param shares the shares
+   * @param index the index to interpolate. Defaults to 0
+   */
+  T Reconstruct(const Vec<T>& shares, int index = 0) const {
+    return Reconstruct(shares, mSecurityLevel, index);
+  };
+
+  /**
+   * @brief Reconstruct the share of a party.
+   */
+  T ReconstructShare(const Vec<T>& shares, SecurityLevel level,
+                     int party_index = 0) const {
+    return Reconstruct(shares, level, party_index + 1);
+  };
+
+  /**
+   * @brief Reconstruct the share of a party.
+   */
+  T ReconstructShare(const Vec<T>& shares, int party_index = 0) const {
+    return Reconstruct(shares, party_index + 1);
+  };
+
+  /**
+   * @brief Get the lagrange coefficients for interpolating a particular index.
+   *
+   * This method modifies the internal cache in case coefficients for the
+   * requested index does not exist.
+   */
+  const Vec<T>& GetLagrangeCoefficients(int index) const {
+    if (mLagrangeCoeff.count(index) == 0) {
+      ComputeLagrangeCoefficients(index);
+    }
+    return mLagrangeCoeff[index];
+  };
+
+ private:
+  Reconstructor(std::size_t threshold, SecurityLevel security_level)
+      : mThreshold(threshold), mSecurityLevel(security_level){};
+
+  void ComputeLagrangeCoefficients(int index) const;
+
+  std::size_t mThreshold;
+  SecurityLevel mSecurityLevel;
+  mutable std::unordered_map<int, Vec<T>> mLagrangeCoeff;
+};
+
+template <typename T>
+Reconstructor<T> Reconstructor<T>::Create(
+    std::size_t threshold, SecurityLevel default_security_level) {
+  Reconstructor<T> intr(threshold, default_security_level);
+  intr.ComputeLagrangeCoefficients(0);
+  return intr;
+}
+
+template <typename T>
+T Reconstructor<T>::Reconstruct(const Vec<T>& shares,
+                                SecurityLevel security_level, int index) const {
+  if (security_level == SecurityLevel::CORRECT) {
+    // TODO(anders): Currently only supports index = 0
+    return details::ReconstructShamirRobust(shares, mThreshold);
+  }
+
+  const auto min_size = mThreshold + 1;
+  if (shares.Size() < min_size) {
+    throw std::invalid_argument("not enough shares to reconstruct");
+  }
+
+  const auto& coeff = GetLagrangeCoefficients(index);
+  auto x = details::UncheckedInnerProd<T>(
+      shares.begin(), shares.begin() + min_size, coeff.begin());
+
+  if (security_level == SecurityLevel::DETECT) {
+    const auto n = 2 * mThreshold + 1;
+    if (shares.Size() < n) {
+      throw std::invalid_argument("not enough shares to detect errors");
+    }
+
+    for (std::size_t i = min_size; i < n; ++i) {
+      const auto& ccoeff = GetLagrangeCoefficients(i + 1);
+      const auto c = details::UncheckedInnerProd<T>(
+          shares.begin(), shares.begin() + min_size, ccoeff.begin());
+      if (c != shares[i]) {
+        throw std::logic_error("error detected during reconstruction");
+      }
+    }
+  }
+  return x;
+}
+
+template <typename T>
+void Reconstructor<T>::ComputeLagrangeCoefficients(int index) const {
+  Vec<T> coeff(mThreshold + 1);
+  const auto x = T(index);
+  for (std::size_t j = 0; j <= mThreshold; ++j) {
+    auto ell = T::One();
+    const auto xj = T(j + 1);
+    for (std::size_t m = 0; m <= mThreshold; ++m) {
+      if (j != m) {
+        const auto xm = T(m + 1);
+        ell *= (x - xm) / (xj - xm);
+      }
+    }
+    coeff[j] = ell;
+  }
+  mLagrangeCoeff[index] = coeff;
+}
+
+/**
+ * @brief A factory object for creating Shamir secret shares.
+ * @tparam T the finite field to use.
+ */
+template <typename T>
+class ShamirSSFactory {
+ public:
+  /**
+   * @brief Create a new Shamir secret share factory
+   * @param t the privacy threshold to use
+   * @param prg the PRG to use when generating new shares
+   * @param security_level the SecurityLevel to use. Default to
+   * SecurityLevel::DETECT
+   */
+  ShamirSSFactory(std::size_t t, PRG& prg,
+                  SecurityLevel security_level = SecurityLevel::DETECT)
+      : mThreshold(t), mPrg(prg), mDefaultSecurityLevel(security_level){};
+
+  /**
+   * @brief Create a new set of Shamir secret shares of a secret
+   * @param secret the secret
+   * @param number_of_shares the number of shares to generate. If empty, then
+   * the number of shares is determined by GetDefaultNumberOfShares
+   * @return a vector of shares.
+   */
+  Vec<T> Share(const T& secret,
+               std::optional<std::size_t> number_of_shares = {});
+
+  /**
+   * @brief Get the number of shares to create based on set security level
+   *
+   * The returned number is determined based on the \ref SecurityLevel
+   * provided during construction. Given a threshold \f$t\f$, then the number of
+   * shares is computed based on the following rules:
+   */
+  std::size_t GetDefaultNumberOfShares() const {
+    switch (mDefaultSecurityLevel) {
+      case SecurityLevel::PASSIVE:
+        return mThreshold + 1;
+      case SecurityLevel::DETECT:
+        return 2 * mThreshold + 1;
+      default:  // SecurityLevel::ROBUST:
+        return 3 * mThreshold + 1;
+    }
+  };
+
+  /**
+   * @brief Get an scl::Interpolator suitable for this factory.
+   */
+  Reconstructor<T> GetInterpolator() const {
+    return Reconstructor<T>::Create(mThreshold, mDefaultSecurityLevel);
+  };
+
+ private:
+  std::size_t mThreshold;
+  PRG mPrg;
+  SecurityLevel mDefaultSecurityLevel;
+};
+
+template <typename T>
+Vec<T> ShamirSSFactory<T>::Share(const T& secret,
+                                 std::optional<std::size_t> number_of_shares) {
+  auto coeff = Vec<T>::PartialRandom(
+      mThreshold + 1, [](std::size_t i) { return i > 0; }, mPrg);
+  coeff[0] = secret;
+  auto p = details::Polynomial<T>::Create(coeff);
+
+  auto n = number_of_shares.value_or(GetDefaultNumberOfShares());
+  std::vector<T> shares;
+  shares.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    shares.emplace_back(p.Evaluate(T(i + 1)));
+  }
+  return Vec<T>(shares);
+}
+
+}  // namespace details
 }  // namespace scl
 
 #endif  // SCL_SS_SHAMIR_H

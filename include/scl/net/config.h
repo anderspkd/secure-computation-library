@@ -42,7 +42,7 @@ struct Party {
   /**
    * @brief The id of this party.
    */
-  unsigned id;
+  int id;
 
   /**
    * @brief The hostname.
@@ -68,7 +68,7 @@ class NetworkConfig {
    * @param id the identity of this party
    * @param filename the filename
    */
-  static NetworkConfig Load(unsigned id, std::string filename);
+  static NetworkConfig Load(int id, const std::string& filename);
 
   /**
    * @brief Create a network config where all parties are running locally.
@@ -82,14 +82,14 @@ class NetworkConfig {
    * @param size the size of the network
    * @param port_base the base port
    */
-  static NetworkConfig Localhost(unsigned id, std::size_t size, int port_base);
+  static NetworkConfig Localhost(int id, int size, int port_base);
 
   /**
    * @brief Create a network config where all parties are running locally.
    * @param id the identity of this party
    * @param size the size of the network
    */
-  static NetworkConfig Localhost(unsigned id, std::size_t size) {
+  static NetworkConfig Localhost(int id, int size) {
     return NetworkConfig::Localhost(id, size, DEFAULT_PORT_OFFSET);
   };
 
@@ -98,7 +98,7 @@ class NetworkConfig {
    * @param id the id of the local party
    * @param parties a list of parties
    */
-  NetworkConfig(unsigned id, std::vector<Party> parties)
+  NetworkConfig(int id, const std::vector<Party>& parties)
       : mId(id), mParties(parties) {
     Validate();
   };
@@ -112,7 +112,7 @@ class NetworkConfig {
   /**
    * @brief Gets the identity of this party.
    */
-  unsigned Id() const { return mId; };
+  int Id() const { return mId; };
 
   /**
    * @brief Gets the size of the network.
@@ -137,7 +137,7 @@ class NetworkConfig {
  private:
   void Validate();
 
-  unsigned mId;
+  int mId;
   std::vector<Party> mParties;
 };
 

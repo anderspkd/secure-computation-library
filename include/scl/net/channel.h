@@ -51,8 +51,8 @@ namespace scl {
 #define MAX_MAT_READ_SIZE 1 << 25
 #endif
 
-#define SCL_CC(x) reinterpret_cast<const unsigned char*>(x)
-#define SCL_C(x) reinterpret_cast<unsigned char*>(x)
+#define SCL_CC(x) reinterpret_cast<const unsigned char(*)>((x))
+#define SCL_C(x) reinterpret_cast<unsigned char(*)>((x))
 
 /**
  * @brief Abstract channel for communicating between two peers.
@@ -85,7 +85,14 @@ class Channel {
    * @param n how much data to receive
    * @return how many bytes were received.
    */
-  virtual int Recv(unsigned char* dst, std::size_t n) = 0;
+  virtual std::size_t Recv(unsigned char* dst, std::size_t n) = 0;
+
+  /**
+   * @brief Check if there is something to receive on this channel.
+   * @return true if this channel has data and false otherwise.
+   * @note the default implementation always returns true.
+   */
+  virtual bool HasData() { return true; };
 
   /**
    * @brief Send a trivially copyable item.
@@ -108,6 +115,7 @@ class Channel {
   template <typename T, typename std::enable_if_t<
                             std::is_trivially_copyable_v<T>, bool> = true>
   void Send(const std::vector<T>& src) {
+    Send(src.size());
     Send(SCL_CC(src.data()), sizeof(T) * src.size());
   }
 
@@ -168,15 +176,16 @@ class Channel {
 
   /**
    * @brief Receive a vector of trivially copyable items.
-   *
-   * <code>dst.size()</code> determines how many bytes to receive.
-   *
    * @param dst where to store the received items
+   * @note any existing content in \p dst is overwritten.
    */
   template <typename T, typename std::enable_if_t<
                             std::is_trivially_copyable_v<T>, bool> = true>
   void Recv(std::vector<T>& dst) {
-    Recv(SCL_C(dst.data()), sizeof(T) * dst.size());
+    std::size_t size;
+    Recv(size);
+    dst.resize(size);
+    Recv(SCL_C(dst.data()), sizeof(T) * size);
   }
 
   /**
@@ -188,8 +197,9 @@ class Channel {
   template <typename T>
   void Recv(Vec<T>& vec) {
     auto vec_size = RecvSize();
-    if (vec_size > MAX_VEC_READ_SIZE)
+    if (vec_size > MAX_VEC_READ_SIZE) {
       throw std::logic_error("received vector exceeds size limit");
+    }
     auto n = vec_size * T::ByteSize();
     auto buf = std::make_unique<unsigned char[]>(n);
     Recv(SCL_C(buf.get()), n);
@@ -206,8 +216,9 @@ class Channel {
   void Recv(Mat<T>& mat) {
     auto rows = RecvSize();
     auto cols = RecvSize();
-    if (rows * cols > MAX_MAT_READ_SIZE)
+    if (rows * cols > MAX_MAT_READ_SIZE) {
       throw std::logic_error("received matrix exceeds size limit");
+    }
     auto n = rows * cols * T::ByteSize();
     auto buf = std::make_unique<unsigned char[]>(n);
     Recv(SCL_C(buf.get()), n);

@@ -67,42 +67,54 @@ TEST_CASE("Hash", "[misc]") {
   SECTION("SHA3-256 0xA3 x 200") {
     unsigned char byte = 0xA3;
     unsigned char buf[200];
-    for (std::size_t i = 0; i < 200; ++i) buf[i] = byte;
+    for (std::size_t i = 0; i < 200; ++i) {
+      buf[i] = byte;
+    }
 
     scl::Hash<256> hash0;
     auto digest = hash0.Update(buf, 200).Finalize();
     REQUIRE(digest == SHA3_256_0xa3_200_times);
 
     scl::Hash<256> hash1;
-    for (std::size_t i = 0; i < 200; ++i) hash1.Update(&byte, 1);
+    for (std::size_t i = 0; i < 200; ++i) {
+      hash1.Update(&byte, 1);
+    }
     REQUIRE(hash1.Finalize() == SHA3_256_0xa3_200_times);
   }
 
   SECTION("SHA3-384 0xA3 x 200") {
     unsigned char byte = 0xA3;
     unsigned char buf[200];
-    for (std::size_t i = 0; i < 200; ++i) buf[i] = byte;
+    for (std::size_t i = 0; i < 200; ++i) {
+      buf[i] = byte;
+    }
 
     scl::Hash<384> hash0;
     auto digest = hash0.Update(buf, 200).Finalize();
     REQUIRE(digest == SHA3_384_0xa3_200_times);
 
     scl::Hash<384> hash1;
-    for (std::size_t i = 0; i < 200; ++i) hash1.Update(&byte, 1);
+    for (std::size_t i = 0; i < 200; ++i) {
+      hash1.Update(&byte, 1);
+    }
     REQUIRE(hash1.Finalize() == SHA3_384_0xa3_200_times);
   }
 
   SECTION("SHA3-512 0xA3 x 200") {
     unsigned char byte = 0xA3;
     unsigned char buf[200];
-    for (std::size_t i = 0; i < 200; ++i) buf[i] = byte;
+    for (std::size_t i = 0; i < 200; ++i) {
+      buf[i] = byte;
+    }
 
     scl::Hash<512> hash0;
     auto digest = hash0.Update(buf, 200).Finalize();
     REQUIRE(digest == SHA3_512_0xa3_200_times);
 
     scl::Hash<512> hash1;
-    for (std::size_t i = 0; i < 200; ++i) hash1.Update(&byte, 1);
+    for (std::size_t i = 0; i < 200; ++i) {
+      hash1.Update(&byte, 1);
+    }
     REQUIRE(hash1.Finalize() == SHA3_512_0xa3_200_times);
   }
 

@@ -53,7 +53,9 @@ void SwapRows(Mat<T>& A, std::size_t k, std::size_t h) {
  */
 template <typename T>
 void MultiplyRow(Mat<T>& A, std::size_t row, const T& m) {
-  for (std::size_t j = 0; j < A.Cols(); ++j) A(row, j) *= m;
+  for (std::size_t j = 0; j < A.Cols(); ++j) {
+    A(row, j) *= m;
+  }
 }
 
 /**
@@ -65,7 +67,9 @@ void MultiplyRow(Mat<T>& A, std::size_t row, const T& m) {
  */
 template <typename T>
 void AddRows(Mat<T>& A, std::size_t dst, std::size_t op, const T& m) {
-  for (std::size_t j = 0; j < A.Cols(); ++j) A(dst, j) += A(op, j) * m;
+  for (std::size_t j = 0; j < A.Cols(); ++j) {
+    A(dst, j) += A(op, j) * m;
+  }
 }
 
 /**
@@ -83,7 +87,9 @@ void RowReduceInPlace(Mat<T>& A) {
   while (r < n && c < m) {
     // find pivot in current column
     auto pivot = r;
-    while (pivot < n && A(pivot, c) == zero) pivot++;
+    while (pivot < n && A(pivot, c) == zero) {
+      pivot++;
+    }
 
     if (pivot == n) {
       // this column was all 0, so go to next one
@@ -97,10 +103,14 @@ void RowReduceInPlace(Mat<T>& A) {
 
       // finally, for each row that is not r, subtract a multiple of row r.
       for (std::size_t k = 0; k < n; ++k) {
-        if (k == r) continue;
+        if (k == r) {
+          continue;
+        }
         // skip row if leading coefficient of that row is 0.
         auto t = A(k, c);
-        if (t != zero) AddRows(A, k, r, -t);
+        if (t != zero) {
+          AddRows(A, k, r, -t);
+        }
       }
       r++;
       c++;
@@ -122,7 +132,9 @@ int GetPivotInColumn(const Mat<T>& A, int col) {
   while (i-- > 0) {
     if (A(i, col) != zero) {
       for (int k = 0; k < col - 1; ++k) {
-        if (A(i, k) != zero) return -1;
+        if (A(i, k) != zero) {
+          return -1;
+        }
       }
       return i;
     }
@@ -152,7 +164,9 @@ std::size_t FindFirstNonZeroRow(const Mat<T>& A) {
         break;
       }
     }
-    if (non_zero) break;
+    if (non_zero) {
+      break;
+    }
   }
   return nzr;
 }
@@ -185,7 +199,9 @@ Vec<T> ExtractSolution(const Mat<T>& A) {
       x[c] = T{1};
     } else {
       T sum;
-      for (std::size_t j = p + 1; j < n; ++j) sum += A(i, j) * x[j];
+      for (std::size_t j = p + 1; j < n; ++j) {
+        sum += A(i, j) * x[j];
+      }
       x[c] = A(i, m - 1) - sum;
       i--;
     }
@@ -218,9 +234,13 @@ bool HasSolution(const Mat<T>& A, bool unique_only) {
     // the last column (the augmentation). I.e., when row(A', i) == 0, but
     // row(A, i) != 0.
     if (unique_only) {
-      if (all_zero) return false;
+      if (all_zero) {
+        return false;
+      }
     } else {
-      if (all_zero && A(i, m - 1) != zero) return false;
+      if (all_zero && A(i, m - 1) != zero) {
+        return false;
+      }
     }
   }
   return true;

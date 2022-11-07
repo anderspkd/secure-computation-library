@@ -46,22 +46,28 @@ int main() {
    * correction. Lets see error detection at work first
    */
 
+  scl::details::ShamirSSFactory<Fp> factory(
+      1, prg, scl::details::SecurityLevel::CORRECT);
   /* We create 4 shamir shares with a threshold of 1.
    */
-  auto shamir_shares = scl::CreateShamirShares(secret, 4, 1, prg);
+  auto shamir_shares = factory.Share(secret);
   std::cout << shamir_shares << "\n";
 
   /* Of course, these can be reconstructed. The second parameter is the
    * threshold. This performs reconstruction with error detection.
    */
-  auto shamir_reconstructed = scl::ReconstructShamir(shamir_shares, 1);
+  auto recon = factory.GetInterpolator();
+  auto shamir_reconstructed =
+      recon.Reconstruct(shamir_shares, scl::details::SecurityLevel::DETECT);
   std::cout << shamir_reconstructed << "\n";
 
   /* If we introduce an error, then reconstruction fails
    */
   shamir_shares[2] = Fp(123);
   try {
-    std::cout << scl::ReconstructShamir(shamir_shares, 1) << "\n";
+    std::cout << recon.Reconstruct(shamir_shares,
+                                   scl::details::SecurityLevel::DETECT)
+              << "\n";
   } catch (std::logic_error& e) {
     std::cout << e.what() << "\n";
   }
@@ -69,7 +75,7 @@ int main() {
   /* On the other hand, we can use the robust reconstruction since the threshold
    * is low enough. I.e., because 4 >= 3*1 + 1.
    */
-  auto r = scl::ReconstructShamirRobust(shamir_shares, 1);
+  auto r = recon.Reconstruct(shamir_shares);
   std::cout << r << "\n";
 
   /* With a bit of extra work, we can even learn which share had the error.
@@ -79,7 +85,7 @@ int main() {
    * default these are just the field elements 1 through 4.
    */
   Vec alphas = {Fp(1), Fp(2), Fp(3), Fp(4)};
-  auto pe = scl::ReconstructShamirRobust(shamir_shares, alphas, 1);
+  auto pe = scl::details::ReconstructShamirRobust(shamir_shares, alphas, 1);
 
   /* pe is a pair of polynomials. The first is the original polynomial used for
    * generating the shares and the second is a polynomial whose roots tell which
@@ -87,18 +93,18 @@ int main() {
    *
    * The secret is embedded in the constant term.
    */
-  std::cout << pe[0].Evaluate(Fp(0)) << "\n";
+  std::cout << std::get<0>(pe).Evaluate(Fp(0)) << "\n";
 
   /* This will be 0, indicating that the share corresponding to party 3 had an
    * error.
    */
-  std::cout << pe[1].Evaluate(Fp(3)) << "\n";
+  std::cout << std::get<1>(pe).Evaluate(Fp(3)) << "\n";
 
   /* Lastly, if there's too many errors, then correction is not possible
    */
   shamir_shares[1] = Fp(22);
   try {
-    scl::ReconstructShamirRobust(shamir_shares, 1);
+    recon.Reconstruct(shamir_shares);
   } catch (std::logic_error& e) {
     std::cout << e.what() << "\n";
   }

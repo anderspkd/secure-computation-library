@@ -46,7 +46,7 @@ class BeaverMulFinalize
  public:
   BeaverMulFinalize(Triple t) : mTriple(t){};
 
-  FF Finalize(Context& ctx) {
+  FF Finalize(Context& ctx) const {
     scl::Vec<FF> ed0(2);
     scl::Vec<FF> ed1(2);
     ctx.network.Party(0)->Recv(ed0);
@@ -56,10 +56,11 @@ class BeaverMulFinalize
     auto d = ed0[1] + ed1[1];
 
     if (ctx.id == 0) {
+      // constant addition
       return e * d - e * mTriple.b - d * mTriple.a + mTriple.c;
-    } else {
-      return -e * mTriple.b - d * mTriple.a + mTriple.c;
     }
+
+    return -e * mTriple.b - d * mTriple.a + mTriple.c;
   };
 
  private:

@@ -57,8 +57,10 @@ struct u256 {
 
 //  https://cp-algorithms.com/algebra/montgomery_multiplication.html
 u256 MultiplyFull(const u128 x, const u128 y) {
-  u64 a = x >> 64, b = x;
-  u64 c = y >> 64, d = y;
+  u64 a = x >> 64;
+  u64 b = x;
+  u64 c = y >> 64;
+  u64 d = y;
   // (a*2^64 + b) * (c*2^64 + d) =
   // (a*c) * 2^128 + (a*d + b*c)*2^64 + (b*d)
   u128 ac = (u128)a * c;
@@ -66,9 +68,9 @@ u256 MultiplyFull(const u128 x, const u128 y) {
   u128 bc = (u128)b * c;
   u128 bd = (u128)b * d;
 
-  u128 carry = (u128)(u64)ad + (u128)(u64)bc + (bd >> 64u);
-  u128 high = ac + (ad >> 64u) + (bc >> 64u) + (carry >> 64u);
-  u128 low = (ad << 64u) + (bc << 64u) + bd;
+  u128 carry = (u128)(u64)ad + (u128)(u64)bc + (bd >> 64U);
+  u128 high = ac + (ad >> 64U) + (bc >> 64U) + (carry >> 64U);
+  u128 low = (ad << 64U) + (bc << 64U) + bd;
 
   return {high, low};
 }
@@ -115,8 +117,8 @@ std::string scl::details::FieldToString<Mersenne127>(const u128& in) {
 }
 
 template <>
-void scl::details::FieldFromString<Mersenne127>(u128& dest,
-                                                const std::string& str) {
-  dest = FromHexString<u128>(str);
-  dest = dest % p;
+void scl::details::FieldFromString<Mersenne127>(u128& out,
+                                                const std::string& src) {
+  out = FromHexString<u128>(src);
+  out = out % p;
 }

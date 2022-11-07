@@ -76,7 +76,7 @@ class Number {
    * @brief Move constructor for a Number.
    * @param number the Number that is moved
    */
-  Number(Number&& number);
+  Number(Number&& number) noexcept;
 
   /**
    * @brief Copy assignment from a Number.
@@ -94,7 +94,7 @@ class Number {
    * @param number the Number that is moved
    * @return this
    */
-  Number& operator=(Number&& number) {
+  Number& operator=(Number&& number) noexcept {
     swap(*this, number);
     return *this;
   };
@@ -257,42 +257,47 @@ class Number {
    */
   int Compare(const Number& number) const;
 
-#define SCL_CMP_FUN_NN(op)                                        \
-  friend bool operator op(const Number& lhs, const Number& rhs) { \
-    return lhs.Compare(rhs) op 0;                                 \
-  }
-
   /**
    * @brief Equality of two numbers.
    */
-  SCL_CMP_FUN_NN(==);
+  friend bool operator==(const Number& lhs, const Number& rhs) {
+    return lhs.Compare(rhs) == 0;
+  };
 
   /**
    * @brief In-equality of two numbers.
    */
-  SCL_CMP_FUN_NN(!=);
+  friend bool operator!=(const Number& lhs, const Number& rhs) {
+    return lhs.Compare(rhs) != 0;
+  };
 
   /**
    * @brief Strictly less-than of two numbers.
    */
-  SCL_CMP_FUN_NN(<);
+  friend bool operator<(const Number& lhs, const Number& rhs) {
+    return lhs.Compare(rhs) < 0;
+  };
 
   /**
    * @brief Less-than-or-equal of two numbers.
    */
-  SCL_CMP_FUN_NN(<=);
+  friend bool operator<=(const Number& lhs, const Number& rhs) {
+    return lhs.Compare(rhs) <= 0;
+  };
 
   /**
    * @brief Strictly greater-than of two numbers.
    */
-  SCL_CMP_FUN_NN(>);
+  friend bool operator>(const Number& lhs, const Number& rhs) {
+    return lhs.Compare(rhs) > 0;
+  };
 
   /**
    * @brief Greater-than-or-equal of two numbers.
    */
-  SCL_CMP_FUN_NN(>=);
-
-#undef SCL_CMP_FUN_NN
+  friend bool operator>=(const Number& lhs, const Number& rhs) {
+    return lhs.Compare(rhs) >= 0;
+  };
 
   /**
    * @brief Get the size of this Number in bits.

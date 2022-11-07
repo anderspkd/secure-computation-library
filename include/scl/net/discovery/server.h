@@ -53,8 +53,9 @@ class DiscoveryServer {
    */
   DiscoveryServer(int discovery_port, std::size_t number_of_parties)
       : mPort(discovery_port), mNumberOfParties(number_of_parties) {
-    if (number_of_parties > MAX_DISCOVER_PARTIES)
+    if (number_of_parties > MAX_DISCOVER_PARTIES) {
       throw std::invalid_argument("number_of_parties exceeds max");
+    }
   };
 
   /**
@@ -69,7 +70,7 @@ class DiscoveryServer {
    * @param me ID, port and hostname information for this party
    * @return A network configuration.
    */
-  NetworkConfig Run(const Party& me);
+  NetworkConfig Run(const Party& me) const;
 
   class CollectIdsAndPorts;
   class SendNetworkConfig;
@@ -107,7 +108,7 @@ class DiscoveryServer::CollectIdsAndPorts
   /**
    * @brief Constructor.
    */
-  CollectIdsAndPorts(std::vector<std::string> hostnames)
+  CollectIdsAndPorts(const std::vector<std::string>& hostnames)
       : mHostnames(hostnames){};
 
   /**
