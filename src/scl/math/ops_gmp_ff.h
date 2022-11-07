@@ -36,11 +36,11 @@ namespace details {
 #define BITS_PER_LIMB static_cast<std::size_t>(mp_bits_per_limb)
 #define BYTES_PER_LIMB sizeof(mp_limb_t)
 
-#define SCL_COPY(out, in, size)              \
-  do {                                       \
-    for (std::size_t i = 0; i < size; ++i) { \
-      *((out) + i) = *((in) + i);            \
-    }                                        \
+#define SCL_COPY(out, in, size)                \
+  do {                                         \
+    for (std::size_t i = 0; i < (size); ++i) { \
+      *((out) + i) = *((in) + i);              \
+    }                                          \
   } while (0)
 
 /**
@@ -198,8 +198,8 @@ inline bool TestBit(const mp_limb_t* v, std::size_t pos) {
 template <std::size_t N>
 void ModExp(mp_limb_t* out, const mp_limb_t* x, const mp_limb_t* e,
             const mp_limb_t* mod, const mp_limb_t* np) {
-  auto n = mpn_scan1(e, N * BITS_PER_LIMB);
-  for (int i = n - 1; i >= 0; --i) {
+  auto n = mpn_sizeinbase(e, N, 2);
+  for (std::size_t i = n; i-- > 0;) {
     ModSqr<N>(out, out, mod, np);
     if (TestBit(e, i)) {
       ModMul<N>(out, x, mod, np);
@@ -262,25 +262,29 @@ std::string ToString(const mp_limb_t* val, const mp_limb_t* mod,
     }
   }
   auto s = ss.str();
+
   // trim leading 0s
   auto n = FindFirstNonZero(s);
   if (n > 0) {
     s = s.substr(n, s.length() - 1);
   }
+
   if (s.length()) {
     return s;
-  } else {
-    return "0";
   }
+
+  return "0";
 }
 
 template <std::size_t N>
 void FromString(mp_limb_t* out, const mp_limb_t* mod, const std::string& str) {
   if (str.length()) {
-    auto n = str.length();
-    if (n > 64) {
+    auto n_ = str.length();
+    if (n_ > 64) {
       throw std::invalid_argument("hex string too large to parse");
     }
+    // to silence conversion errors. Safe to do because n_ is pretty small.
+    int n = static_cast<int>(n_);
 
     std::string s = str;
     if (n % 2) {
@@ -288,10 +292,10 @@ void FromString(mp_limb_t* out, const mp_limb_t* mod, const std::string& str) {
       n++;
     }
 
-    const auto m = 2 * BYTES_PER_LIMB;
+    const auto m = static_cast<int>(2 * BYTES_PER_LIMB);
     int c = (n - 1) / m;
     auto beg = s.begin();
-    for (std::size_t i = 0; i < n && c >= 0; i += m) {
+    for (int i = 0; i < n && c >= 0; i += m) {
       auto end = std::min(n, i + m);
       out[c--] = FromHexString<mp_limb_t>(std::string(beg + i, beg + end));
     }
@@ -299,7 +303,6 @@ void FromString(mp_limb_t* out, const mp_limb_t* mod, const std::string& str) {
   }
 }
 
-#undef SCL_COPY
 #undef BITS_PER_LIMB
 #undef BYTES_PER_LIMB
 

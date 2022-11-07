@@ -37,9 +37,9 @@ void scl::details::SCL_AcceptConnections(
   // Act as server for all clients with an ID strictly greater than ours.
   auto my_id = config.Id();
   auto n = config.NetworkSize() - my_id - 1;
-  if (n) {
+  if (n > 0) {
     auto port = config.GetParty(my_id).port;
-    int ssock = scl::details::CreateServerSocket(port, n);
+    int ssock = scl::details::CreateServerSocket(port, static_cast<int>(n));
     for (std::size_t i = config.Id() + 1; i < config.NetworkSize(); ++i) {
       auto ac = scl::details::AcceptConnection(ssock);
       std::shared_ptr<scl::Channel> channel =

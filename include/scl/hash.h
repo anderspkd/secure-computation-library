@@ -130,13 +130,17 @@ Hash<B> &Hash<B>::Update(const unsigned char *bytes, std::size_t nbytes) {
   const unsigned char *p = bytes;
 
   if (nbytes < old_tail) {
-    while (nbytes--) mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
+    while (nbytes-- > 0) {
+      mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
+    }
     return *this;
   }
 
-  if (old_tail) {
+  if (old_tail != 0) {
     nbytes -= old_tail;
-    while (old_tail--) mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
+    while (old_tail-- != 0) {
+      mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
+    }
 
     mState[mWordIndex] ^= mSaved;
     mByteIndex = 0;
@@ -167,7 +171,9 @@ Hash<B> &Hash<B>::Update(const unsigned char *bytes, std::size_t nbytes) {
     p += sizeof(uint64_t);
   }
 
-  while (tail--) mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
+  while (tail-- > 0) {
+    mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
+  }
 
   return *this;
 }
@@ -194,7 +200,9 @@ auto Hash<B>::Finalize() -> DigestType {
 
   // truncate
   DigestType digest = {0};
-  for (std::size_t i = 0; i < digest.size(); ++i) digest[i] = mStateBytes[i];
+  for (std::size_t i = 0; i < digest.size(); ++i) {
+    digest[i] = mStateBytes[i];
+  }
 
   return digest;
 }
@@ -208,7 +216,9 @@ template <typename D>
 std::string DigestToString(const D &digest) {
   std::stringstream ss;
   ss << std::setw(2) << std::setfill('0') << std::hex;
-  for (const auto &c : digest) ss << (int)c;
+  for (const auto &c : digest) {
+    ss << (int)c;
+  }
   return ss.str();
 }
 

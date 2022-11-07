@@ -18,6 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <array>
 #include <sstream>
 
 #include "./ops_gmp_ff.h"
@@ -94,24 +95,24 @@ void scl::details::FieldInvert<Field>(Elem& out) {
 }
 
 template <>
-bool scl::details::FieldEqual<Field>(const Elem& first, const Elem& second) {
-  return CompareValues<NUM_LIMBS>(PTR(first), PTR(second)) == 0;
+bool scl::details::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
+  return CompareValues<NUM_LIMBS>(PTR(in1), PTR(in2)) == 0;
 }
 
 template <>
-void scl::details::FieldFromBytes<Field>(Elem& out, const unsigned char* src) {
-  ValueFromBytes<NUM_LIMBS>(PTR(out), src);
+void scl::details::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
+  ValueFromBytes<NUM_LIMBS>(PTR(dest), src);
 }
 
 template <>
-std::string scl::details::FieldToString<Field>(const Elem& element) {
-  return ToString<NUM_LIMBS>(PTR(element), kPrime, kMontyN);
+std::string scl::details::FieldToString<Field>(const Elem& in) {
+  return ToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
 }
 
 template <>
-void scl::details::FieldFromString<Field>(Elem& out, const std::string& str) {
+void scl::details::FieldFromString<Field>(Elem& out, const std::string& src) {
   out = {0};
-  FromString<NUM_LIMBS>(PTR(out), kPrime, str);
+  FromString<NUM_LIMBS>(PTR(out), kPrime, src);
 }
 
 bool scl::SCL_FF_Extras<Field>::IsSmaller(

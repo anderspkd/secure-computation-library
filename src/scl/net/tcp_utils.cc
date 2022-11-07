@@ -76,19 +76,19 @@ scl::details::AcceptedConnection scl::details::AcceptConnection(
       ::accept(server_socket, ac.socket_info.get(), (socklen_t*)&addrsize);
   if (ac.socket < 0) {
     SCL_THROW_SYS_ERROR("could not accept connection");
-  } else {
-    return ac;
   }
+
+  return ac;
 }
 
 std::string scl::details::GetAddress(
-    scl::details::AcceptedConnection connection) {
+    const scl::details::AcceptedConnection& connection) {
   struct sockaddr_in* s =
       reinterpret_cast<struct sockaddr_in*>(connection.socket_info.get());
   return inet_ntoa(s->sin_addr);
 }
 
-int scl::details::ConnectAsClient(std::string hostname, int port) {
+int scl::details::ConnectAsClient(const std::string& hostname, int port) {
   using namespace std::chrono_literals;
 
   int sock = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -101,26 +101,30 @@ int scl::details::ConnectAsClient(std::string hostname, int port) {
   addr.sin_port = ::htons(port);
 
   int err = ::inet_pton(AF_INET, hostname.c_str(), &(addr.sin_addr));
+
   if (err == 0) {
     throw std::runtime_error("invalid hostname");
-  } else if (err < 0) {
+  }
+
+  if (err < 0) {
     SCL_THROW_SYS_ERROR("invalid address family");
   }
 
-  while (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0)
+  while (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
     std::this_thread::sleep_for(300ms);
+  }
 
   return sock;
 }
 
 int scl::details::CloseSocket(int socket) { return ::close(socket); }
 
-int scl::details::ReadFromSocket(int socket, unsigned char* dst,
-                                 std::size_t n) {
+ssize_t scl::details::ReadFromSocket(int socket, unsigned char* dst,
+                                     std::size_t n) {
   return ::read(socket, dst, n);
 }
 
-int scl::details::WriteToSocket(int socket, const unsigned char* src,
-                                std::size_t n) {
+ssize_t scl::details::WriteToSocket(int socket, const unsigned char* src,
+                                    std::size_t n) {
   return ::write(socket, src, n);
 }

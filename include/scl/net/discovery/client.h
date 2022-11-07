@@ -41,14 +41,14 @@ class DiscoveryClient {
    * @param discovery_port the port of the discovery server
    * @param discovery_hostname the hostname of the discovery server
    */
-  DiscoveryClient(std::string discovery_hostname, int discovery_port)
+  DiscoveryClient(const std::string& discovery_hostname, int discovery_port)
       : mHostname(discovery_hostname), mPort(discovery_port){};
 
   /**
    * @brief Create a new client in a discovery protocol.
    * @param discovery_hostname the hostname of the discovery server
    */
-  DiscoveryClient(std::string discovery_hostname)
+  DiscoveryClient(const std::string& discovery_hostname)
       : DiscoveryClient(discovery_hostname, DEFAULT_DISCOVERY_PORT){};
 
   /**
@@ -57,7 +57,7 @@ class DiscoveryClient {
    * @param port the port of this party
    * @return A network configuration.
    */
-  NetworkConfig Run(unsigned id, int port);
+  NetworkConfig Run(int id, int port) const;
 
   class SendIdAndPort;
   class ReceiveNetworkConfig;
@@ -77,15 +77,16 @@ class DiscoveryClient::SendIdAndPort
   /**
    * @brief Constructor.
    */
-  SendIdAndPort(unsigned id, int port) : mId(id), mPort(port){};
+  SendIdAndPort(int id, int port) : mId(id), mPort(port){};
 
   /**
    * @brief Run this protocol step.
    */
-  DiscoveryClient::ReceiveNetworkConfig Run(std::shared_ptr<Channel> ctx);
+  DiscoveryClient::ReceiveNetworkConfig Run(
+      const std::shared_ptr<Channel>& ctx) const;
 
  private:
-  unsigned mId;
+  int mId;
   int mPort;
 };
 
@@ -99,15 +100,15 @@ class DiscoveryClient::ReceiveNetworkConfig
   /**
    * @brief Constructor.
    */
-  ReceiveNetworkConfig(unsigned id) : mId(id){};
+  ReceiveNetworkConfig(int id) : mId(id){};
 
   /**
    * @brief Finalize the discovery protocol.
    */
-  NetworkConfig Finalize(std::shared_ptr<Channel> ctx);
+  NetworkConfig Finalize(const std::shared_ptr<Channel>& ctx) const;
 
  private:
-  unsigned mId;
+  int mId;
 };
 
 }  // namespace scl

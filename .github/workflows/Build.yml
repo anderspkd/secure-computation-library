@@ -1,9 +1,14 @@
 name: Build
 
-on: [push]
+on:
+  push:
+    branches:
+      - '*'
+      - '!master'
 
 jobs:
   build:
+    name: Release
     runs-on: ubuntu-latest
 
     steps:

@@ -27,7 +27,7 @@
 
 using Client = scl::DiscoveryClient;
 
-scl::NetworkConfig Client::Run(unsigned id, int port) {
+scl::NetworkConfig Client::Run(int id, int port) const {
   auto socket = scl::details::ConnectAsClient(mHostname, mPort);
   std::shared_ptr<scl::Channel> server =
       std::make_shared<scl::TcpChannel>(socket);
@@ -37,13 +37,15 @@ scl::NetworkConfig Client::Run(unsigned id, int port) {
 }
 
 Client::ReceiveNetworkConfig Client::SendIdAndPort::Run(
-    std::shared_ptr<scl::Channel> ctx) {
+    const std::shared_ptr<scl::Channel>& ctx) const {
   ctx->Send(mId);
   ctx->Send(mPort);
   return Client::ReceiveNetworkConfig{mId};
 }
 
-static inline std::string ReceiveHostname(std::shared_ptr<scl::Channel> ctx) {
+namespace {
+
+std::string ReceiveHostname(const std::shared_ptr<scl::Channel>& ctx) {
   std::size_t len;
   ctx->Recv(len);
   auto buf = std::make_unique<char[]>(len);
@@ -51,8 +53,10 @@ static inline std::string ReceiveHostname(std::shared_ptr<scl::Channel> ctx) {
   return std::string(buf.get(), buf.get() + len);
 }
 
+}  // namespace
+
 scl::NetworkConfig Client::ReceiveNetworkConfig::Finalize(
-    std::shared_ptr<scl::Channel> ctx) {
+    const std::shared_ptr<scl::Channel>& ctx) const {
   std::size_t number_of_parties;
   ctx->Recv(number_of_parties);
 

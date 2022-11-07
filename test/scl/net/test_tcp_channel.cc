@@ -30,11 +30,14 @@ TEST_CASE("TcpChannel", "[network]") {
   SECTION("Connect and Close") {
     auto port = scl_tests::GetPort();
 
-    std::shared_ptr<scl::TcpChannel> client, server;
+    std::shared_ptr<scl::TcpChannel> client;
+    std::shared_ptr<scl::TcpChannel> server;
+
     std::thread clt([&]() {
       int socket = scl::details::ConnectAsClient("0.0.0.0", port);
       client = std::make_shared<scl::TcpChannel>(socket);
     });
+
     std::thread srv([&]() {
       int ssock = scl::details::CreateServerSocket(port, 1);
       auto ac = scl::details::AcceptConnection(ssock);
@@ -58,7 +61,9 @@ TEST_CASE("TcpChannel", "[network]") {
   SECTION("Send Receive") {
     auto port = scl_tests::GetPort();
 
-    std::shared_ptr<scl::TcpChannel> client, server;
+    std::shared_ptr<scl::TcpChannel> client;
+    std::shared_ptr<scl::TcpChannel> server;
+
     std::thread clt([&]() {
       int socket = scl::details::ConnectAsClient("0.0.0.0", port);
       client = std::make_shared<scl::TcpChannel>(socket);
@@ -79,8 +84,12 @@ TEST_CASE("TcpChannel", "[network]") {
     unsigned char recv[200] = {0};
     prg.Next(send, 200);
 
+    REQUIRE(!server->HasData());
+
     client->Send(send, 100);
     client->Send(send + 100, 100);
+
+    REQUIRE(server->HasData());
     server->Recv(recv, 20);
     server->Recv(recv + 20, 180);
 
@@ -90,7 +99,9 @@ TEST_CASE("TcpChannel", "[network]") {
   SECTION("Recv from closed") {
     auto port = scl_tests::GetPort();
 
-    std::shared_ptr<scl::TcpChannel> client, server;
+    std::shared_ptr<scl::TcpChannel> client;
+    std::shared_ptr<scl::TcpChannel> server;
+
     std::thread clt([&]() {
       int socket = scl::details::ConnectAsClient("0.0.0.0", port);
       client = std::make_shared<scl::TcpChannel>(socket);

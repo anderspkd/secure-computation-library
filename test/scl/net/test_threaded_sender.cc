@@ -32,7 +32,8 @@ TEST_CASE("ThreadedSender", "[network]") {
   SECTION("Connect and send") {
     auto port = scl_tests::GetPort();
 
-    std::shared_ptr<scl::Channel> client, server;
+    std::shared_ptr<scl::Channel> client;
+    std::shared_ptr<scl::Channel> server;
 
     std::thread clt([&]() {
       int socket = scl::details::ConnectAsClient("0.0.0.0", port);
@@ -54,8 +55,22 @@ TEST_CASE("ThreadedSender", "[network]") {
     unsigned char recv[200] = {0};
     prg.Next(send, 200);
 
+    REQUIRE(!server->HasData());
+
     client->Send(send, 100);
     client->Send(send + 100, 100);
+
+    // because the sender returns immediately, there might not be data
+    // available, so we will try a couple of times before failing.
+    {
+      using namespace std::chrono_literals;
+      auto c = 0;
+      while (c < 10 && !server->HasData()) {
+        std::this_thread::sleep_for(100ms);
+        c++;
+      }
+    }
+    REQUIRE(server->HasData());
 
     server->Recv(recv, 20);
     server->Recv(recv + 20, 180);

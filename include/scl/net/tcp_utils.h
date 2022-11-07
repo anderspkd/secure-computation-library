@@ -64,7 +64,7 @@ AcceptedConnection AcceptConnection(int server_socket);
 /**
  * @brief Extra the hostname of an accepted connection.
  */
-std::string GetAddress(AcceptedConnection connection);
+std::string GetAddress(const AcceptedConnection& connection);
 
 /**
  * @brief Connect in client mode.
@@ -72,7 +72,7 @@ std::string GetAddress(AcceptedConnection connection);
  * @param port the port of the server
  * @return a socket.
  */
-int ConnectAsClient(std::string hostname, int port);
+int ConnectAsClient(const std::string& hostname, int port);
 
 /**
  * @brief Close a socket.
@@ -82,12 +82,12 @@ int CloseSocket(int socket);
 /**
  * @brief Read from a socket.
  */
-int ReadFromSocket(int socket, unsigned char* dst, std::size_t n);
+ssize_t ReadFromSocket(int socket, unsigned char* dst, std::size_t n);
 
 /**
  * @brief Write to a socket.
  */
-int WriteToSocket(int socket, const unsigned char* src, std::size_t n);
+ssize_t WriteToSocket(int socket, const unsigned char* src, std::size_t n);
 
 }  // namespace details
 }  // namespace scl

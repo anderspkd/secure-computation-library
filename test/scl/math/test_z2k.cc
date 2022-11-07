@@ -82,7 +82,7 @@ TEMPLATE_TEST_CASE("Z2k", "[math]", Z2k1, Z2k2) {
 
 #define RANDOM_INVERTIBLE(var) \
   TestType var;                \
-  while (var.Lsb() == 0) var = TestType::Random(prg)
+  while ((var).Lsb() == 0) (var) = TestType::Random(prg)
 
   SECTION("inverses") {
     RANDOM_INVERTIBLE(a);

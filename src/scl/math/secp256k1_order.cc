@@ -20,6 +20,7 @@
 
 #include <gmp.h>
 
+#include <array>
 #include <cstddef>
 
 #include "./ops_gmp_ff.h"
@@ -94,24 +95,24 @@ void scl::details::FieldInvert<Field>(Elem& out) {
 }
 
 template <>
-bool scl::details::FieldEqual<Field>(const Elem& first, const Elem& second) {
-  return CompareValues<NUM_LIMBS>(PTR(first), PTR(second)) == 0;
+bool scl::details::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
+  return CompareValues<NUM_LIMBS>(PTR(in1), PTR(in2)) == 0;
 }
 
 template <>
-void scl::details::FieldFromBytes<Field>(Elem& out, const unsigned char* src) {
-  ValueFromBytes<NUM_LIMBS>(PTR(out), src);
+void scl::details::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
+  ValueFromBytes<NUM_LIMBS>(PTR(dest), src);
 }
 
 template <>
-std::string scl::details::FieldToString<Field>(const Elem& element) {
-  return ToString<NUM_LIMBS>(PTR(element), kPrime, kMontyN);
+std::string scl::details::FieldToString<Field>(const Elem& in) {
+  return ToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
 }
 
 template <>
-void scl::details::FieldFromString<Field>(Elem& out, const std::string& str) {
+void scl::details::FieldFromString<Field>(Elem& out, const std::string& src) {
   out = {0};
-  FromString<NUM_LIMBS>(PTR(out), kPrime, str);
+  FromString<NUM_LIMBS>(PTR(out), kPrime, src);
 }
 
 std::size_t scl::SCL_FF_Extras<Field>::HigestSetBit(
@@ -125,6 +126,18 @@ bool scl::SCL_FF_Extras<Field>::TestBit(const scl::FF<Field>& element,
   const auto limb = pos / bits_per_limb;
   const auto limb_pos = pos % bits_per_limb;
   return ((element.mValue[limb] >> limb_pos) & 1) == 1;
+}
+
+scl::FF<Field> scl::SCL_FF_Extras<Field>::FromMonty(
+    const scl::FF<Field>& element) {
+  mp_limb_t padded[2 * NUM_LIMBS] = {0};
+  SCL_COPY(padded, PTR(element.mValue), NUM_LIMBS);
+  details::Redc<NUM_LIMBS>(padded, kPrime, kMontyN);
+
+  scl::FF<Field> r;
+  SCL_COPY(PTR(r.mValue), padded, NUM_LIMBS);
+
+  return r;
 }
 
 #undef ONE

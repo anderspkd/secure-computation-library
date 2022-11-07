@@ -24,8 +24,9 @@
 
 template <>
 std::string scl::details::ToHexString(const __uint128_t& v) {
+  std::string str;
   if (v == 0) {
-    return "0";
+    str = "0";
   } else {
     std::stringstream ss;
     auto top = static_cast<std::uint64_t>(v >> 64);
@@ -35,6 +36,7 @@ std::string scl::details::ToHexString(const __uint128_t& v) {
       ss << top;
     }
     ss << bot;
-    return ss.str();
+    str = ss.str();
   }
+  return str;
 }

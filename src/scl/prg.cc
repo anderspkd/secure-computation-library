@@ -30,19 +30,19 @@ using block_t = __m128i;
 
 using std::size_t;
 
-#define DO_ENC_BLOCK(m, k)              \
-  do {                                  \
-    m = _mm_xor_si128(m, k[0]);         \
-    m = _mm_aesenc_si128(m, k[1]);      \
-    m = _mm_aesenc_si128(m, k[2]);      \
-    m = _mm_aesenc_si128(m, k[3]);      \
-    m = _mm_aesenc_si128(m, k[4]);      \
-    m = _mm_aesenc_si128(m, k[5]);      \
-    m = _mm_aesenc_si128(m, k[6]);      \
-    m = _mm_aesenc_si128(m, k[7]);      \
-    m = _mm_aesenc_si128(m, k[8]);      \
-    m = _mm_aesenc_si128(m, k[9]);      \
-    m = _mm_aesenclast_si128(m, k[10]); \
+#define DO_ENC_BLOCK(m, k)                  \
+  do {                                      \
+    (m) = _mm_xor_si128(m, (k)[0]);         \
+    (m) = _mm_aesenc_si128(m, (k)[1]);      \
+    (m) = _mm_aesenc_si128(m, (k)[2]);      \
+    (m) = _mm_aesenc_si128(m, (k)[3]);      \
+    (m) = _mm_aesenc_si128(m, (k)[4]);      \
+    (m) = _mm_aesenc_si128(m, (k)[5]);      \
+    (m) = _mm_aesenc_si128(m, (k)[6]);      \
+    (m) = _mm_aesenc_si128(m, (k)[7]);      \
+    (m) = _mm_aesenc_si128(m, (k)[8]);      \
+    (m) = _mm_aesenc_si128(m, (k)[9]);      \
+    (m) = _mm_aesenclast_si128(m, (k)[10]); \
   } while (0)
 
 #define AES_128_key_exp(k, rcon) \
@@ -97,18 +97,24 @@ static inline auto create_mask(const long counter) {
 }
 
 void scl::PRG::Next(byte_t* dest, size_t nbytes) {
-  if (!nbytes) return;
+  if (nbytes == 0) {
+    return;
+  }
 
   size_t nblocks = nbytes / BlockSize();
 
-  if (nbytes % BlockSize()) nblocks++;
+  if ((nbytes % BlockSize()) != 0) {
+    nblocks++;
+  }
 
   block_t mask = create_mask(mCounter);
   byte_t* out = (byte_t*)malloc(nblocks * BlockSize());
   byte_t* p = out;
 
   // LCOV_EXCL_START
-  if (!out) throw std::runtime_error("Could not allocate memory for PRG.");
+  if (out == nullptr) {
+    throw std::runtime_error("Could not allocate memory for PRG.");
+  }
   // LCOV_EXCL_STOP
 
   for (size_t i = 0; i < nblocks; i++) {

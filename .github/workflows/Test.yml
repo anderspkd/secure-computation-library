@@ -1,38 +1,39 @@
 name: Test
 
-on: [push]
+on:
+  push:
+    branches:
+      - '*'
+      - '!master'
 
 env:
   BUILD_TYPE: Debug
 
 jobs:
   build:
+    name: Coverage and Linting
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Setup catch2
+    - name: Setup
       run: |
-        sudo apt-get install -y lcov
+        sudo apt-get install -y lcov bear
         curl -L https://github.com/catchorg/Catch2/archive/v2.13.0.tar.gz -o c.tar.gz
         tar xvf c.tar.gz
         cd Catch2-2.13.0/
-        cmake -Bbuild -H. -DBUILD_TESTING=OFF
-        sudo cmake --build build/ --target install
+        cmake -B catch -DBUILD_TESTING=OFF
+        cmake --build catch
+        sudo cmake --install catch
 
-    - name: Create build directory
-      run: cmake -E make_directory ${{runner.workspace}}/build
-
-    - name: Configure CMake
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+    - name: CMake
+      run: cmake -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: cmake --build . --config $BUILD_TYPE
+      run: bear make -s -j4
 
     - name: Test
       working-directory: ${{runner.workspace}}/build
@@ -40,12 +41,17 @@ jobs:
       run: ctest -C $BUILD_TYPE
 
     - name: Coverage
-      working-directory: ${{runner.workspace}}/build
       shell: bash
       run: |
-        make coverage
-        lcov --summary coverage.info >> summary.txt
+        cmake --build ${{runner.workspace}}/build --target coverage
+        lcov --summary ${{runner.workspace}}/build/coverage.info >> ${{runner.workspace}}/summary.txt
+        ./scripts/check_coverage.py ${{runner.workspace}}/summary.txt
 
-    - name: Check
+    - name: Lint
       shell: bash
-      run: ./scripts/check_coverage.py ${{runner.workspace}}/build/summary.txt
+      run: |
+        find include/ src/ test/ -type f \( -iname "*.h" -o -iname "*.cc" \) \
+        -exec clang-tidy -p ${{runner.workspace}}/build/compile_commands.json --quiet {} \; 1>> lint.txt 2>/dev/null
+        cat lint.txt
+        test ! -s lint.txt
+

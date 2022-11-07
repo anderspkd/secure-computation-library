@@ -18,10 +18,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _TEST_SCL_NET_UTIL_H
-#define _TEST_SCL_NET_UTIL_H
+#ifndef TEST_SCL_NET_UTIL_H
+#define TEST_SCL_NET_UTIL_H
 
-#include <cstddef>
 namespace scl_tests {
 
 /**
@@ -48,4 +47,4 @@ bool BufferEquals(const unsigned char* a, const unsigned char* b, int n);
 
 }  // namespace scl_tests
 
-#endif /* _TEST_SCL_NET_UTIL_H */
+#endif  // TEST_SCL_NET_UTIL_H

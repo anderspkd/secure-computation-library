@@ -22,11 +22,14 @@
 
 #include <cstring>
 
+// used to silence narrowing conversion errors. x will have type std::size_t
+#define DIFF_T(x) static_cast<std::vector<unsigned char>::difference_type>((x))
+
 void scl::InMemoryChannel::Send(const unsigned char* src, std::size_t n) {
   mOut->PushBack(std::vector<unsigned char>(src, src + n));
 }
 
-int scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
+std::size_t scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
   std::size_t rem = n;
 
   // if there's any leftovers from previous calls to recv, then we retrieve
@@ -34,10 +37,10 @@ int scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
   const auto leftovers = mOverflow.size();
   if (leftovers > 0) {
     const auto to_copy = leftovers > rem ? rem : leftovers;
-    auto data = mOverflow.data();
+    auto* data = mOverflow.data();
     std::memcpy(dst, data, to_copy);
     rem -= to_copy;
-    mOverflow = std::vector<unsigned char>(mOverflow.begin() + to_copy,
+    mOverflow = std::vector<unsigned char>(mOverflow.begin() + DIFF_T(to_copy),
                                            mOverflow.end());
   }
 
@@ -53,8 +56,8 @@ int scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
       const auto leftovers = data.size() - to_copy;
       const auto old_size = mOverflow.size();
       mOverflow.reserve(old_size + leftovers);
-      mOverflow.insert(mOverflow.begin() + old_size, data.begin() + to_copy,
-                       data.end());
+      mOverflow.insert(mOverflow.begin() + DIFF_T(old_size),
+                       data.begin() + DIFF_T(to_copy), data.end());
     }
   }
 

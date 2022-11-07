@@ -18,6 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <array>
 #include <stdexcept>
 
 #include "./secp256k1_extras.h"
@@ -34,9 +35,9 @@ using Point = Curve::ValueType;
 #define POINT_AT_INFINITY Point{{Field{0}, Field{1}, Field{0}}}
 // clang-format on
 
-#define _X(point) (point)[0]
-#define _Y(point) (point)[1]
-#define _Z(point) (point)[2]
+#define GET_X(point) (point)[0]
+#define GET_Y(point) (point)[1]
+#define GET_Z(point) (point)[2]
 
 static const Field kCurveB(7);
 
@@ -66,42 +67,37 @@ void scl::details::CurveSetAffine<Curve>(Point& out, const Field& x,
 }
 
 template <>
-bool scl::details::CurveEqual<Curve>(const Point& in1, const Point& in2) {
-  const auto Z1 = _Z(in1);
-  const auto Z2 = _Z(in2);
-  // (X1, Y1, Z1) eqv (X2, Y2, Z2) <==> (X1 * Z2, Y1 * Z2) == (X2 * Z1, Y2 * Z2)
-  return _X(in1) * Z2 == _X(in2) * Z1 && _Y(in1) * Z2 == _Y(in2) * Z1;
+std::array<Field, 2> scl::details::CurveToAffine<Curve>(const Point& point) {
+  const auto Z = GET_Z(point);
+  return {GET_X(point) / Z, GET_Y(point) / Z};
 }
 
 template <>
-bool scl::details::CurveIsPointAtInfinity<Curve>(const Point& out) {
-  return CurveEqual<Curve>(out, POINT_AT_INFINITY);
+bool scl::details::CurveEqual<Curve>(const Point& in1, const Point& in2) {
+  const auto Z1 = GET_Z(in1);
+  const auto Z2 = GET_Z(in2);
+  // (X1, Y1, Z1) eqv (X2, Y2, Z2) <==> (X1 * Z2, Y1 * Z2) == (X2 * Z1, Y2 * Z2)
+  return GET_X(in1) * Z2 == GET_X(in2) * Z1 &&
+         GET_Y(in1) * Z2 == GET_Y(in2) * Z1;
 }
 
-struct AffinePoint {
-  Field x;
-  Field y;
-};
-
-namespace {
-
-AffinePoint ToAffine(const Point& point) {
-  const auto Z = _Z(point);
-  return {_X(point) / Z, _Y(point) / Z};
+template <>
+bool scl::details::CurveIsPointAtInfinity<Curve>(const Point& point) {
+  return CurveEqual<Curve>(point, POINT_AT_INFINITY);
 }
-
-}  // namespace
 
 template <>
 std::string scl::details::CurveToString<Curve>(const Point& point) {
+  std::string str;
   if (CurveIsPointAtInfinity<Curve>(point)) {
-    return "EC{POINT_AT_INFINITY}";
+    str = "EC{POINT_AT_INFINITY}";
   } else {
-    auto ap = ToAffine(point);
+    auto ap = CurveToAffine<Curve>(point);
     std::stringstream ss;
-    ss << "EC{" << ap.x << ", " << ap.y << "}";
-    return ss.str();
+    ss << "EC{" << ap[0] << ", " << ap[1] << "}";
+    str = ss.str();
   }
+  return str;
 }
 
 template <>
@@ -119,12 +115,12 @@ void scl::details::CurveSetGenerator<Curve>(Point& out) {
 template <>
 void scl::details::CurveDouble<Curve>(Point& out) {
   if (!CurveIsPointAtInfinity<Curve>(out)) {
-    if (_Y(out) == Field::Zero()) {
+    if (GET_Y(out) == Field::Zero()) {
       CurveSetPointAtInfinity<Curve>(out);
     } else if (!CurveIsPointAtInfinity<Curve>(out)) {
-      const auto X = _X(out);
-      const auto Y = _Y(out);
-      const auto Z = _Z(out);
+      const auto X = GET_X(out);
+      const auto Y = GET_Y(out);
+      const auto Z = GET_Z(out);
 
       const auto W = Field(3) * X * X;
       const auto S = Y * Z;
@@ -141,16 +137,16 @@ void scl::details::CurveDouble<Curve>(Point& out) {
 }
 
 template <>
-void scl::details::CurveAdd<Curve>(Point& out, const Point& op) {
+void scl::details::CurveAdd<Curve>(Point& out, const Point& in) {
   if (CurveIsPointAtInfinity<Curve>(out)) {
-    out = op;
-  } else if (!CurveIsPointAtInfinity<Curve>(op)) {
-    const auto X1 = _X(out);
-    const auto Y1 = _Y(out);
-    const auto Z1 = _Z(out);
-    const auto X2 = _X(op);
-    const auto Y2 = _Y(op);
-    const auto Z2 = _Z(op);
+    out = in;
+  } else if (!CurveIsPointAtInfinity<Curve>(in)) {
+    const auto X1 = GET_X(out);
+    const auto Y1 = GET_Y(out);
+    const auto Z1 = GET_Z(out);
+    const auto X2 = GET_X(in);
+    const auto Y2 = GET_Y(in);
+    const auto Z2 = GET_Z(in);
 
     const auto U1 = Y2 * Z1;
     const auto U2 = Y1 * Z2;
@@ -180,16 +176,16 @@ void scl::details::CurveAdd<Curve>(Point& out, const Point& op) {
 
 template <>
 void scl::details::CurveNegate<Curve>(Point& out) {
-  if (_Y(out) == Field::Zero()) {
+  if (GET_Y(out) == Field::Zero()) {
     CurveSetPointAtInfinity<Curve>(out);
   } else {
-    _Y(out).Negate();
+    GET_Y(out).Negate();
   }
 }
 
 template <>
-void scl::details::CurveSubtract<Curve>(Point& out, const Point& op) {
-  Point copy(op);
+void scl::details::CurveSubtract<Curve>(Point& out, const Point& in) {
+  Point copy(in);
   CurveNegate<Curve>(copy);
   CurveAdd<Curve>(out, copy);
 }
@@ -201,7 +197,8 @@ void scl::details::CurveScalarMultiply<Curve>(Point& out,
     const auto n = scalar.BitSize();
     Point res;
     CurveSetPointAtInfinity<Curve>(res);
-    for (int i = n - 1; i >= 0; --i) {
+    // equivalent to for (int i = n - 1; i >= 0; i--)
+    for (auto i = n; i-- > 0;) {
       CurveDouble<Curve>(res);
       if (scalar.TestBit(i)) {
         CurveAdd<Curve>(res, out);
@@ -215,12 +212,13 @@ template <>
 void scl::details::CurveScalarMultiply<Curve>(Point& out,
                                               const FF<Curve::Order>& scalar) {
   if (!CurveIsPointAtInfinity<Curve>(out)) {
-    const auto n = scl::SCL_FF_Extras<Curve::Order>::HigestSetBit(scalar);
+    auto x = scl::SCL_FF_Extras<Curve::Order>::FromMonty(scalar);
+    const auto n = scl::SCL_FF_Extras<Curve::Order>::HigestSetBit(x);
     Point res;
     CurveSetPointAtInfinity<Curve>(res);
-    for (int i = n - 1; i >= 0; --i) {
+    for (auto i = n; i-- > 0;) {
       CurveDouble<Curve>(res);
-      if (scl::SCL_FF_Extras<Curve::Order>::TestBit(scalar, i)) {
+      if (scl::SCL_FF_Extras<Curve::Order>::TestBit(x, i)) {
         CurveAdd<Curve>(res, out);
       }
     }
@@ -232,9 +230,9 @@ void scl::details::CurveScalarMultiply<Curve>(Point& out,
 #define POINT_AT_INFINITY_FLAG 0x02
 #define SELECT_SMALLER_FLAG 0x01
 
-#define IS_COMPRESSED(flags) (flags & COMPRESSED_FLAG)
-#define IS_POINT_AT_INFINITY(flags) (flags & POINT_AT_INFINITY_FLAG)
-#define SELECT_SMALLER(flags) (flags & SELECT_SMALLER_FLAG)
+#define IS_COMPRESSED(flags) ((flags)&COMPRESSED_FLAG)
+#define IS_POINT_AT_INFINITY(flags) ((flags)&POINT_AT_INFINITY_FLAG)
+#define SELECT_SMALLER(flags) ((flags)&SELECT_SMALLER_FLAG)
 
 namespace {
 
@@ -272,9 +270,9 @@ void scl::details::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
       auto smaller = IsSmaller(y, yn);
       auto select_smaller = SELECT_SMALLER(flags);
       if (smaller) {
-        out[1] = select_smaller ? y : yn;
+        out[1] = select_smaller == 0 ? yn : y;
       } else {
-        out[1] = select_smaller ? yn : y;
+        out[1] = select_smaller == 0 ? y : yn;
       }
     } else {
       out[0] = Field::Read(src + 1);
@@ -284,41 +282,43 @@ void scl::details::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
   }
 }
 
-#define MARK_COMPRESSED(buf) (*buf |= COMPRESSED_FLAG)
-#define MARK_POINT_AT_INFINITY(buf) (*buf |= POINT_AT_INFINITY_FLAG)
-#define MARK_SELECT_SMALLER(buf) (*buf |= SELECT_SMALLER_FLAG)
+#define MARK_COMPRESSED(buf) (*(buf) |= COMPRESSED_FLAG)
+#define MARK_POINT_AT_INFINITY(buf) (*(buf) |= POINT_AT_INFINITY_FLAG)
+#define MARK_SELECT_SMALLER(buf) (*(buf) |= SELECT_SMALLER_FLAG)
 
 template <>
-void scl::details::CurveToBytes<Curve>(unsigned char* dest, const Point& point,
+void scl::details::CurveToBytes<Curve>(unsigned char* dest, const Point& in,
                                        bool compress) {
   // Make sure flag byte is zeroed.
   *dest = 0;
 
   // if point is compressed, mark it as such.
-  if (compress) MARK_COMPRESSED(dest);
+  if (compress) {
+    MARK_COMPRESSED(dest);
+  }
 
-  if (CurveIsPointAtInfinity<Curve>(point)) {
+  if (CurveIsPointAtInfinity<Curve>(in)) {
     MARK_POINT_AT_INFINITY(dest);
     // zero rest of the buffer to ensure we can always safely send the right
     // amount of bytes.
     std::memset(dest + 1, 0, compress ? 32 : 64);
   } else {
-    const auto ap = ToAffine(point);
+    const auto ap = CurveToAffine<Curve>(in);
     // if compression is used, we indicate a bit indicating which of {y, -y} is
     // the smaller, and the only write the x coordinate. Otherwise we write both
     // x and y.
     if (compress) {
       // include a flag which indicates which of {y, -y} is the smaller.
-      const auto y = ap.y;
+      const auto y = ap[1];
       const auto yn = y.Negated();
 
       if (IsSmaller(y, yn)) {
         MARK_SELECT_SMALLER(dest);
       }
-      ap.x.Write(dest + 1);
+      ap[0].Write(dest + 1);
     } else {
-      ap.x.Write(dest + 1);
-      ap.y.Write(dest + 1 + Field::ByteSize());
+      ap[0].Write(dest + 1);
+      ap[1].Write(dest + 1 + Field::ByteSize());
     }
   }
 }

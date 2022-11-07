@@ -26,7 +26,7 @@
 
 TEST_CASE("Config", "[network]") {
   SECTION("From file") {
-    auto filename = SCL_TEST_DATA_DIR "3_parties.txt";
+    const auto* filename = SCL_TEST_DATA_DIR "3_parties.txt";
     auto cfg = scl::NetworkConfig::Load(0, filename);
 
     REQUIRE(cfg.NetworkSize() == 3);
@@ -41,22 +41,22 @@ TEST_CASE("Config", "[network]") {
   }
 
   SECTION("Invalid file") {
-    auto invalid_empty = SCL_TEST_DATA_DIR "invalid_no_entries.txt";
+    const auto* invalid_empty = SCL_TEST_DATA_DIR "invalid_no_entries.txt";
     REQUIRE_THROWS_MATCHES(scl::NetworkConfig::Load(0, invalid_empty),
                            std::invalid_argument,
                            Catch::Matchers::Message("n cannot be zero"));
 
-    auto valid = SCL_TEST_DATA_DIR "3_parties.txt";
+    const auto* valid = SCL_TEST_DATA_DIR "3_parties.txt";
     REQUIRE_THROWS_MATCHES(scl::NetworkConfig::Load(4, valid),
                            std::invalid_argument,
                            Catch::Matchers::Message("invalid id"));
 
-    auto invalid_entry = SCL_TEST_DATA_DIR "invalid_entry.txt";
+    const auto* invalid_entry = SCL_TEST_DATA_DIR "invalid_entry.txt";
     REQUIRE_THROWS_MATCHES(
         scl::NetworkConfig::Load(0, invalid_entry), std::invalid_argument,
         Catch::Matchers::Message("invalid entry in config file"));
 
-    auto invalid_non_existing_file = "";
+    const auto* invalid_non_existing_file = "";
     REQUIRE_THROWS_MATCHES(
         scl::NetworkConfig::Load(0, invalid_non_existing_file),
         std::invalid_argument, Catch::Matchers::Message("could not open file"));

@@ -46,8 +46,9 @@ class InMemoryChannel final : public Channel {
   static std::array<std::shared_ptr<InMemoryChannel>, 2> CreatePaired() {
     auto buf0 = std::make_shared<Buffer>();
     auto buf1 = std::make_shared<Buffer>();
-    return {std::make_shared<InMemoryChannel>(buf0, buf1),
-            std::make_shared<InMemoryChannel>(buf1, buf0)};
+    auto chl0 = std::make_shared<InMemoryChannel>(buf0, buf1);
+    auto chl1 = std::make_shared<InMemoryChannel>(buf1, buf0);
+    return {chl0, chl1};
   };
 
   /**
@@ -65,18 +66,21 @@ class InMemoryChannel final : public Channel {
    */
   InMemoryChannel(std::shared_ptr<Buffer> in_buffer,
                   std::shared_ptr<Buffer> out_buffer)
-      : mIn(in_buffer), mOut(out_buffer){};
+      : mIn(std::move(in_buffer)), mOut(std::move(out_buffer)){};
 
   /**
    * @brief Flush the incomming buffer;
    */
   void Flush() {
-    while (mIn->Size()) mIn->PopFront();
+    while (mIn->Size() > 0) {
+      mIn->PopFront();
+    }
     mOverflow.clear();
   };
 
   void Send(const unsigned char* src, std::size_t n) override;
-  int Recv(unsigned char* dst, std::size_t n) override;
+  std::size_t Recv(unsigned char* dst, std::size_t n) override;
+  bool HasData() override { return mIn->Size() > 0 || !mOverflow.empty(); };
   void Close() override{};
 
  private:

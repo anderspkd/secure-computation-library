@@ -24,10 +24,13 @@
 
 inline bool BufferCmp(const unsigned char* b0, const unsigned char* b1,
                       unsigned len) {
-  auto p0 = b0;
-  auto p1 = b1;
-  while (len-- > 0)
-    if (*p0++ != *p1++) return false;
+  const auto* p0 = b0;
+  const auto* p1 = b1;
+  while (len-- > 0) {
+    if (*p0++ != *p1++) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -40,7 +43,7 @@ inline bool BufferLooksRandom(const unsigned char* p, unsigned len) {
 
   bool all_in_interval = true;
   for (std::size_t i = 0; i < 256; i++) {
-    auto p = 100 * ((float)buckets[i] / len);
+    auto p = 100 * ((float)buckets[i] / (float)len);
     all_in_interval &= p >= 0.2 || p <= 6.0;
   }
   return all_in_interval;
@@ -84,7 +87,9 @@ TEST_CASE("PRG", "[misc]") {
     std::vector<unsigned char> buffer(100);
     prg.Next(buffer, 50);
     bool last_is_zero = true;
-    for (std::size_t i = 50; i < 100; i++) last_is_zero &= buffer[i] == 0;
+    for (std::size_t i = 50; i < 100; i++) {
+      last_is_zero &= buffer[i] == 0;
+    }
     REQUIRE(last_is_zero);
 
     REQUIRE_THROWS_MATCHES(

@@ -38,7 +38,9 @@ namespace scl {
  */
 template <typename T>
 Vec<T> CreateAdditiveShares(const T& secret, std::size_t n, PRG& prg) {
-  if (!n) throw std::invalid_argument("cannot create shares for 0 people");
+  if (!n) {
+    throw std::invalid_argument("cannot create shares for 0 people");
+  }
 
   Vec<T> shares = Vec<T>::PartialRandom(
       n, [](std::size_t i) { return i > 0; }, prg);

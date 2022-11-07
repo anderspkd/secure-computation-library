@@ -42,6 +42,10 @@ struct SCL_FF_Extras<details::Secp256k1::Field> {
 
 template <>
 struct SCL_FF_Extras<details::Secp256k1::Order> {
+  // Convert an element out of montgomery representation
+  static scl::FF<details::Secp256k1::Order> FromMonty(
+      const scl::FF<details::Secp256k1::Order>& element);
+
   // Get position of the highest set bit
   static std::size_t HigestSetBit(
       const scl::FF<details::Secp256k1::Order>& element);

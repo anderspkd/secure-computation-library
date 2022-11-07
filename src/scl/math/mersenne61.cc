@@ -90,8 +90,8 @@ std::string scl::details::FieldToString<Mersenne61>(const u64& in) {
 }
 
 template <>
-void scl::details::FieldFromString<Mersenne61>(u64& dest,
-                                               const std::string& str) {
-  dest = FromHexString<u64>(str);
-  dest = dest % p;
+void scl::details::FieldFromString<Mersenne61>(u64& out,
+                                               const std::string& src) {
+  out = FromHexString<u64>(src);
+  out = out % p;
 }

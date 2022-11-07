@@ -31,17 +31,21 @@ using GF7 = scl::FF<scl::details::GF7>;
 
 #ifdef SCL_ENABLE_EC_TESTS
 using Secp256k1_Field = scl::FF<scl::details::Secp256k1::Field>;
+using Secp256k1_Order = scl::FF<scl::details::Secp256k1::Order>;
 #endif
 
 template <typename T>
 T RandomNonZero(scl::PRG& prg) {
   auto a = T::Random(prg);
   for (std::size_t i = 0; i < 10; ++i) {
-    if (a == T::Zero()) a = T::Random(prg);
+    if (a == T::Zero()) {
+      a = T::Random(prg);
+    }
     break;
   }
-  if (a == T::Zero())
+  if (a == T::Zero()) {
     throw std::logic_error("could not generate a non-zero random value");
+  }
   return a;
 }
 
@@ -59,7 +63,7 @@ GF7 RandomNonZero<GF7>(scl::PRG& prg) {
 #define REPEAT for (std::size_t i = 0; i < 50; ++i)
 
 #ifdef SCL_ENABLE_EC_TESTS
-#define ARG_LIST Mersenne61, Mersenne127, GF7, Secp256k1_Field
+#define ARG_LIST Mersenne61, Mersenne127, GF7, Secp256k1_Field, Secp256k1_Order
 #else
 #define ARG_LIST Mersenne61, Mersenne127, GF7
 #endif

@@ -19,6 +19,7 @@
  */
 
 #include <catch2/catch.hpp>
+#include <stdexcept>
 
 #include "../gf7.h"
 #include "scl/math.h"
@@ -29,97 +30,87 @@ TEST_CASE("Shamir", "[ss]") {
   using FF = scl::Fp<61>;
   using Vec = scl::Vec<FF>;
 
-  scl::PRG prg;
+  const std::size_t t = 2;
 
-  SECTION("Share") {
+  SECTION("Reconstruct") {
+    scl::PRG prg;
+    scl::details::ShamirSSFactory<FF> factory(
+        t, prg, scl::details::SecurityLevel::PASSIVE);
+    auto intr = factory.GetInterpolator();
+
     auto secret = FF(123);
-    Vec alphas = {FF(2), FF(5), FF(3)};
-    auto share_poly = scl::details::CreateShamirSharePolynomial(secret, 2, prg);
-    auto shares = scl::CreateShamirShares(share_poly, alphas);
 
-    auto reconstructed =
-        scl::ReconstructShamirPassive(shares, alphas, FF(0), 2);
-    REQUIRE(reconstructed == secret);
-
-    auto some_share = scl::ReconstructShamirPassive(shares, alphas, FF(3), 2);
-    REQUIRE(some_share == shares[2]);
-  }
-
-  SECTION("Passive") {
-    auto secret = FF(123);
-    auto shares = scl::CreateShamirShares(secret, 4, 3, prg);
-    auto reconstructed = scl::ReconstructShamirPassive(shares, 3);
-
-    REQUIRE(reconstructed == secret);
+    auto shares = factory.Share(secret);
+    auto s = intr.Reconstruct(shares);
+    REQUIRE(s == secret);
 
     REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamirPassive(shares, 4), std::invalid_argument,
+        intr.Reconstruct(shares.SubVector(1)), std::invalid_argument,
         Catch::Matchers::Message("not enough shares to reconstruct"));
-
-    Vec alphas = {FF(1), FF(2), FF(3)};
-    REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamirPassive(shares, alphas, FF(0), 3),
-        std::invalid_argument,
-        Catch::Matchers::Message("not enough alphas to reconstruct"));
   }
 
   SECTION("Detection") {
-    auto secret = FF(123);
-    auto shares = scl::CreateShamirShares(secret, 7, 3, prg);
-    auto reconstructed = scl::ReconstructShamir(shares, 3);
-    REQUIRE(reconstructed == secret);
+    scl::PRG prg;
+    scl::details::ShamirSSFactory<FF> factory(
+        t, prg, scl::details::SecurityLevel::DETECT);
+    auto intr = scl::details::Reconstructor<FF>::Create(
+        t, scl::details::SecurityLevel::DETECT);
 
-    auto shares0 = shares;
-    shares0[2] = FF(4);
-    REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamir(shares0, 3), std::logic_error,
-        Catch::Matchers::Message("error detected during reconstruction"));
-
-    auto shares1 = shares;
-    shares1[6] = FF(3);
-    REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamir(shares1, 3), std::logic_error,
-        Catch::Matchers::Message("error detected during reconstruction"));
+    auto secret = FF(555);
+    auto shares = factory.Share(secret);
+    REQUIRE(shares.Size() == 2 * t + 1);
+    REQUIRE(intr.Reconstruct(shares) == secret);
 
     REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamir(shares0, 4), std::invalid_argument,
-        Catch::Matchers::Message(
-            "not enough shares to reconstruct with error detection"));
-    REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamir(shares0, Vec{}, FF(0), 2), std::invalid_argument,
-        Catch::Matchers::Message(
-            "not enough alphas to reconstruct with error detection"));
+        intr.Reconstruct(shares.SubVector(2)), std::invalid_argument,
+        Catch::Matchers::Message("not enough shares to reconstruct"));
+
+    auto ss = intr.ReconstructShare(shares, 2);
+    REQUIRE(ss == shares[2]);
+    REQUIRE(intr.Reconstruct(shares, 3) == intr.ReconstructShare(shares, 2));
   }
 
-  SECTION("Correction") {
+  SECTION("Robust") {
+    scl::PRG prg;
+    scl::details::ShamirSSFactory<FF> factory(
+        t, prg, scl::details::SecurityLevel::CORRECT);
+
     // no errors
     auto secret = FF(123);
-    auto shares = scl::CreateShamirShares(secret, 7, 2, prg);
-    auto reconstructed = scl::ReconstructShamirRobust(shares, 2);
-    CHECK(reconstructed == secret);
+    auto shares = factory.Share(secret);
+    REQUIRE(shares.Size() == 3 * t + 1);
+    auto reconstructed = scl::details::ReconstructShamirRobust(shares, t);
+    REQUIRE(reconstructed == secret);
+
+    // can also reconstruct with an interpolator
+    auto intr = scl::details::Reconstructor<FF>::Create(
+        t, scl::details::SecurityLevel::CORRECT);
+    REQUIRE(intr.Reconstruct(shares) == secret);
 
     // one error
     shares[0] = FF(63212);
-    auto reconstructed_1 = scl::ReconstructShamirRobust(shares, 2);
-    CHECK(reconstructed_1 == secret);
+    auto reconstructed_1 = scl::details::ReconstructShamirRobust(shares, t);
+    REQUIRE(reconstructed_1 == secret);
 
     // two errors
     shares[2] = FF(63212211);
-    auto reconstructed_2 = scl::ReconstructShamirRobust(shares, 2);
-    CHECK(reconstructed_2 == secret);
+    auto reconstructed_2 = scl::details::ReconstructShamirRobust(shares, t);
+    REQUIRE(reconstructed_2 == secret);
 
     // three errors -- that's one too many
     shares[1] = FF(123);
     REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamirRobust(shares, 2), std::logic_error,
+        scl::details::ReconstructShamirRobust(shares, t), std::logic_error,
         Catch::Matchers::Message("could not correct shares"));
 
     REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamirRobust(shares, 3), std::invalid_argument,
+        scl::details::ReconstructShamirRobust(shares, t + 1),
+        std::invalid_argument,
         Catch::Matchers::Message(
             "not enough shares to reconstruct with error correction"));
     REQUIRE_THROWS_MATCHES(
-        scl::ReconstructShamirRobust(shares, Vec{}, 2), std::invalid_argument,
+        scl::details::ReconstructShamirRobust(shares, Vec{}, t),
+        std::invalid_argument,
         Catch::Matchers::Message(
             "not enough alphas to reconstruct with error correction"));
   }
@@ -135,9 +126,9 @@ TEST_CASE("BerlekampWelch", "[ss][math]") {
   Vec as = {FF(0), FF(1), FF(2), FF(3), FF(4), FF(5), FF(6)};
   Vec corrected = {FF(1), FF(6), FF(3), FF(6), FF(1), FF(2), FF(2)};
 
-  auto pe = scl::ReconstructShamirRobust(bs, as, 2);
-  auto p = pe[0];
-  auto e = pe[1];
+  auto pe = scl::details::ReconstructShamirRobust(bs, as, 2);
+  auto p = std::get<0>(pe);
+  auto e = std::get<1>(pe);
 
   // errors
   REQUIRE(e.Evaluate(FF(1)) == FF{});

@@ -32,7 +32,9 @@ namespace details {
 template <typename T>
 void ModAdd(T& t, const T& v, const T& m) {
   t = t + v;
-  if (t >= m) t = t - m;
+  if (t >= m) {
+    t = t - m;
+  }
 }
 
 /**
@@ -40,10 +42,11 @@ void ModAdd(T& t, const T& v, const T& m) {
  */
 template <typename T>
 void ModSub(T& t, const T& v, const T& m) {
-  if (v > t)
+  if (v > t) {
     t = t + m - v;
-  else
+  } else {
     t = t - v;
+  }
 }
 
 /**
@@ -51,7 +54,9 @@ void ModSub(T& t, const T& v, const T& m) {
  */
 template <typename T>
 void ModNeg(T& t, const T& m) {
-  if (t) t = m - t;
+  if (t) {
+    t = m - t;
+  }
 }
 
 /**
@@ -62,8 +67,8 @@ void ModInv(T& t, const T& v, const T& m) {
 #define SCL_PARALLEL_ASSIGN(v1, v2, q) \
   do {                                 \
     const auto __temp = v2;            \
-    v2 = v1 - q * __temp;              \
-    v1 = __temp;                       \
+    (v2) = (v1) - (q)*__temp;          \
+    (v1) = __temp;                     \
   } while (0)
 
   if (v == 0) {

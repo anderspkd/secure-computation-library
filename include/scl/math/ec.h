@@ -272,6 +272,14 @@ class EC {
   };
 
   /**
+   * @brief Return this point as a pair of affine coordinates.
+   * @return this point as a pair of affine coordinates.
+   */
+  std::array<Field, 2> ToAffine() const {
+    return details::CurveToAffine<Curve>(mValue);
+  };
+
+  /**
    * @brief Output this point as a string.
    */
   std::string ToString() const {

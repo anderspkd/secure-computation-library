@@ -52,9 +52,11 @@ class ThreadedSenderChannel final : public Channel {
     mSendBuffer.PushBack({src, src + n});
   };
 
-  int Recv(unsigned char* dst, std::size_t n) override {
+  std::size_t Recv(unsigned char* dst, std::size_t n) override {
     return mChannel.Recv(dst, n);
   };
+
+  bool HasData() override { return mChannel.HasData(); };
 
  private:
   TcpChannel mChannel;

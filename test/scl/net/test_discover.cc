@@ -28,15 +28,19 @@
 #include "scl/net/mem_channel.h"
 #include "scl/net/network.h"
 
-static inline bool VerifyParty(scl::Party& party, unsigned id,
-                               std::string hostname, int port) {
+namespace {
+
+bool VerifyParty(scl::Party& party, int id, const std::string& hostname,
+                 int port) {
   return party.id == id && party.hostname == hostname && party.port == port;
 }
 
-static inline bool PartyEquals(scl::Party& first, scl::Party& second) {
+bool PartyEquals(scl::Party& first, scl::Party& second) {
   return first.id == second.id && first.hostname == second.hostname &&
          first.port == second.port;
 }
+
+}  // namespace
 
 TEST_CASE("Discovery Server", "[network]") {
   SECTION("CollectIdsAndPorts") {
@@ -127,15 +131,16 @@ TEST_CASE("Discovery Server", "[network]") {
   }
 }
 
-static inline void SendHostname(scl::Channel* channel, std::string hostname) {
+namespace {
+
+void SendHostname(scl::Channel* channel, const std::string& hostname) {
   std::size_t length = hostname.size();
   channel->Send(length);
   channel->Send(reinterpret_cast<const unsigned char*>(hostname.c_str()),
                 length);
 }
 
-static inline void SendConfig(scl::Channel* channel,
-                              const scl::NetworkConfig& config) {
+void SendConfig(scl::Channel* channel, const scl::NetworkConfig& config) {
   channel->Send(config.NetworkSize());
   for (const auto& party : config.Parties()) {
     channel->Send(party.id);
@@ -143,6 +148,8 @@ static inline void SendConfig(scl::Channel* channel,
     SendHostname(channel, party.hostname);
   }
 }
+
+}  // namespace
 
 TEST_CASE("Discovery Client", "[network]") {
   SECTION("SendIdAndPort") {
@@ -196,7 +203,9 @@ TEST_CASE("Discovery", "[network]") {
         Catch::Matchers::Message("number_of_parties exceeds max"));
   }
 
-  scl::NetworkConfig c0, c1, c2;
+  scl::NetworkConfig c0;
+  scl::NetworkConfig c1;
+  scl::NetworkConfig c2;
 
   std::thread server([&c0]() {
     Server srv(9999, 3);
