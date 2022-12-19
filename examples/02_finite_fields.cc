@@ -18,9 +18,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <scl/math.h>
-
 #include <iostream>
+
+#include <scl/math.h>
 
 int main() {
   /* This defines a "Finite Field" with space for at least 32 bits of
@@ -67,7 +67,7 @@ int main() {
   std::cout << a << " ?= " << b << ": " << (a == b) << "\n";
   std::cout << a << " ?= " << a << ": " << (a == a) << "\n";
 
-  scl::PRG prg;
+  auto prg = scl::PRG::Create();
 
   /* Using a PRG (see the PRG example), we can generate random field elements.
    */

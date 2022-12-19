@@ -42,5 +42,5 @@ int main() {
 
   /* The DigestToString can be used to print a hex representation of a digest.
    */
-  std::cout << scl::DigestToString(digest) << "\n";
+  std::cout << scl::details::DigestToString(digest) << "\n";
 }
