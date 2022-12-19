@@ -21,7 +21,7 @@
 #ifndef SCL_PRIMITIVES_H
 #define SCL_PRIMITIVES_H
 
-#include "scl/hash.h"
-#include "scl/prg.h"
+#include "scl/primitives/hash.h"
+#include "scl/primitives/prg.h"
 
 #endif  // SCL_PRIMITIVES_H

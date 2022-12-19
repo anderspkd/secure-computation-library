@@ -26,13 +26,15 @@
 #include "scl/math/ec_ops.h"
 #include "scl/math/fp.h"
 #include "scl/math/number.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 using Curve = scl::EC<scl::details::Secp256k1>;
 using Field = Curve::Field;
 
 TEST_CASE("secp256k1_field", "[math]") {
-  SECTION("name") { REQUIRE(std::string(Field::Name()) == "secp256k1_field"); }
+  SECTION("name") {
+    REQUIRE(std::string(Field::Name()) == "secp256k1_field");
+  }
 
   SECTION("Strings") {
     REQUIRE(Field(0).ToString() == "0");
@@ -76,7 +78,8 @@ TEST_CASE("secp256k1_field", "[math]") {
     REQUIRE(as_affine[1] == y);
 
     REQUIRE_THROWS_MATCHES(
-        Curve::FromAffine(Field(0), Field(0)), std::invalid_argument,
+        Curve::FromAffine(Field(0), Field(0)),
+        std::invalid_argument,
         Catch::Matchers::Message("provided (x, y) not on curve"));
   }
 
@@ -126,7 +129,8 @@ TEST_CASE("secp256k1_field", "[math]") {
 
   SECTION("inversion") {
     REQUIRE_THROWS_MATCHES(
-        Field(0).Inverse(), std::invalid_argument,
+        Field(0).Inverse(),
+        std::invalid_argument,
         Catch::Matchers::Message("0 not invertible modulo prime"));
     Field one(1);
     REQUIRE(one * one.Inverse() == one);
@@ -148,13 +152,18 @@ TEST_CASE("secp256k1_field", "[math]") {
 
 using Scalar = scl::FF<scl::details::Secp256k1::Order>;
 
-static Curve RandomPoint(scl::PRG& prg) {
+namespace {
+
+Curve RandomPoint(scl::PRG& prg) {
   auto r = scl::Number::Random(100, prg);
   return Curve::Generator() * r;
 }
+}  // namespace
 
 TEST_CASE("secp256k1", "[math]") {
-  SECTION("name") { REQUIRE(std::string(Curve::Name()) == "secp256k1"); }
+  SECTION("name") {
+    REQUIRE(std::string(Curve::Name()) == "secp256k1");
+  }
 
   auto ord = scl::Number::FromString(
       "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
@@ -186,7 +195,7 @@ TEST_CASE("secp256k1", "[math]") {
     REQUIRE(poi.ToString() == "EC{POINT_AT_INFINITY}");
   }
 
-  scl::PRG prg;
+  auto prg = scl::PRG::Create();
 
   SECTION("addition") {
     auto a = RandomPoint(prg);
@@ -263,23 +272,23 @@ TEST_CASE("secp256k1", "[math]") {
     auto a = RandomPoint(prg);
     auto buffer = std::make_unique<unsigned char[]>(Curve::ByteSize(false));
     a.Write(buffer.get(), false);
-    REQUIRE(buffer[0] == 0);
+    REQUIRE(buffer[0] == 0x04);
     auto c = Curve::Read(buffer.get());
     REQUIRE(a == c);
 
     a.Write(buffer.get(), true);
     auto d = Curve::Read(buffer.get());
-    REQUIRE(buffer[0] == 0x05);
+    REQUIRE(buffer[0] == 0x01);
     REQUIRE(a == d);
 
     Curve poi;
     poi.Write(buffer.get(), false);
-    REQUIRE(buffer[0] == 0x02);
+    REQUIRE(buffer[0] == 0x06);
     auto e = Curve::Read(buffer.get());
     REQUIRE(e.PointAtInfinity());
 
     poi.Write(buffer.get(), true);
-    REQUIRE(buffer[0] == (0x02 | 0x04));
+    REQUIRE(buffer[0] == 0x02);
     auto f = Curve::Read(buffer.get());
     REQUIRE(f.PointAtInfinity());
 
@@ -290,7 +299,7 @@ TEST_CASE("secp256k1", "[math]") {
                           "a2eee86009ff")  //
     );
     g.Write(buffer.get());
-    REQUIRE(buffer[0] == (0x04 | 0x01));
+    REQUIRE(buffer[0] == 0x01);
     auto h = Curve::Read(buffer.get());
     REQUIRE(h == g);
 

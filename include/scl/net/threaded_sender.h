@@ -56,7 +56,9 @@ class ThreadedSenderChannel final : public Channel {
     return mChannel.Recv(dst, n);
   };
 
-  bool HasData() override { return mChannel.HasData(); };
+  bool HasData() override {
+    return mChannel.HasData();
+  };
 
  private:
   TcpChannel mChannel;

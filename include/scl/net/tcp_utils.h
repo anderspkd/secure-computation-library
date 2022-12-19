@@ -21,10 +21,10 @@
 #ifndef SCL_NET_TCP_UTILS_H
 #define SCL_NET_TCP_UTILS_H
 
-#include <sys/socket.h>
-
 #include <memory>
 #include <system_error>
+
+#include <sys/socket.h>
 
 namespace scl {
 namespace details {

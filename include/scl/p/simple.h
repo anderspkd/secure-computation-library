@@ -33,12 +33,14 @@ struct ProtocolStep {
   /**
    * @brief Evaluate a step of the protocol.
    */
-  auto Run(Ctx& context) { return static_cast<T*>(this)->Run(context); };
+  auto Run(Ctx& context) {
+    return static_cast<T*>(this)->Run(context);
+  };
 };
 
 /**
  * @brief The final step of a protocol.
- */
+o */
 template <typename T, typename Ctx>
 struct LastProtocolStep {
   /**
@@ -53,7 +55,8 @@ struct LastProtocolStep {
  * @brief Recursively evaluate all internal steps of a protocol.
  */
 template <
-    typename S, typename Ctx,
+    typename S,
+    typename Ctx,
     std::enable_if_t<std::is_base_of_v<ProtocolStep<S, Ctx>, S>, bool> = true>
 auto Evaluate(S& step, Ctx& context) {
   auto next = step.Run(context);
@@ -63,7 +66,8 @@ auto Evaluate(S& step, Ctx& context) {
 /**
  * @brief Evaluate the last step of a protocol.
  */
-template <typename S, typename Ctx,
+template <typename S,
+          typename Ctx,
           std::enable_if_t<std::is_base_of_v<LastProtocolStep<S, Ctx>, S>,
                            bool> = true>
 auto Evaluate(S& last, Ctx& context) {

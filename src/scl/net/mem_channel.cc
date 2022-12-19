@@ -57,7 +57,8 @@ std::size_t scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
       const auto old_size = mOverflow.size();
       mOverflow.reserve(old_size + leftovers);
       mOverflow.insert(mOverflow.begin() + DIFF_T(old_size),
-                       data.begin() + DIFF_T(to_copy), data.end());
+                       data.begin() + DIFF_T(to_copy),
+                       data.end());
     }
   }
 

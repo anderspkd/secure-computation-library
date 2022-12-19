@@ -1,0 +1,27 @@
+Checks: '-*,bugprone-*,performance-*,readability-*,google-global-names-in-headers,cert-dcl59-cpp,-bugprone-easily-swappable-parameters,-readability-identifier-length,-readability-magic-numbers,-readability-function-cognitive-complexity,-readability-function-size'
+
+# Enabled checks:
+# - bugprone
+# - performance
+# - readability
+# - google-global-names-in-headers
+# - cert-dcl59-cpp
+#
+# Specific disabled checks
+#
+# bugprone-easily-swappable-parameters:
+#   Doesn't make sense to exclude functions taking multiple ints in SCL.
+#
+# readability-identifier-length:
+#   Short identifiers make sense.
+#
+# readability-magic-numbers:
+#   Too strict.
+#
+# readability-function-cognitive-complexity
+#   Catch2.
+#
+# readability-function-size
+#   Catch2.
+
+AnalyzeTemporaryDtors: false

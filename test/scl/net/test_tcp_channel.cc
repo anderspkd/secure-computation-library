@@ -23,7 +23,7 @@
 
 #include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 #include "util.h"
 
 TEST_CASE("TcpChannel", "[network]") {
@@ -79,7 +79,7 @@ TEST_CASE("TcpChannel", "[network]") {
     clt.join();
     srv.join();
 
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     unsigned char send[200] = {0};
     unsigned char recv[200] = {0};
     prg.Next(send, 200);

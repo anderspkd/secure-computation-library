@@ -19,6 +19,7 @@
  */
 
 #include <catch2/catch.hpp>
+#include <sstream>
 
 #include "scl/math/fp.h"
 
@@ -30,7 +31,9 @@ TEST_CASE("Mersenne61", "[math]") {
   Field x(0x7b);
   Field big(0x41621e);
 
-  SECTION("Name") { REQUIRE(std::string(Field::Name()) == "Mersenne61"); }
+  SECTION("Name") {
+    REQUIRE(std::string(Field::Name()) == "Mersenne61");
+  }
 
   SECTION("ToString") {
     REQUIRE(zero.ToString() == "0");
@@ -53,10 +56,12 @@ TEST_CASE("Mersenne61", "[math]") {
   }
 
   SECTION("FromString") {
-    REQUIRE_THROWS_MATCHES(Field::FromString("012"), std::invalid_argument,
+    REQUIRE_THROWS_MATCHES(Field::FromString("012"),
+                           std::invalid_argument,
                            Catch::Matchers::Message("odd-length hex string"));
     REQUIRE_THROWS_MATCHES(
-        Field::FromString("1g"), std::invalid_argument,
+        Field::FromString("1g"),
+        std::invalid_argument,
         Catch::Matchers::Message("encountered invalid hex character"));
     auto y = Field::FromString("7b");
     REQUIRE(x == y);

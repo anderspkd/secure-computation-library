@@ -21,14 +21,15 @@
 #ifndef SCL_MATH_OPS_GMP_FF_H
 #define SCL_MATH_OPS_GMP_FF_H
 
-#include <gmp.h>
-
 #include <cmath>
 #include <cstddef>
+#include <cstring>
 #include <sstream>
 #include <string>
 
-#include "scl/math/str.h"
+#include <gmp.h>
+
+#include "scl/util/str.h"
 
 namespace scl {
 namespace details {
@@ -138,7 +139,9 @@ void ModSub(mp_limb_t* out, const mp_limb_t* op, const mp_limb_t* mod) {
  */
 template <std::size_t N>
 void ModNeg(mp_limb_t* out, const mp_limb_t* mod) {
-  mpn_sub_n(out, mod, out, N);
+  mp_limb_t t[N] = {0};
+  ModSub<N>(t, out, mod);
+  SCL_COPY(out, t, N);
 }
 
 /**
@@ -150,7 +153,9 @@ void ModNeg(mp_limb_t* out, const mp_limb_t* mod) {
  * @see Redc
  */
 template <std::size_t N>
-void ModMul(mp_limb_t* out, const mp_limb_t* op, const mp_limb_t* mod,
+void ModMul(mp_limb_t* out,
+            const mp_limb_t* op,
+            const mp_limb_t* mod,
             const mp_limb_t* np) {
   mp_limb_t res[2 * N];
   mpn_mul_n(res, out, op, N);
@@ -166,7 +171,9 @@ void ModMul(mp_limb_t* out, const mp_limb_t* op, const mp_limb_t* mod,
  * @param np a constant used for montgomery reduction
  */
 template <std::size_t N>
-void ModSqr(mp_limb_t* out, const mp_limb_t* op, const mp_limb_t* mod,
+void ModSqr(mp_limb_t* out,
+            const mp_limb_t* op,
+            const mp_limb_t* mod,
             const mp_limb_t* np) {
   mp_limb_t res[2 * N];
   mpn_sqr(res, op, N);
@@ -196,8 +203,11 @@ inline bool TestBit(const mp_limb_t* v, std::size_t pos) {
  * @param np a constant used for montgomery reduction
  */
 template <std::size_t N>
-void ModExp(mp_limb_t* out, const mp_limb_t* x, const mp_limb_t* e,
-            const mp_limb_t* mod, const mp_limb_t* np) {
+void ModExp(mp_limb_t* out,
+            const mp_limb_t* x,
+            const mp_limb_t* e,
+            const mp_limb_t* mod,
+            const mp_limb_t* np) {
   auto n = mpn_sizeinbase(e, N, 2);
   for (std::size_t i = n; i-- > 0;) {
     ModSqr<N>(out, out, mod, np);
@@ -208,8 +218,11 @@ void ModExp(mp_limb_t* out, const mp_limb_t* x, const mp_limb_t* e,
 }
 
 template <std::size_t N>
-void ModInvFermat(mp_limb_t* out, const mp_limb_t* op, const mp_limb_t* mod,
-                  const mp_limb_t* mod_minus_2, const mp_limb_t* np) {
+void ModInvFermat(mp_limb_t* out,
+                  const mp_limb_t* op,
+                  const mp_limb_t* mod,
+                  const mp_limb_t* mod_minus_2,
+                  const mp_limb_t* np) {
   if (mpn_zero_p(op, N)) {
     throw std::invalid_argument("0 not invertible modulo prime");
   }
@@ -226,16 +239,34 @@ int CompareValues(const mp_limb_t* lhs, const mp_limb_t* rhs) {
   return mpn_cmp(lhs, rhs, N);
 }
 
-void ReadLimb(mp_limb_t& lmb, const unsigned char* bytes,
-              std::size_t bits_per_limb);
-
-/**
- * @brief Read a value from a byte array.
- */
 template <std::size_t N>
-void ValueFromBytes(mp_limb_t* out, const unsigned char* src) {
-  for (std::size_t i = 0; i < N; ++i) {
-    ReadLimb(out[i], src + i * BYTES_PER_LIMB, BITS_PER_LIMB);
+void ValueFromBytes(mp_limb_t* out,
+                    const unsigned char* src,
+                    const mp_limb_t* mod) {
+  for (int i = N - 1; i >= 0; --i) {
+    for (int j = BYTES_PER_LIMB - 1; j >= 0; --j) {
+      out[i] |= static_cast<mp_limb_t>(*src++) << (j * 8);
+    }
+  }
+
+  ToMonty<N>(out, mod);
+}
+
+template <std::size_t N>
+void ValueToBytes(unsigned char* dest,
+                  const mp_limb_t* src,
+                  const mp_limb_t* mod,
+                  const mp_limb_t* np) {
+  mp_limb_t padded[2 * N] = {0};
+  SCL_COPY(padded, src, N);
+  Redc<N>(padded, mod, np);
+
+  std::size_t c = 0;
+  for (int i = N - 1; i >= 0; --i) {
+    const auto v = padded[i];
+    for (int j = BYTES_PER_LIMB - 1; j >= 0; --j) {
+      dest[c++] = v >> (j * 8);
+    }
   }
 }
 
@@ -245,7 +276,8 @@ std::size_t FindFirstNonZero(const std::string& s);
  * @brief Print a value.
  */
 template <std::size_t N>
-std::string ToString(const mp_limb_t* val, const mp_limb_t* mod,
+std::string ToString(const mp_limb_t* val,
+                     const mp_limb_t* mod,
                      const mp_limb_t* np) {
   mp_limb_t padded[2 * N] = {0};
   SCL_COPY(padded, val, N);

@@ -26,8 +26,6 @@
 #include <string>
 #include <type_traits>
 
-#include "scl/math/str.h"
-
 namespace scl {
 namespace details {
 
@@ -89,19 +87,14 @@ bool FieldEqual(const typename F::ValueType& in1,
 
 /**
  * @brief Convert a field element to bytes.
+ * @param dest the field element to convert
+ * @param src where to store the converted element
  *
  * For types that are trivially copyable, this function has a default
  * implementation based on std::memcpy.
- *
- * @param dest the field element to convert
- * @param src where to store the converted element
  */
-template <typename F,
-          std::enable_if_t<std::is_trivially_copyable_v<typename F::ValueType>,
-                           int> = 0>
-void FieldToBytes(unsigned char* dest, const typename F::ValueType& src) {
-  std::memcpy(dest, &src, sizeof(typename F::ValueType));
-}
+template <typename F>
+void FieldToBytes(unsigned char* dest, const typename F::ValueType& src);
 
 /**
  * @brief Convert the content of a buffer to a field element.

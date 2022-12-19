@@ -80,7 +80,11 @@ class InMemoryChannel final : public Channel {
 
   void Send(const unsigned char* src, std::size_t n) override;
   std::size_t Recv(unsigned char* dst, std::size_t n) override;
-  bool HasData() override { return mIn->Size() > 0 || !mOverflow.empty(); };
+
+  bool HasData() override {
+    return mIn->Size() > 0 || !mOverflow.empty();
+  };
+
   void Close() override{};
 
  private:

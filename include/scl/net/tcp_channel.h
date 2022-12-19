@@ -44,12 +44,16 @@ class TcpChannel final : public Channel {
   /**
    * @brief Destroying a TCP channel closes the connection.
    */
-  ~TcpChannel() { Close(); };
+  ~TcpChannel() {
+    Close();
+  };
 
   /**
    * @brief Tells whether this channel is alive or not.
    */
-  bool Alive() const { return mAlive; };
+  bool Alive() const {
+    return mAlive;
+  };
 
   void Send(const unsigned char* src, std::size_t n) override;
   std::size_t Recv(unsigned char* dst, std::size_t n) override;

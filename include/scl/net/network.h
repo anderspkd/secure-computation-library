@@ -65,12 +65,16 @@ class Network {
    * @brief Get a channel to a particular party.
    * @param id the id of the party
    */
-  Channel* Party(unsigned id) { return mChannels[id].get(); }
+  Channel* Party(unsigned id) {
+    return mChannels[id].get();
+  }
 
   /**
    * @brief The size of the network.
    */
-  std::size_t Size() const { return mChannels.size(); };
+  std::size_t Size() const {
+    return mChannels.size();
+  };
 
   /**
    * @brief Closes all channels in the network.
@@ -153,8 +157,8 @@ Network Network::Create(const scl::NetworkConfig& config) {
 
   channels[config.Id()] = scl::details::CreateChannelConnectingToSelf();
 
-  std::thread server(scl::details::SCL_AcceptConnections, std::ref(channels),
-                     config);
+  std::thread server(
+      scl::details::SCL_AcceptConnections, std::ref(channels), config);
 
   for (std::size_t i = 0; i < static_cast<std::size_t>(config.Id()); ++i) {
     const auto party = config.GetParty(i);

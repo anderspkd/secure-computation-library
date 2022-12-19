@@ -1,0 +1,30 @@
+Language:                               Cpp
+BasedOnStyle:                           Google
+DerivePointerAlignment:                 false
+AllowShortFunctionsOnASingleLine:       Empty
+BinPackArguments:                       false
+BinPackParameters:                      false
+
+# The include rules below structures includes as
+#
+#  - STL headers (anything without an extension, tbp)
+#  - Other headers (anything that ends with .h)
+#  - External SCL headers (anything of the form <scl/...>)
+#  - Internal SCL headers (anything of the form "scl/...")
+#
+# The only exception is when a .cc file includes a header file with the same
+# name at the same path.
+
+IncludeCategories:
+  - Regex:           '^<scl/.*\.h*'
+    Priority:        4
+    SortPriority:    0
+  - Regex:           '^<.*\.h>'
+    Priority:        2
+    SortPriority:    0
+  - Regex:           '^<.*'
+    Priority:        1
+    SortPriority:    0
+  - Regex:           '^scl/.*'
+    Priority:        5
+    SortPriority:    0

@@ -27,7 +27,7 @@
 
 #include "scl/math/ff_ops.h"
 #include "scl/math/ring.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -47,17 +47,23 @@ class FF final : details::RingBase<FF<Field>> {
   /**
    * @brief Size in bytes of a field element.
    */
-  constexpr static std::size_t ByteSize() { return Field::kByteSize; };
+  constexpr static std::size_t ByteSize() {
+    return Field::kByteSize;
+  };
 
   /**
    * @brief Actual bit size of an element.
    */
-  constexpr static std::size_t BitSize() { return Field::kBitSize; };
+  constexpr static std::size_t BitSize() {
+    return Field::kBitSize;
+  };
 
   /**
    * @brief A short string representation of this field.
    */
-  constexpr static const char* Name() { return Field::kName; };
+  constexpr static const char* Name() {
+    return Field::kName;
+  };
 
   /**
    * @brief Read a field element from a buffer.
@@ -166,7 +172,9 @@ class FF final : details::RingBase<FF<Field>> {
    * @param other the other element
    * @return this set to this * <code>other.Inverse()</code>.
    */
-  FF& operator/=(const FF& other) { return operator*=(other.Inverse()); };
+  FF& operator/=(const FF& other) {
+    return operator*=(other.Inverse());
+  };
 
   /**
    * @brief Negates this element.

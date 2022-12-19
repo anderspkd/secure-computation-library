@@ -26,7 +26,7 @@
 
 #include "./ops_small_fp.h"
 #include "scl/math/ff_ops.h"
-#include "scl/math/str.h"
+#include "scl/util/str.h"
 
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
@@ -82,6 +82,12 @@ void scl::details::FieldFromBytes<Mersenne61>(u64& dest,
                                               const unsigned char* src) {
   dest = *(const u64*)src;
   dest = dest % p;
+}
+
+template <>
+void scl::details::FieldToBytes<Mersenne61>(unsigned char* dest,
+                                            const u64& src) {
+  std::memcpy(dest, &src, sizeof(u64));
 }
 
 template <>

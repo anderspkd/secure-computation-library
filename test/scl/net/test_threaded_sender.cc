@@ -25,7 +25,7 @@
 
 #include "scl/net/tcp_utils.h"
 #include "scl/net/threaded_sender.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 #include "util.h"
 
 TEST_CASE("ThreadedSender", "[network]") {
@@ -50,7 +50,7 @@ TEST_CASE("ThreadedSender", "[network]") {
     clt.join();
     srv.join();
 
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     unsigned char send[200] = {0};
     unsigned char recv[200] = {0};
     prg.Next(send, 200);

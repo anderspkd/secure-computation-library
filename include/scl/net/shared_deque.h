@@ -44,7 +44,7 @@ class SharedDeque {
   /**
    * @brief Read the top element from the queue.
    */
-  T &Peek();
+  T& Peek();
 
   /**
    * @brief Remove and return the top element from the queue.
@@ -54,12 +54,12 @@ class SharedDeque {
   /**
    * @brief Insert an item to the back of the queue.
    */
-  void PushBack(const T &item);
+  void PushBack(const T& item);
 
   /**
    * @brief Move an item to the back of the queue.
    */
-  void PushBack(T &&item);
+  void PushBack(T&& item);
 
   /**
    * @brief Number of elements currently in the queue.
@@ -82,7 +82,7 @@ void SharedDeque<T, Allocator>::PopFront() {
 }
 
 template <typename T, typename Allocator>
-T &SharedDeque<T, Allocator>::Peek() {
+T& SharedDeque<T, Allocator>::Peek() {
   std::unique_lock<std::mutex> lock(mMutex);
   while (mDeck.empty()) {
     mCond.wait(lock);
@@ -102,7 +102,7 @@ T SharedDeque<T, Allocator>::Pop() {
 }
 
 template <typename T, typename Allocator>
-void SharedDeque<T, Allocator>::PushBack(const T &item) {
+void SharedDeque<T, Allocator>::PushBack(const T& item) {
   std::unique_lock<std::mutex> lock(mMutex);
   mDeck.push_back(item);
   lock.unlock();
@@ -110,7 +110,7 @@ void SharedDeque<T, Allocator>::PushBack(const T &item) {
 }
 
 template <typename T, typename Allocator>
-void SharedDeque<T, Allocator>::PushBack(T &&item) {
+void SharedDeque<T, Allocator>::PushBack(T&& item) {
   std::unique_lock<std::mutex> lock(mMutex);
   mDeck.push_back(std::move(item));
   lock.unlock();

@@ -101,18 +101,23 @@ bool scl::details::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
 
 template <>
 void scl::details::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
-  ValueFromBytes<NUM_LIMBS>(PTR(dest), src);
+  ValueFromBytes<NUM_LIMBS>(PTR(dest), src, kPrime);
 }
 
 template <>
-std::string scl::details::FieldToString<Field>(const Elem& in) {
-  return ToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
+void scl::details::FieldToBytes<Field>(unsigned char* dest, const Elem& src) {
+  ValueToBytes<NUM_LIMBS>(dest, PTR(src), kPrime, kMontyN);
 }
 
 template <>
 void scl::details::FieldFromString<Field>(Elem& out, const std::string& src) {
   out = {0};
   FromString<NUM_LIMBS>(PTR(out), kPrime, src);
+}
+
+template <>
+std::string scl::details::FieldToString<Field>(const Elem& in) {
+  return ToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
 }
 
 bool scl::SCL_FF_Extras<Field>::IsSmaller(

@@ -70,12 +70,16 @@ class Polynomial {
   /**
    * @brief Access coefficients, with the constant term at position 0.
    */
-  T& operator[](std::size_t idx) { return mCoefficients[idx]; };
+  T& operator[](std::size_t idx) {
+    return mCoefficients[idx];
+  };
 
   /**
    * @brief Access coefficients, with the constant term at position 0.
    */
-  T operator[](std::size_t idx) const { return mCoefficients[idx]; };
+  T operator[](std::size_t idx) const {
+    return mCoefficients[idx];
+  };
 
   /**
    * @brief Add two polynomials.
@@ -101,22 +105,30 @@ class Polynomial {
   /**
    * @brief Returns true if this is the 0 polynomial.
    */
-  bool IsZero() const { return Degree() == 0 && ConstantTerm() == T(0); };
+  bool IsZero() const {
+    return Degree() == 0 && ConstantTerm() == T(0);
+  };
 
   /**
    * @brief Get the constant term of this polynomial.
    */
-  T ConstantTerm() const { return operator[](0); };
+  T ConstantTerm() const {
+    return operator[](0);
+  };
 
   /**
    * @brief Get the leading term of this polynomial.
    */
-  T LeadingTerm() const { return operator[](Degree()); };
+  T LeadingTerm() const {
+    return operator[](Degree());
+  };
 
   /**
    * @brief Degree of this polynomial.
    */
-  std::size_t Degree() const { return mCoefficients.Size() - 1; };
+  std::size_t Degree() const {
+    return mCoefficients.Size() - 1;
+  };
 
   /**
    * @brief Get a string representation of this polynomial.
@@ -135,7 +147,9 @@ class Polynomial {
    * @brief Get a string representation of this polynomial.
    * @note Equivalent to ToString("f", "x").
    */
-  std::string ToString() const { return ToString("f", "x"); };
+  std::string ToString() const {
+    return ToString("f", "x");
+  };
 
   /**
    * @brief Write a string representation of this polynomial to a stream.

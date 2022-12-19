@@ -18,10 +18,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gmp.h>
-
 #include <array>
 #include <cstddef>
+
+#include <gmp.h>
 
 #include "./ops_gmp_ff.h"
 #include "./secp256k1_extras.h"
@@ -101,7 +101,12 @@ bool scl::details::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
 
 template <>
 void scl::details::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
-  ValueFromBytes<NUM_LIMBS>(PTR(dest), src);
+  ValueFromBytes<NUM_LIMBS>(PTR(dest), src, kPrime);
+}
+
+template <>
+void scl::details::FieldToBytes<Field>(unsigned char* dest, const Elem& src) {
+  ValueToBytes<NUM_LIMBS>(dest, PTR(src), kPrime, kMontyN);
 }
 
 template <>

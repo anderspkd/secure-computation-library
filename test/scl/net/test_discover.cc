@@ -30,7 +30,9 @@
 
 namespace {
 
-bool VerifyParty(scl::Party& party, int id, const std::string& hostname,
+bool VerifyParty(scl::Party& party,
+                 int id,
+                 const std::string& hostname,
                  int port) {
   return party.id == id && party.hostname == hostname && party.port == port;
 }
@@ -105,7 +107,8 @@ TEST_CASE("Discovery Server", "[network]") {
 
     scl::DiscoveryServer::Ctx ctx{me, fake.my_network};
     REQUIRE_THROWS_MATCHES(
-        prot.Run(ctx), std::logic_error,
+        prot.Run(ctx),
+        std::logic_error,
         Catch::Matchers::Message("received invalid party ID"));
   }
 
@@ -195,11 +198,13 @@ TEST_CASE("Discovery", "[network]") {
 
   SECTION("Too many parties") {
     REQUIRE_THROWS_MATCHES(
-        Server(9999, 256), std::invalid_argument,
+        Server(9999, 256),
+        std::invalid_argument,
         Catch::Matchers::Message("number_of_parties exceeds max"));
 
     REQUIRE_THROWS_MATCHES(
-        Server(256), std::invalid_argument,
+        Server(256),
+        std::invalid_argument,
         Catch::Matchers::Message("number_of_parties exceeds max"));
   }
 

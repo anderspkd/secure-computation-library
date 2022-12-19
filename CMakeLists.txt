@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 3.0.0 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 4.0.0 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -35,10 +35,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native -Wall -Wextra -pedantic -Werror -std=gnu++17")
 
 set(SCL_SOURCE_FILES
-  src/scl/prg.cc
-  src/scl/hash.cc
+  src/scl/util/str.cc
 
-  src/scl/math/str.cc
+  src/scl/primitives/prg.cc
+  src/scl/primitives/sha3.cc
+  src/scl/primitives/sha256.cc
+
   src/scl/math/mersenne61.cc
   src/scl/math/mersenne127.cc
 
@@ -87,8 +89,9 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(SCL_TEST_SOURCE_FILES
     test/scl/main.cc
 
-    test/scl/test_hash.cc
-    test/scl/test_prg.cc
+    test/scl/primitives/test_prg.cc
+    test/scl/primitives/test_sha3.cc
+    test/scl/primitives/test_sha256.cc
 
     test/scl/gf7.cc
     test/scl/math/test_mersenne61.cc
@@ -102,6 +105,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/ss/test_additive.cc
     test/scl/ss/test_poly.cc
     test/scl/ss/test_shamir.cc
+    test/scl/ss/test_feldman.cc
 
     test/scl/net/util.cc
     test/scl/net/test_config.cc

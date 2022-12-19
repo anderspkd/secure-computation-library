@@ -20,19 +20,12 @@
 
 #include <catch2/catch.hpp>
 
-#include "../gf7.h"
-#include "scl/math/curves/secp256k1.h"
-#include "scl/math/fp.h"
-#include "scl/prg.h"
+#include "fields.h"
+#include "scl/primitives/prg.h"
 
-using Mersenne61 = scl::Fp<61>;
-using Mersenne127 = scl::Fp<127>;
-using GF7 = scl::FF<scl::details::GF7>;
+using namespace scl_tests;
 
-#ifdef SCL_ENABLE_EC_TESTS
-using Secp256k1_Field = scl::FF<scl::details::Secp256k1::Field>;
-using Secp256k1_Order = scl::FF<scl::details::Secp256k1::Order>;
-#endif
+namespace {
 
 template <typename T>
 T RandomNonZero(scl::PRG& prg) {
@@ -60,16 +53,12 @@ GF7 RandomNonZero<GF7>(scl::PRG& prg) {
   return a;
 }
 
+}  // namespace
+
 #define REPEAT for (std::size_t i = 0; i < 50; ++i)
 
-#ifdef SCL_ENABLE_EC_TESTS
-#define ARG_LIST Mersenne61, Mersenne127, GF7, Secp256k1_Field, Secp256k1_Order
-#else
-#define ARG_LIST Mersenne61, Mersenne127, GF7
-#endif
-
-TEMPLATE_TEST_CASE("FF", "[math]", ARG_LIST) {
-  scl::PRG prg;
+TEMPLATE_TEST_CASE("FF", "[math]", FIELD_DEFS) {
+  auto prg = scl::PRG::Create();
   auto zero = TestType();
 
   SECTION("random") {
@@ -106,6 +95,8 @@ TEMPLATE_TEST_CASE("FF", "[math]", ARG_LIST) {
       REQUIRE(a == a_negated);
       REQUIRE(a - zero == a);
     }
+
+    REQUIRE(TestType(0) == -TestType(0));
   }
 
   SECTION("subtraction") {
@@ -136,7 +127,8 @@ TEMPLATE_TEST_CASE("FF", "[math]", ARG_LIST) {
 
   SECTION("inverses") {
     REQUIRE_THROWS_MATCHES(
-        zero.Inverse(), std::logic_error,
+        zero.Inverse(),
+        std::logic_error,
         Catch::Matchers::Message("0 not invertible modulo prime"));
 
     REPEAT {

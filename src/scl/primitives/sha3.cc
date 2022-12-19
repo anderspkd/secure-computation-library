@@ -1,5 +1,5 @@
 /**
- * @file hash.cc
+ * @file sha3.cc
  *
  * SCL --- Secure Computation Library
  * Copyright (C) 2022 Anders Dalskov
@@ -18,13 +18,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/hash.h"
+#include "scl/primitives/sha3.h"
 
-static inline uint64_t rotl64(uint64_t x, uint64_t y) {
+namespace {
+
+const uint64_t keccakf_rndc[24] = {
+    0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
+    0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
+    0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL,
+    0x0000000000000088ULL, 0x0000000080008009ULL, 0x000000008000000aULL,
+    0x000000008000808bULL, 0x800000000000008bULL, 0x8000000000008089ULL,
+    0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL,
+    0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL,
+    0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL};
+
+const unsigned int keccakf_rotc[24] = {1,  3,  6,  10, 15, 21, 28, 36,
+                                       45, 55, 2,  14, 27, 41, 56, 8,
+                                       25, 43, 62, 18, 39, 61, 20, 44};
+
+const unsigned int keccakf_piln[24] = {10, 7,  11, 17, 18, 3,  5,  16,
+                                       8,  21, 24, 4,  15, 23, 19, 13,
+                                       12, 2,  20, 14, 22, 9,  6,  1};
+
+uint64_t RotLeft64(uint64_t x, uint64_t y) {
   return (x << y) | (x >> ((sizeof(uint64_t) * 8) - y));
 }
 
-void scl::Keccakf(uint64_t state[25]) {
+}  // namespace
+
+void scl::details::Keccakf(uint64_t state[25]) {
   uint64_t t;
   uint64_t bc[5];
 
@@ -35,7 +57,7 @@ void scl::Keccakf(uint64_t state[25]) {
     }
 
     for (std::size_t i = 0; i < 5; ++i) {
-      t = bc[(i + 4) % 5] ^ rotl64(bc[(i + 1) % 5], 1);
+      t = bc[(i + 4) % 5] ^ RotLeft64(bc[(i + 1) % 5], 1);
       for (std::size_t j = 0; j < 25; j += 5) {
         state[j + i] ^= t;
       }
@@ -45,7 +67,7 @@ void scl::Keccakf(uint64_t state[25]) {
     for (std::size_t i = 0; i < 24; ++i) {
       const uint64_t v = keccakf_piln[i];
       bc[0] = state[v];
-      state[v] = rotl64(t, keccakf_rotc[i]);
+      state[v] = RotLeft64(t, keccakf_rotc[i]);
       t = bc[0];
     }
 

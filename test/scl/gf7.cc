@@ -22,7 +22,7 @@
 
 #include "scl/math/ff_ops.h"
 
-using GF7 = scl::details::GF7;
+using GF7 = scl_tests::GaloisField7;
 
 template <>
 void scl::details::FieldConvertIn<GF7>(unsigned char& out, int v) {
@@ -93,6 +93,12 @@ void scl::details::FieldFromBytes<GF7>(unsigned char& dest,
                                        const unsigned char* src) {
   dest = *src;
   dest = dest % 7;
+}
+
+template <>
+void scl::details::FieldToBytes<GF7>(unsigned char* dest,
+                                     const unsigned char& src) {
+  *dest = src;
 }
 
 template <>

@@ -25,7 +25,7 @@
 
 #include "scl/math.h"
 #include "scl/net/mem_channel.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 #include "util.h"
 
 void PrintBuf(const unsigned char* b, std::size_t n) {
@@ -41,7 +41,7 @@ TEST_CASE("InMemoryChannel", "[network]") {
   auto chl0 = channels[0];
   auto chl1 = channels[1];
 
-  scl::PRG prg;
+  auto prg = scl::PRG::Create();
   unsigned char data_in[200] = {0};
   prg.Next(data_in, 200);
 

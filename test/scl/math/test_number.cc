@@ -22,13 +22,13 @@
 #include <sstream>
 
 #include "scl/math/number.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 #define REPEAT_I(I) for (std::size_t i = 0; i < (I); ++i)
 #define REPEAT REPEAT_I(50)
 
 TEST_CASE("Number", "[math]") {
-  scl::PRG prg;
+  auto prg = scl::PRG::Create();
   SECTION("Construction") {
     scl::Number n0(27);
     REQUIRE(n0.ToString() == "Number{1b}");
@@ -129,7 +129,9 @@ TEST_CASE("Number", "[math]") {
     }
   }
 
-  SECTION("Negation") { REQUIRE(-scl::Number(1234) == scl::Number(-1234)); }
+  SECTION("Negation") {
+    REQUIRE(-scl::Number(1234) == scl::Number(-1234));
+  }
 
   SECTION("Multiplication") {
     scl::Number a(444);

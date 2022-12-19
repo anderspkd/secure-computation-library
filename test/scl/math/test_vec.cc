@@ -112,7 +112,8 @@ TEST_CASE("Vector", "[math]") {
   SECTION("Incompatible") {
     auto v2 = Vec{F(2), F(3)};
     REQUIRE(!v2.Equals(v1));
-    REQUIRE_THROWS_MATCHES(v2.Add(v1), std::invalid_argument,
+    REQUIRE_THROWS_MATCHES(v2.Add(v1),
+                           std::invalid_argument,
                            Catch::Matchers::Message("Vec sizes mismatch"));
   }
 
@@ -122,7 +123,7 @@ TEST_CASE("Vector", "[math]") {
   }
 
   SECTION("Random") {
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     auto r = Vec::Random(3, prg);
     auto zero = F();
     REQUIRE(r.Size() == 3);

@@ -35,7 +35,7 @@ struct RingBase {
   /**
    * @brief Add two elements and return their sum.
    */
-  friend T operator+(const T &lhs, const T &rhs) {
+  friend T operator+(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp += rhs;
   };
@@ -43,7 +43,7 @@ struct RingBase {
   /**
    * @brief Subtract two elements and return their difference.
    */
-  friend T operator-(const T &lhs, const T &rhs) {
+  friend T operator-(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp -= rhs;
   };
@@ -51,7 +51,7 @@ struct RingBase {
   /**
    * @brief Return the negation of an element.
    */
-  friend T operator-(const T &elem) {
+  friend T operator-(const T& elem) {
     T temp(elem);
     return temp.Negate();
   };
@@ -59,7 +59,7 @@ struct RingBase {
   /**
    * @brief Multiply two elements and return their product.
    */
-  friend T operator*(const T &lhs, const T &rhs) {
+  friend T operator*(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp *= rhs;
   };
@@ -67,7 +67,7 @@ struct RingBase {
   /**
    * @brief Divide two elements and return their quotient.
    */
-  friend T operator/(const T &lhs, const T &rhs) {
+  friend T operator/(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp /= rhs;
   };
@@ -75,17 +75,21 @@ struct RingBase {
   /**
    * @brief Compare two elements for equality.
    */
-  friend bool operator==(const T &lhs, const T &rhs) { return lhs.Equal(rhs); };
+  friend bool operator==(const T& lhs, const T& rhs) {
+    return lhs.Equal(rhs);
+  };
 
   /**
    * @brief Compare two elements for inequality.
    */
-  friend bool operator!=(const T &lhs, const T &rhs) { return !(lhs == rhs); };
+  friend bool operator!=(const T& lhs, const T& rhs) {
+    return !(lhs == rhs);
+  };
 
   /**
    * @brief Write a string representation of an element to a stream.
    */
-  friend std::ostream &operator<<(std::ostream &os, const T &r) {
+  friend std::ostream& operator<<(std::ostream& os, const T& r) {
     return os << r.ToString();
   };
 };

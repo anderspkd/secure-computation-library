@@ -19,16 +19,21 @@
  */
 
 #include <catch2/catch.hpp>
+#include <stdexcept>
 
+#include "../math/fields.h"
 #include "scl/math.h"
-#include "scl/prg.h"
+#include "scl/math/curves/secp256k1.h"
+#include "scl/primitives/prg.h"
 #include "scl/ss/poly.h"
 
-using FF = scl::Fp<61>;
-using Poly = scl::details::Polynomial<FF>;
-using Vec = scl::Vec<FF>;
+using namespace scl_tests;
 
-TEST_CASE("Polynomials", "[ss][math]") {
+TEMPLATE_TEST_CASE("Polynomials", "[ss][math]", FIELD_DEFS) {
+  using FF = TestType;
+  using Poly = scl::details::Polynomial<FF>;
+  using Vec = scl::Vec<FF>;
+
   SECTION("DefaultConstruct") {
     Poly p;
     REQUIRE(p.Degree() == 0);
@@ -149,10 +154,15 @@ TEST_CASE("Polynomials", "[ss][math]") {
     for (std::size_t i = 0; i < x.Degree(); ++i) {
       REQUIRE(x[i] == q[i]);
     }
+
+    Poly z;
+    REQUIRE_THROWS_MATCHES(p.Divide(z),
+                           std::invalid_argument,
+                           Catch::Matchers::Message("division by 0"));
   }
 
   SECTION("DivideRandom") {
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     auto c0 = Vec::Random(10, prg);
     auto c1 = Vec::Random(9, prg);
     auto a = Poly::Create(c0);
