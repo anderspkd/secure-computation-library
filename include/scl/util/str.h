@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_STR_H
-#define SCL_MATH_STR_H
+#ifndef SCL_UTIL_STR_H
+#define SCL_UTIL_STR_H
 
 #include <iomanip>
 #include <stdexcept>
@@ -78,6 +78,22 @@ std::string ToHexString(const T& v) {
 }
 
 /**
+ * @brief Convert a list of bytes to a string.
+ * @param begin the start of an iterator
+ * @param end the end of an iterator
+ * @return a hex representation of the digest.
+ */
+template <typename It>
+std::string ToHexString(It begin, It end) {
+  std::stringstream ss;
+  ss << std::setfill('0') << std::hex;
+  while (begin != end) {
+    ss << std::setw(2) << static_cast<int>(*begin++);
+  }
+  return ss.str();
+}
+
+/**
  * @brief ToHexString specialization for <code>__uint128_t</code>.
  */
 template <>
@@ -86,4 +102,4 @@ std::string ToHexString(const __uint128_t& v);
 }  // namespace details
 }  // namespace scl
 
-#endif  // SCL_MATH_STR_H
+#endif  // SCL_UTIL_STR_H

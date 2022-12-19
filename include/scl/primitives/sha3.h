@@ -1,5 +1,5 @@
 /**
- * @file hash.h
+ * @file sha3.h
  *
  * SCL --- Secure Computation Library
  * Copyright (C) 2022 Anders Dalskov
@@ -18,75 +18,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_HASH_H
-#define SCL_HASH_H
+#ifndef SCL_PRIMITIVES_SHA3_H
+#define SCL_PRIMITIVES_SHA3_H
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
-#include <iomanip>
-#include <string>
 #include <vector>
 
+#include "scl/primitives/digest.h"
+#include "scl/primitives/iuf_hash.h"
+
 namespace scl {
+namespace details {
 
 /**
- * @brief A hash function.
- *
- * <p>Hash defines an IUF (Initialize-Update-Finalize) style interface for a
- * hash function. The current implementation is based on SHA3 and supports
- * digest sizes of either 256, 384 or 512 bits.</p>
- *
- * @code
- * // define a hash function object with 256-bit output.
- * using Hash = scl::Hash<256>;
- *
- * unsigned char data[] = {'d', 'a', 't', 'a'};
- * Hash hash;
- * hash.Update(data, 4);
- * auto digest = hash.Finalize();
- * @endcode
- *
+ * @brief SHA3 hash function.
  * @tparam DigestSize the output size in bits. Must be either 256, 384 or 512
  */
 template <std::size_t DigestSize>
-class Hash {
+class Sha3 final : public details::IUFHash<Sha3<DigestSize>> {
   static_assert(DigestSize == 256 || DigestSize == 384 || DigestSize == 512,
-                "B must be one of 256, 384 or 512");
+                "Invalid SHA3 digest size. Must be 256, 384 or 512");
 
  public:
   /**
-   * @brief The type of the final digest.
+   * @brief The type of a SHA3 digest.
    */
-  using DigestType = std::array<unsigned char, DigestSize / 8>;
-
-  /**
-   * @brief Initialize the hash function.
-   */
-  Hash(){};
+  using DigestType = typename details::Digest<DigestSize>::Type;
 
   /**
    * @brief Update the hash function with a set of bytes.
-   *
-   * @param[in] bytes a pointer to a number of bytes.
-   * @param[in] nbytes the number of bytes.
+   * @param bytes a pointer to a number of bytes.
+   * @param nbytes the number of bytes.
    * @return the updated Hash object.
    */
-  Hash &Update(const unsigned char *bytes, std::size_t nbytes);
-
-  /**
-   * @brief Update the hash function with the content from a byte vector.
-   *
-   * @param bytes a vector of bytes.
-   * @return the updated Hash object.
-   */
-  Hash &Update(const std::vector<unsigned char> &bytes) {
-    return Update(bytes.data(), bytes.size());
-  };
+  void Hash(const unsigned char* bytes, std::size_t nbytes);
 
   /**
    * @brief Finalize and return the digest.
    */
-  DigestType Finalize();
+  DigestType Write();
 
  private:
   static const std::size_t kStateSize = 25;
@@ -100,40 +72,22 @@ class Hash {
   unsigned int mWordIndex = 0;
 };
 
-static const uint64_t keccakf_rndc[24] = {
-    0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
-    0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
-    0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL,
-    0x0000000000000088ULL, 0x0000000080008009ULL, 0x000000008000000aULL,
-    0x000000008000808bULL, 0x800000000000008bULL, 0x8000000000008089ULL,
-    0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL,
-    0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL,
-    0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL};
-
-static const unsigned int keccakf_rotc[24] = {1,  3,  6,  10, 15, 21, 28, 36,
-                                              45, 55, 2,  14, 27, 41, 56, 8,
-                                              25, 43, 62, 18, 39, 61, 20, 44};
-
-static const unsigned int keccakf_piln[24] = {10, 7,  11, 17, 18, 3,  5,  16,
-                                              8,  21, 24, 4,  15, 23, 19, 13,
-                                              12, 2,  20, 14, 22, 9,  6,  1};
-
 /**
  * @brief Keccak function.
  * @param state the current state
  */
 void Keccakf(uint64_t state[25]);
 
-template <std::size_t B>
-Hash<B> &Hash<B>::Update(const unsigned char *bytes, std::size_t nbytes) {
+template <std::size_t DigestSize>
+void Sha3<DigestSize>::Hash(const unsigned char* bytes, std::size_t nbytes) {
   unsigned int old_tail = (8 - mByteIndex) & 7;
-  const unsigned char *p = bytes;
+  const unsigned char* p = bytes;
 
   if (nbytes < old_tail) {
     while (nbytes-- > 0) {
       mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
     }
-    return *this;
+    return;
   }
 
   if (old_tail != 0) {
@@ -174,12 +128,10 @@ Hash<B> &Hash<B>::Update(const unsigned char *bytes, std::size_t nbytes) {
   while (tail-- > 0) {
     mSaved |= (uint64_t)(*(p++)) << ((mByteIndex++) * 8);
   }
-
-  return *this;
 }
 
-template <std::size_t B>
-auto Hash<B>::Finalize() -> DigestType {
+template <std::size_t DigestSize>
+auto Sha3<DigestSize>::Write() -> Sha3<DigestSize>::DigestType {
   uint64_t t = (uint64_t)(((uint64_t)(0x02 | (1 << 2))) << ((mByteIndex)*8));
   mState[mWordIndex] ^= mSaved ^ t;
   mState[kCuttoff - 1] ^= 0x8000000000000000ULL;
@@ -207,21 +159,7 @@ auto Hash<B>::Finalize() -> DigestType {
   return digest;
 }
 
-/**
- * @brief Convert a digest to a string.
- * @param digest the digest
- * @return a hex representation of the digest.
- */
-template <typename D>
-std::string DigestToString(const D &digest) {
-  std::stringstream ss;
-  ss << std::setw(2) << std::setfill('0') << std::hex;
-  for (const auto &c : digest) {
-    ss << (int)c;
-  }
-  return ss.str();
-}
-
+}  // namespace details
 }  // namespace scl
 
-#endif  // SCL_HASH_H
+#endif  // SCL_PRIMITIVES_SHA3_H

@@ -26,13 +26,17 @@
 using F = scl::Fp<61>;
 using Mat = scl::Mat<F>;
 
-inline void Populate(Mat& m, const int* values) {
+namespace {
+
+void Populate(Mat& m, const int* values) {
   for (std::size_t i = 0; i < m.Rows(); i++) {
     for (std::size_t j = 0; j < m.Cols(); j++) {
       m(i, j) = F(values[i * m.Cols() + j]);
     }
   }
 }
+
+}  // namespace
 
 TEST_CASE("Matrix", "[math]") {
   Mat m0(2, 2);
@@ -79,9 +83,11 @@ TEST_CASE("Matrix", "[math]") {
     // matrices are 0 initialized, so the above matrices are equal
     REQUIRE(a.Equals(b));
 
-    REQUIRE_THROWS_MATCHES(Mat(0, 1), std::invalid_argument,
+    REQUIRE_THROWS_MATCHES(Mat(0, 1),
+                           std::invalid_argument,
                            Catch::Matchers::Message("n or m cannot be 0"));
-    REQUIRE_THROWS_MATCHES(Mat(1, 0), std::invalid_argument,
+    REQUIRE_THROWS_MATCHES(Mat(1, 0),
+                           std::invalid_argument,
                            Catch::Matchers::Message("n or m cannot be 0"));
   }
 
@@ -119,7 +125,8 @@ TEST_CASE("Matrix", "[math]") {
 
   SECTION("Incompatible") {
     Mat m2(3, 2);
-    REQUIRE_THROWS_MATCHES(m2.Add(m0), std::invalid_argument,
+    REQUIRE_THROWS_MATCHES(m2.Add(m0),
+                           std::invalid_argument,
                            Catch::Matchers::Message("incompatible matrices"));
   }
 
@@ -147,7 +154,8 @@ TEST_CASE("Matrix", "[math]") {
     REQUIRE(m5.Equals(m4));
 
     REQUIRE_THROWS_MATCHES(
-        m3.Multiply(m0), std::invalid_argument,
+        m3.Multiply(m0),
+        std::invalid_argument,
         Catch::Matchers::Message("invalid matrix dimensions for multiply"));
   }
 
@@ -181,7 +189,7 @@ TEST_CASE("Matrix", "[math]") {
   }
 
   SECTION("Random") {
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     Mat mr = Mat::Random(4, 5, prg);
     REQUIRE(mr.Rows() == 4);
     REQUIRE(mr.Cols() == 5);
@@ -194,7 +202,7 @@ TEST_CASE("Matrix", "[math]") {
     REQUIRE(not_zero);
 
     // check stability
-    scl::PRG prg1;
+    auto prg1 = scl::PRG::Create();
     Mat mr1 = Mat::Random(4, 5, prg1);
     REQUIRE(mr1.Equals(mr));
   }
@@ -212,7 +220,7 @@ TEST_CASE("Matrix", "[math]") {
   }
 
   SECTION("resize") {
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     Mat m = Mat::Random(2, 4, prg);
     auto copy = m;
     copy.Resize(1, 8);
@@ -225,12 +233,13 @@ TEST_CASE("Matrix", "[math]") {
       }
     }
 
-    REQUIRE_THROWS_MATCHES(m.Resize(42, 4), std::invalid_argument,
+    REQUIRE_THROWS_MATCHES(m.Resize(42, 4),
+                           std::invalid_argument,
                            Catch::Matchers::Message("cannot resize matrix"));
   }
 
   SECTION("IsSquare") {
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     Mat sq = Mat::Random(2, 2, prg);
     REQUIRE(sq.IsSquare());
     Mat nsq = Mat::Random(4, 2, prg);
@@ -279,7 +288,8 @@ TEST_CASE("Matrix", "[math]") {
     REQUIRE(m1(2, 2) == F(64));
 
     xs.emplace_back(F(55));
-    REQUIRE_THROWS_MATCHES(Mat::Vandermonde(3, 3, xs), std::invalid_argument,
+    REQUIRE_THROWS_MATCHES(Mat::Vandermonde(3, 3, xs),
+                           std::invalid_argument,
                            Catch::Matchers::Message("|xs| != number of rows"));
   }
 }

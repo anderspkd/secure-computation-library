@@ -21,12 +21,12 @@
 #include <catch2/catch.hpp>
 
 #include "scl/math.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 #include "scl/ss/additive.h"
 
 TEST_CASE("AdditiveSS", "[ss]") {
   using FF = scl::Fp<61>;
-  scl::PRG prg;
+  auto prg = scl::PRG::Create();
 
   auto secret = FF(12345);
 
@@ -41,6 +41,7 @@ TEST_CASE("AdditiveSS", "[ss]") {
   REQUIRE(scl::ReconstructAdditive(sum) == secret + x);
 
   REQUIRE_THROWS_MATCHES(
-      scl::CreateAdditiveShares(secret, 0, prg), std::invalid_argument,
+      scl::CreateAdditiveShares(secret, 0, prg),
+      std::invalid_argument,
       Catch::Matchers::Message("cannot create shares for 0 people"));
 }

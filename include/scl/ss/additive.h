@@ -24,7 +24,7 @@
 #include <stdexcept>
 
 #include "scl/math/vec.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 

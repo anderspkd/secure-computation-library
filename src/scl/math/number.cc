@@ -25,7 +25,9 @@
 #include <stdexcept>
 #include <type_traits>
 
-scl::Number::Number() { mpz_init(mValue); }
+scl::Number::Number() {
+  mpz_init(mValue);
+}
 
 scl::Number::Number(const Number& number) : Number() {
   mpz_set(mValue, number.mValue);
@@ -35,7 +37,9 @@ scl::Number::Number(Number&& number) noexcept : Number() {
   mpz_set(mValue, number.mValue);
 }
 
-scl::Number::~Number() { mpz_clear(mValue); }
+scl::Number::~Number() {
+  mpz_clear(mValue);
+}
 
 scl::Number scl::Number::Random(std::size_t bits, PRG& prg) {
   auto len = (bits - 1) / 8 + 2;
@@ -59,7 +63,9 @@ scl::Number scl::Number::FromString(const std::string& str) {
   return num;
 }  // LCOV_EXCL_LINE
 
-scl::Number::Number(int value) : Number() { mpz_set_si(mValue, value); }
+scl::Number::Number(int value) : Number() {
+  mpz_set_si(mValue, value);
+}
 
 scl::Number scl::Number::operator+(const Number& number) const {
   scl::Number sum;
@@ -139,7 +145,9 @@ int scl::Number::Compare(const Number& number) const {
   return mpz_cmp(mValue, number.mValue);
 }
 
-std::size_t scl::Number::BitSize() const { return mpz_sizeinbase(mValue, 2); }
+std::size_t scl::Number::BitSize() const {
+  return mpz_sizeinbase(mValue, 2);
+}
 
 bool scl::Number::TestBit(std::size_t index) const {
   return mpz_tstbit(mValue, index);

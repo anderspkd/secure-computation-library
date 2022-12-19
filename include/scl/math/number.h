@@ -21,12 +21,12 @@
 #ifndef SCL_MATH_NUMBER_H
 #define SCL_MATH_NUMBER_H
 
-#include <gmp.h>
-
 #include <cstdint>
 #include <memory>
 
-#include "scl/prg.h"
+#include <gmp.h>
+
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -99,17 +99,15 @@ class Number {
     return *this;
   };
 
-    // This is used for all op-assign operator overloads below.
-#define SCL_OP_IMPL(op, arg) \
-  *this = *this op(arg);     \
-  return *this
-
   /**
    * @brief In-place addition of two numbers.
    * @param number the other number
    * @return this
    */
-  Number& operator+=(const Number& number) { SCL_OP_IMPL(+, number); };
+  Number& operator+=(const Number& number) {
+    *this = *this + number;
+    return *this;
+  };
 
   /**
    * @brief Add two numbers.
@@ -123,7 +121,10 @@ class Number {
    * @param number the other number
    * @return this.
    */
-  Number& operator-=(const Number& number) { SCL_OP_IMPL(-, number); };
+  Number& operator-=(const Number& number) {
+    *this = *this - number;
+    return *this;
+  };
 
   /**
    * @brief Subtract two Numbers.
@@ -143,7 +144,10 @@ class Number {
    * @param number the other Number
    * @return this.
    */
-  Number& operator*=(const Number& number) { SCL_OP_IMPL(*, number); };
+  Number& operator*=(const Number& number) {
+    *this = *this * number;
+    return *this;
+  };
 
   /**
    * @brief Multiply two Numbers.
@@ -157,7 +161,10 @@ class Number {
    * @param number the other number
    * @return this.
    */
-  Number& operator/=(const Number& number) { SCL_OP_IMPL(/, number); };
+  Number& operator/=(const Number& number) {
+    *this = *this / number;
+    return *this;
+  };
 
   /**
    * @brief Divide two Numbers.
@@ -171,7 +178,10 @@ class Number {
    * @param shift the amount to left shift
    * @return this.
    */
-  Number& operator<<=(int shift) { SCL_OP_IMPL(<<, shift); };
+  Number& operator<<=(int shift) {
+    *this = *this << shift;
+    return *this;
+  };
 
   /**
    * @brief Perform a left shift of a Number.
@@ -185,7 +195,10 @@ class Number {
    * @param shift the amount to right shift
    * @return this.
    */
-  Number& operator>>=(int shift) { SCL_OP_IMPL(>>, shift); };
+  Number& operator>>=(int shift) {
+    *this = *this >> shift;
+    return *this;
+  };
 
   /**
    * @brief Perform a right shift of a Number.
@@ -199,7 +212,10 @@ class Number {
    * @param number the number to xor this with
    * @return \p this
    */
-  Number& operator^=(const Number& number) { SCL_OP_IMPL(^, number); };
+  Number& operator^=(const Number& number) {
+    *this = *this ^ number;
+    return *this;
+  };
 
   /**
    * @brief Exclusive or of two numbers.
@@ -213,7 +229,10 @@ class Number {
    * @param number
    * @return
    */
-  Number& operator|=(const Number& number) { SCL_OP_IMPL(|, number); };
+  Number& operator|=(const Number& number) {
+    *this = *this | number;
+    return *this;
+  };
 
   /**
    * @brief operator |
@@ -227,9 +246,10 @@ class Number {
    * @param number
    * @return
    */
-  Number& operator&=(const Number& number) { SCL_OP_IMPL(&, number); };
-
-#undef SCL_OP_IMPL
+  Number& operator&=(const Number& number) {
+    *this = *this & number;
+    return *this;
+  };
 
   /**
    * @brief operator &
@@ -320,13 +340,17 @@ class Number {
    * @brief Test if this Number is odd.
    * @return true if this Number is odd.
    */
-  bool Odd() const { return TestBit(0); };
+  bool Odd() const {
+    return TestBit(0);
+  };
 
   /**
    * @brief Test if this Number is even.
    * @return true if this Number is even.
    */
-  bool Even() const { return !Odd(); };
+  bool Even() const {
+    return !Odd();
+  };
 
   /**
    * @brief Return a string representation of this Number.

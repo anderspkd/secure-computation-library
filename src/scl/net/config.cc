@@ -73,7 +73,8 @@ scl::NetworkConfig scl::NetworkConfig::Load(int id,
   return NetworkConfig(id, info);
 }
 
-scl::NetworkConfig scl::NetworkConfig::Localhost(int id, int size,
+scl::NetworkConfig scl::NetworkConfig::Localhost(int id,
+                                                 int size,
                                                  int port_base) {
   ValidateIdAndSize(id, size);
 

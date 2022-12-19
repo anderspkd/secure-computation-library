@@ -19,6 +19,7 @@
  */
 
 #include <catch2/catch.hpp>
+#include <sstream>
 
 #include "scl/math/fp.h"
 
@@ -31,7 +32,9 @@ TEST_CASE("Mersenne127", "[math]") {
   Field x(0x7b);
   Field big = Field::FromString("58797a14d0653d22a05c11c60e1aacf4");
 
-  SECTION("Name") { REQUIRE(std::string(Field::Name()) == "Mersenne127"); }
+  SECTION("Name") {
+    REQUIRE(std::string(Field::Name()) == "Mersenne127");
+  }
 
   SECTION("ToString") {
     REQUIRE(zero.ToString() == "0");

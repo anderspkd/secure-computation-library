@@ -25,7 +25,7 @@
 #include "scl/math/la.h"
 #include "scl/math/mat.h"
 
-using F = scl::FF<scl::details::GF7>;
+using F = scl::FF<scl_tests::GaloisField7>;
 using Mat = scl::Mat<F>;
 using Vec = scl::Vec<F>;
 
@@ -37,10 +37,8 @@ TEST_CASE("LinearAlgebra", "[math]") {
     // [1 0 1]
     // [0 1 0]
     // [0 0 0]
-    Mat A = Mat::FromVector(3, 3,
-                            {one, zero, one,   //
-                             zero, one, zero,  //
-                             zero, zero, zero});
+    Mat A = Mat::FromVector(
+        3, 3, {one, zero, one, zero, one, zero, zero, zero, zero});
     REQUIRE(scl::details::GetPivotInColumn(A, 2) == -1);
     REQUIRE(scl::details::GetPivotInColumn(A, 1) == 1);
     REQUIRE(scl::details::GetPivotInColumn(A, 0) == 0);
@@ -52,27 +50,27 @@ TEST_CASE("LinearAlgebra", "[math]") {
   }
 
   SECTION("FindFirstNonZeroRow") {
-    Mat A = Mat::FromVector(3, 3,
-                            {one, zero, one,   //
-                             zero, one, zero,  //
-                             zero, zero, zero});
+    Mat A = Mat::FromVector(
+        3, 3, {one, zero, one, zero, one, zero, zero, zero, zero});
     REQUIRE(scl::details::FindFirstNonZeroRow(A) == 1);
     A(2, 1) = one;
     REQUIRE(scl::details::FindFirstNonZeroRow(A) == 2);
   }
 
   SECTION("ExtractSolution") {
-    Mat A = Mat::FromVector(3, 4,
-                            {one, zero, zero, F(3),  //
-                             zero, one, zero, F(5),  //
-                             zero, zero, one, F(2)});
+    Mat A = Mat::FromVector(
+        3,
+        4,
+        {one, zero, zero, F(3), zero, one, zero, F(5), zero, zero, one, F(2)});
     auto x = scl::details::ExtractSolution(A);
     REQUIRE(x.Equals(Vec{F(3), F(5), F(2)}));
 
+    // clang-format off
     Mat B = Mat::FromVector(3, 4,
-                            {F(1), F(3), F(1), F(2),  //
-                             F(0), F(0), F(1), F(4),  //
+                            {F(1), F(3), F(1), F(2),
+                             F(0), F(0), F(1), F(4),
                              F(0), F(0), F(0), F(0)});
+    // clang-format on
     auto y = scl::details::ExtractSolution(B);
     REQUIRE(y.Equals(Vec{F(4), F(4), F(0)}));
 
@@ -84,7 +82,7 @@ TEST_CASE("LinearAlgebra", "[math]") {
 
   SECTION("RandomSolve") {
     auto n = 10;
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
 
     Mat A = Mat::Random(n, n, prg);
     Vec b = Vec::Random(n, prg);
@@ -99,7 +97,8 @@ TEST_CASE("LinearAlgebra", "[math]") {
     Mat A(2, 2);
     Vec b(3);
     REQUIRE_THROWS_MATCHES(
-        scl::details::SolveLinearSystem(x, A, b), std::invalid_argument,
+        scl::details::SolveLinearSystem(x, A, b),
+        std::invalid_argument,
         Catch::Matchers::Message("malformed system of equations"));
   }
 
@@ -113,7 +112,7 @@ TEST_CASE("LinearAlgebra", "[math]") {
 
   SECTION("Inverse") {
     std::size_t n = 10;
-    scl::PRG prg;
+    auto prg = scl::PRG::Create();
     Mat A = Mat::Random(n, n, prg);
     Mat I = Mat::Identity(n);
 

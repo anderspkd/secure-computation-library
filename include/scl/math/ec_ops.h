@@ -56,7 +56,8 @@ void CurveSetGenerator(typename C::ValueType& out);
  * @param y the y coordinate
  */
 template <typename C>
-void CurveSetAffine(typename C::ValueType& out, const FF<typename C::Field>& x,
+void CurveSetAffine(typename C::ValueType& out,
+                    const FF<typename C::Field>& x,
                     const FF<typename C::Field>& y);
 
 /**
@@ -139,7 +140,8 @@ void CurveFromBytes(typename C::ValueType& out, const unsigned char* src);
  * @param compress whether to compress the point
  */
 template <typename C>
-void CurveToBytes(unsigned char* dest, const typename C::ValueType& in,
+void CurveToBytes(unsigned char* dest,
+                  const typename C::ValueType& in,
                   bool compress);
 
 /**

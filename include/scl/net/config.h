@@ -112,22 +112,30 @@ class NetworkConfig {
   /**
    * @brief Gets the identity of this party.
    */
-  int Id() const { return mId; };
+  int Id() const {
+    return mId;
+  };
 
   /**
    * @brief Gets the size of the network.
    */
-  std::size_t NetworkSize() const { return mParties.size(); };
+  std::size_t NetworkSize() const {
+    return mParties.size();
+  };
 
   /**
    * @brief Get a list of connection information for parties in this network.
    */
-  std::vector<Party> Parties() const { return mParties; };
+  std::vector<Party> Parties() const {
+    return mParties;
+  };
 
   /**
    * @brief Get information about a party.
    */
-  Party GetParty(unsigned id) const { return mParties[id]; };
+  Party GetParty(unsigned id) const {
+    return mParties[id];
+  };
 
   /**
    * @brief Return a string representation of this network config.

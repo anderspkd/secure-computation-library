@@ -20,10 +20,6 @@
 
 #include "scl/net/tcp_utils.h"
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
 #include <cerrno>
 #include <chrono>
 #include <cstddef>
@@ -31,6 +27,10 @@
 #include <stdexcept>
 #include <system_error>
 #include <thread>
+
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 int scl::details::CreateServerSocket(int port, int backlog) {
   int err;
@@ -117,14 +117,18 @@ int scl::details::ConnectAsClient(const std::string& hostname, int port) {
   return sock;
 }
 
-int scl::details::CloseSocket(int socket) { return ::close(socket); }
+int scl::details::CloseSocket(int socket) {
+  return ::close(socket);
+}
 
-ssize_t scl::details::ReadFromSocket(int socket, unsigned char* dst,
+ssize_t scl::details::ReadFromSocket(int socket,
+                                     unsigned char* dst,
                                      std::size_t n) {
   return ::read(socket, dst, n);
 }
 
-ssize_t scl::details::WriteToSocket(int socket, const unsigned char* src,
+ssize_t scl::details::WriteToSocket(int socket,
+                                    const unsigned char* src,
                                     std::size_t n) {
   return ::write(socket, src, n);
 }

@@ -92,14 +92,17 @@ class Channel {
    * @return true if this channel has data and false otherwise.
    * @note the default implementation always returns true.
    */
-  virtual bool HasData() { return true; };
+  virtual bool HasData() {
+    return true;
+  };
 
   /**
    * @brief Send a trivially copyable item.
    * @param src the thing to send
    */
-  template <typename T, typename std::enable_if_t<
-                            std::is_trivially_copyable_v<T>, bool> = true>
+  template <
+      typename T,
+      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
   void Send(const T& src) {
     Send(SCL_CC(&src), sizeof(T));
   }
@@ -112,8 +115,9 @@ class Channel {
    *
    * @param src an STL vector of things to send
    */
-  template <typename T, typename std::enable_if_t<
-                            std::is_trivially_copyable_v<T>, bool> = true>
+  template <
+      typename T,
+      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
   void Send(const std::vector<T>& src) {
     Send(src.size());
     Send(SCL_CC(src.data()), sizeof(T) * src.size());
@@ -168,8 +172,9 @@ class Channel {
    * @brief Receive a trivially copyable item.
    * @param dst where to store the received item
    */
-  template <typename T, typename std::enable_if_t<
-                            std::is_trivially_copyable_v<T>, bool> = true>
+  template <
+      typename T,
+      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
   void Recv(T& dst) {
     Recv(SCL_C(&dst), sizeof(T));
   }
@@ -179,8 +184,9 @@ class Channel {
    * @param dst where to store the received items
    * @note any existing content in \p dst is overwritten.
    */
-  template <typename T, typename std::enable_if_t<
-                            std::is_trivially_copyable_v<T>, bool> = true>
+  template <
+      typename T,
+      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
   void Recv(std::vector<T>& dst) {
     std::size_t size;
     Recv(size);

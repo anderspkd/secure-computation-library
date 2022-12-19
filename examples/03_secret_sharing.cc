@@ -18,16 +18,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <scl/math.h>
-#include <scl/secret_sharing.h>
-
 #include <iostream>
 #include <stdexcept>
+
+#include <scl/math.h>
+#include <scl/secret_sharing.h>
 
 int main() {
   using Fp = scl::Fp<32>;
   using Vec = scl::Vec<Fp>;
-  scl::PRG prg;
+
+  auto prg = scl::PRG::Create();
 
   /* We can easily create an additive secret sharing of some secret value:
    */
@@ -46,8 +47,8 @@ int main() {
    * correction. Lets see error detection at work first
    */
 
-  scl::details::ShamirSSFactory<Fp> factory(
-      1, prg, scl::details::SecurityLevel::CORRECT);
+  auto factory =
+      scl::ShamirSSFactory<Fp>::Create(1, prg, scl::SecurityLevel::CORRECT);
   /* We create 4 shamir shares with a threshold of 1.
    */
   auto shamir_shares = factory.Share(secret);
@@ -56,17 +57,15 @@ int main() {
   /* Of course, these can be reconstructed. The second parameter is the
    * threshold. This performs reconstruction with error detection.
    */
-  auto recon = factory.GetInterpolator();
   auto shamir_reconstructed =
-      recon.Reconstruct(shamir_shares, scl::details::SecurityLevel::DETECT);
+      factory.Recover(shamir_shares, scl::SecurityLevel::DETECT);
   std::cout << shamir_reconstructed << "\n";
 
   /* If we introduce an error, then reconstruction fails
    */
   shamir_shares[2] = Fp(123);
   try {
-    std::cout << recon.Reconstruct(shamir_shares,
-                                   scl::details::SecurityLevel::DETECT)
+    std::cout << factory.Recover(shamir_shares, scl::SecurityLevel::DETECT)
               << "\n";
   } catch (std::logic_error& e) {
     std::cout << e.what() << "\n";
@@ -75,7 +74,7 @@ int main() {
   /* On the other hand, we can use the robust reconstruction since the threshold
    * is low enough. I.e., because 4 >= 3*1 + 1.
    */
-  auto r = recon.Reconstruct(shamir_shares);
+  auto r = factory.Recover(shamir_shares);
   std::cout << r << "\n";
 
   /* With a bit of extra work, we can even learn which share had the error.
@@ -104,7 +103,7 @@ int main() {
    */
   shamir_shares[1] = Fp(22);
   try {
-    recon.Reconstruct(shamir_shares);
+    factory.Recover(shamir_shares);
   } catch (std::logic_error& e) {
     std::cout << e.what() << "\n";
   }

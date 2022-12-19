@@ -26,7 +26,7 @@
 #include <string>
 #include <type_traits>
 
-#include "scl/math/str.h"
+#include "scl/util/str.h"
 
 namespace scl {
 namespace details {

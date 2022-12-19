@@ -1,3 +1,14 @@
+4.0: Shamir, Feldman, SHA-256
+- Refactor Shamir to allow caching of Lagrange coefficients
+- Add support for Feldman Secret Sharing
+- Add support for SHA-256
+- Add bibtex blob for citing SCL
+- Refactor interface for hash functions
+- Refactor interface for Shamir
+- bugs:
+  - Fix negation of 0 in Secp256k1::Field and Secp256k1::Order
+  - Make serialization and deserialization of curve points behave more sanely
+
 3.0: More features, build changes
 - Add method for returning a point as a pair of affine coordinates
 - Add method to check if a channel has data available

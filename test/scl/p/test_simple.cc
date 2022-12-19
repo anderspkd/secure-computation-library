@@ -87,8 +87,10 @@ class BeaverMul : public scl::ProtocolStep<BeaverMul, Context> {
   FF y;
 };
 
-static inline std::vector<Triple> RandomTriple() {
-  scl::PRG prg;
+namespace {
+
+std::vector<Triple> RandomTriple() {
+  auto prg = scl::PRG::Create();
   auto a = FF::Random(prg);
   auto b = FF::Random(prg);
   auto c = a * b;
@@ -100,8 +102,10 @@ static inline std::vector<Triple> RandomTriple() {
   return std::vector<Triple>{{as[0], bs[0], cs[0]}, {as[1], bs[1], cs[1]}};
 }
 
+}  // namespace
+
 TEST_CASE("protocol") {
-  scl::PRG prg;
+  auto prg = scl::PRG::Create();
   auto xs = scl::CreateAdditiveShares(FF(42), 2, prg);
   auto ys = scl::CreateAdditiveShares(FF(11), 2, prg);
   auto ts = RandomTriple();

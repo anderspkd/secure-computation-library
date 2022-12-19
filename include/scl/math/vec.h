@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "scl/math/mat.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -41,8 +41,8 @@ namespace details {
  * @param xe end of the first iterator
  * @param yb start of the second iterator
  */
-template <typename T, typename It>
-T UncheckedInnerProd(It xb, It xe, It yb) {
+template <typename T, typename I0, typename I1>
+T UncheckedInnerProd(I0 xb, I0 xe, I1 yb) {
   T v;
   while (xb != xe) {
     v += *xb++ * *yb++;
@@ -161,17 +161,23 @@ class Vec {
   /**
    * @brief The size of the Vec.
    */
-  std::size_t Size() const { return mValues.size(); };
+  std::size_t Size() const {
+    return mValues.size();
+  };
 
   /**
    * @brief Mutable access to vector elements.
    */
-  T& operator[](std::size_t idx) { return mValues[idx]; };
+  T& operator[](std::size_t idx) {
+    return mValues[idx];
+  };
 
   /**
    * @brief Read only access to vector elements.
    */
-  T operator[](std::size_t idx) const { return mValues[idx]; };
+  T operator[](std::size_t idx) const {
+    return mValues[idx];
+  };
 
   /**
    * @brief Add two Vec objects entry-wise.
@@ -305,22 +311,30 @@ class Vec {
   /**
    * @brief Convert this vector into a 1-by-N row matrix.
    */
-  Mat<T> ToRowMatrix() const { return Mat<T>{1, Size(), mValues}; };
+  Mat<T> ToRowMatrix() const {
+    return Mat<T>{1, Size(), mValues};
+  };
 
   /**
    * @brief Convert this vector into a N-by-1 column matrix.
    */
-  Mat<T> ToColumnMatrix() const { return Mat<T>{Size(), 1, mValues}; };
+  Mat<T> ToColumnMatrix() const {
+    return Mat<T>{Size(), 1, mValues};
+  };
 
   /**
    * @brief Convert this Vec object to an std::vector.
    */
-  std::vector<T>& ToStlVector() { return mValues; };
+  std::vector<T>& ToStlVector() {
+    return mValues;
+  };
 
   /**
    * @brief Convert this Vec object to a const std::vector.
    */
-  const std::vector<T>& ToStlVector() const { return mValues; };
+  const std::vector<T>& ToStlVector() const {
+    return mValues;
+  };
 
   /**
    * @brief Extract a sub-vector
@@ -343,7 +357,9 @@ class Vec {
    * @param end the end index, exclusive
    * @return a sub-vector.
    */
-  Vec<T> SubVector(std::size_t end) { return SubVector(0, end); };
+  Vec<T> SubVector(std::size_t end) {
+    return SubVector(0, end);
+  };
 
   /**
    * @brief Return a string representation of this vector.
@@ -366,67 +382,93 @@ class Vec {
   /**
    * @brief Returns the number of bytes that Write writes.
    */
-  std::size_t ByteSize() const { return Size() * T::ByteSize(); };
+  std::size_t ByteSize() const {
+    return Size() * T::ByteSize();
+  };
 
   /**
    * @brief Return an iterator pointing to the start of this Vec.
    */
-  iterator begin() { return mValues.begin(); };
+  iterator begin() {
+    return mValues.begin();
+  };
 
   /**
    * @brief Provides a const iterator to the start of this Vec.
    */
-  const_iterator begin() const { return mValues.begin(); };
+  const_iterator begin() const {
+    return mValues.begin();
+  };
 
   /**
    * @brief Provides a const iterator to the start of this Vec.
    */
-  const_iterator cbegin() const { return mValues.cbegin(); };
+  const_iterator cbegin() const {
+    return mValues.cbegin();
+  };
 
   /**
    * @brief Provides an iterator pointing to the end of this Vec.
    */
-  iterator end() { return mValues.end(); };
+  iterator end() {
+    return mValues.end();
+  };
 
   /**
    * @brief Provides a const iterator pointing to the end of this Vec.
    */
-  const_iterator end() const { return mValues.end(); };
+  const_iterator end() const {
+    return mValues.end();
+  };
 
   /**
    * @brief Provides a const iterator pointing to the end of this Vec.
    */
-  const_iterator cend() const { return mValues.cend(); };
+  const_iterator cend() const {
+    return mValues.cend();
+  };
 
   /**
    * @brief Provides a reverse iterator pointing to the end of this Vec.
    */
-  reverse_iterator rbegin() { return mValues.rbegin(); };
+  reverse_iterator rbegin() {
+    return mValues.rbegin();
+  };
 
   /**
    * @brief Provides a reverse const iterator pointing to the end of this Vec.
    */
-  const_reverse_iterator rbegin() const { return mValues.rbegin(); };
+  const_reverse_iterator rbegin() const {
+    return mValues.rbegin();
+  };
 
   /**
    * @brief Provides a reverse const iterator pointing to the end of this Vec.
    */
-  const_reverse_iterator crbegin() const { return mValues.crbegin(); };
+  const_reverse_iterator crbegin() const {
+    return mValues.crbegin();
+  };
 
   /**
    * @brief Provides a reverse iterator pointing to the start of this Vec.
    */
-  reverse_iterator rend() { return mValues.rend(); };
+  reverse_iterator rend() {
+    return mValues.rend();
+  };
 
   /**
    * @brief Provides a reverse const iterator pointing to the start of this Vec.
    */
-  const_reverse_iterator rend() const { return mValues.rend(); };
+  const_reverse_iterator rend() const {
+    return mValues.rend();
+  };
 
   /**
    * @brief Provides a reverse const iterator pointing to the start of this Vec.
    */
-  const_reverse_iterator crend() const { return mValues.crend(); };
+  const_reverse_iterator crend() const {
+    return mValues.crend();
+  };
 
  private:
   void EnsureCompatible(const Vec& other) const {

@@ -19,6 +19,7 @@
  */
 
 #include <array>
+#include <sstream>
 #include <stdexcept>
 
 #include "./secp256k1_extras.h"
@@ -57,7 +58,8 @@ bool Valid(const Field& x, const Field& y) {
 }  // namespace
 
 template <>
-void scl::details::CurveSetAffine<Curve>(Point& out, const Field& x,
+void scl::details::CurveSetAffine<Curve>(Point& out,
+                                         const Field& x,
                                          const Field& y) {
   if (Valid(x, y)) {
     out = {x, y, Field(1)};
@@ -226,11 +228,16 @@ void scl::details::CurveScalarMultiply<Curve>(Point& out,
   }
 }
 
-#define COMPRESSED_FLAG 0x04
+// Flag indicating that the point was serialized as an (X, Y) pair
+#define FULL_POINT_FLAG 0x04
+// Flag indicating that the serialized point was the point at infinity. If the
+// point was also serialized as a FULL_POINT, then we write the pair (0, 0).
 #define POINT_AT_INFINITY_FLAG 0x02
+// Flag indicating which of Y or -Y to select in case we serialize the point in
+// compressed form.
 #define SELECT_SMALLER_FLAG 0x01
 
-#define IS_COMPRESSED(flags) ((flags)&COMPRESSED_FLAG)
+#define IS_FULL_POINT(flags) ((flags)&FULL_POINT_FLAG)
 #define IS_POINT_AT_INFINITY(flags) ((flags)&POINT_AT_INFINITY_FLAG)
 #define SELECT_SMALLER(flags) ((flags)&SELECT_SMALLER_FLAG)
 
@@ -258,7 +265,11 @@ void scl::details::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
     // send the point-at-infinity.
     CurveSetPointAtInfinity<Curve>(out);
   } else {
-    if (IS_COMPRESSED(flags)) {
+    if (IS_FULL_POINT(flags)) {
+      out[0] = Field::Read(src + 1);
+      out[1] = Field::Read(src + 1 + Field::ByteSize());
+      out[2] = Field::One();
+    } else {
       Field x = Field::Read(src + 1);
 
       out[0] = x;
@@ -274,27 +285,24 @@ void scl::details::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
       } else {
         out[1] = select_smaller == 0 ? y : yn;
       }
-    } else {
-      out[0] = Field::Read(src + 1);
-      out[1] = Field::Read(src + 1 + Field::ByteSize());
-      out[2] = Field::One();
     }
   }
 }
 
-#define MARK_COMPRESSED(buf) (*(buf) |= COMPRESSED_FLAG)
+#define MARK_FULL_POINT(buf) (*(buf) |= FULL_POINT_FLAG)
 #define MARK_POINT_AT_INFINITY(buf) (*(buf) |= POINT_AT_INFINITY_FLAG)
 #define MARK_SELECT_SMALLER(buf) (*(buf) |= SELECT_SMALLER_FLAG)
 
 template <>
-void scl::details::CurveToBytes<Curve>(unsigned char* dest, const Point& in,
+void scl::details::CurveToBytes<Curve>(unsigned char* dest,
+                                       const Point& in,
                                        bool compress) {
   // Make sure flag byte is zeroed.
   *dest = 0;
 
-  // if point is compressed, mark it as such.
-  if (compress) {
-    MARK_COMPRESSED(dest);
+  // if point is un-compressed, mark it as such.
+  if (!compress) {
+    MARK_FULL_POINT(dest);
   }
 
   if (CurveIsPointAtInfinity<Curve>(in)) {

@@ -20,16 +20,7 @@
 
 #include "./ops_gmp_ff.h"
 
-void scl::details::ReadLimb(mp_limb_t &lmb, const unsigned char *bytes,
-                            std::size_t bits_per_limbs) {
-  std::size_t c = 0;
-  lmb = 0;
-  for (std::size_t i = 0; i < bits_per_limbs; i += 8) {
-    lmb |= static_cast<mp_limb_t>(bytes[c++]) << i;
-  }
-}
-
-std::size_t scl::details::FindFirstNonZero(const std::string &s) {
+std::size_t scl::details::FindFirstNonZero(const std::string& s) {
   int n = 0;
   for (const auto c : s) {
     if (c != '0') {

@@ -18,11 +18,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <scl/scl.h>
-
 #include <iostream>
 
-#include "scl/net/tcp_channel.h"
+#include <scl/net/tcp_channel.h>
+#include <scl/scl.h>
 
 scl::NetworkConfig RunServer(int n) {
   scl::DiscoveryServer server(n);
@@ -67,7 +66,7 @@ int main(int argc, char** argv) {
 
   auto network = scl::Network::Create<scl::TcpChannel>(config);
 
-  for (std::size_t i = 0; i < 3; ++i) {
+  for (std::size_t i = 0; i < (std::size_t)n; ++i) {
     // similar to the TCP channel example, send our ID to everyone:
     network.Party(i)->Send(config.Id());
     unsigned received_id;

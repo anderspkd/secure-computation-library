@@ -22,14 +22,14 @@
 #include <sstream>
 
 #include "scl/math/z2k.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 // use sizes that ensure masking is needed
 using Z2k1 = scl::Z2k<62>;
 using Z2k2 = scl::Z2k<123>;
 
 TEMPLATE_TEST_CASE("Z2k", "[math]", Z2k1, Z2k2) {
-  scl::PRG prg;
+  auto prg = scl::PRG::Create();
   auto zero = TestType();
 
   REQUIRE(std::string("Z2k") == TestType::Name());
@@ -89,7 +89,8 @@ TEMPLATE_TEST_CASE("Z2k", "[math]", Z2k1, Z2k2) {
     auto a_inverse = a.Inverse();
     REQUIRE(a * a_inverse == TestType(1));
     REQUIRE_THROWS_MATCHES(
-        zero.Inverse(), std::logic_error,
+        zero.Inverse(),
+        std::logic_error,
         Catch::Matchers::Message("value not invertible modulo 2^K"));
   }
 

@@ -18,23 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <catch2/catch.hpp>
 
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
-inline bool BufferCmp(const unsigned char* b0, const unsigned char* b1,
-                      unsigned len) {
-  const auto* p0 = b0;
-  const auto* p1 = b1;
-  while (len-- > 0) {
-    if (*p0++ != *p1++) {
-      return false;
-    }
-  }
-  return true;
-}
+namespace {
 
-inline bool BufferLooksRandom(const unsigned char* p, unsigned len) {
+bool BufferLooksRandom(const unsigned char* p, unsigned len) {
   std::vector<unsigned> buckets(256);
 
   for (std::size_t i = 0; i < len; i++) {
@@ -43,16 +34,17 @@ inline bool BufferLooksRandom(const unsigned char* p, unsigned len) {
 
   bool all_in_interval = true;
   for (std::size_t i = 0; i < 256; i++) {
-    auto p = 100 * ((float)buckets[i] / (float)len);
+    auto p = 100 * (static_cast<float>(buckets[i]) / static_cast<float>(len));
     all_in_interval &= p >= 0.2 || p <= 6.0;
   }
   return all_in_interval;
 }
 
-TEST_CASE("PRG", "[misc]") {
-  scl::PRG prg;
+}  // namespace
 
-  REQUIRE(scl::PRG::BlockSize() == 16);
+TEST_CASE("PRG", "[misc]") {
+  auto prg = scl::PRG::Create();
+
   REQUIRE(scl::PRG::SeedSize() == 16);
 
   SECTION("SanityCheck") {
@@ -65,22 +57,19 @@ TEST_CASE("PRG", "[misc]") {
 
   SECTION("Stable") {
     unsigned char seed[scl::PRG::SeedSize()] = "1234567890abcde";
-    scl::PRG prg0(seed);
-    scl::PRG prg1(seed);
-
-    REQUIRE(prg0.Counter() == prg1.Counter());
-    auto counter_before = prg1.Counter();
-    REQUIRE(BufferCmp(prg0.Seed(), seed, scl::PRG::SeedSize()));
+    auto prg0 = scl::PRG::Create(seed);
+    auto prg1 = scl::PRG::Create(seed);
 
     auto rand0 = prg0.Next(100);
     auto rand1 = prg1.Next(100);
 
     REQUIRE(rand0 == rand1);
-    REQUIRE(counter_before != prg1.Counter());
 
     prg0.Reset();
     auto rand00 = prg0.Next(100);
     REQUIRE(rand00 == rand0);
+    auto rand10 = prg1.Next(100);
+    REQUIRE(rand00 != rand10);
   }
 
   SECTION("Fill") {
@@ -93,7 +82,8 @@ TEST_CASE("PRG", "[misc]") {
     REQUIRE(last_is_zero);
 
     REQUIRE_THROWS_MATCHES(
-        prg.Next(buffer, 101), std::invalid_argument,
+        prg.Next(buffer, 101),
+        std::invalid_argument,
         Catch::Matchers::Message("requested more randomness than dest.size()"));
 
     prg.Next(buffer);

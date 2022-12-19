@@ -62,3 +62,15 @@ inspiration.
 SCL uses Doxygen for documentation. Run `./scripts/build_documentation.sh` to
 generate the documentation. This is placed in the `doc/` folder. Documentation
 uses `doxygen`, so make sure that's installed.
+
+# Citing
+
+I'd greatly appreciate any work that uses SCL include the below bibtex entry
+
+```
+@misc{secure-computation-library,
+    author = {Anders Dalskov},        
+    title = {{SCL (Secure Computation Library)---utility library for prototyping MPC applications}},
+    howpublished = {\url{https://github.com/anderspkd/secure-computation-library}},
+}
+```

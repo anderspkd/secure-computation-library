@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -73,7 +73,8 @@ class Mat {
    * @param xs a \p n length vector containing the x values to use
    * @return a Vandermonde matrix.
    */
-  static Mat<T> Vandermonde(std::size_t n, std::size_t m,
+  static Mat<T> Vandermonde(std::size_t n,
+                            std::size_t m,
                             const std::vector<T>& xs);
 
   /**
@@ -119,7 +120,8 @@ class Mat {
    * @param vec the elements of the matrix
    * @return a Matrix.
    */
-  static Mat<T> FromVector(std::size_t n, std::size_t m,
+  static Mat<T> FromVector(std::size_t n,
+                           std::size_t m,
                            const std::vector<T>& vec) {
     if (vec.size() != n * m) {
       throw std::invalid_argument("invalid dimensions");
@@ -167,12 +169,16 @@ class Mat {
   /**
    * @brief The number of rows of this matrix.
    */
-  std::size_t Rows() const { return mRows; };
+  std::size_t Rows() const {
+    return mRows;
+  };
 
   /**
    * @brief The number of columns of this matrix.
    */
-  std::size_t Cols() const { return mCols; };
+  std::size_t Cols() const {
+    return mCols;
+  };
 
   /**
    * @brief Provides mutable access to a matrix element.
@@ -313,7 +319,9 @@ class Mat {
   /**
    * @brief Check if this matrix is square.
    */
-  bool IsSquare() const { return Rows() == Cols(); };
+  bool IsSquare() const {
+    return Rows() == Cols();
+  };
 
   /**
    * @brief Transpose this matrix.
@@ -385,7 +393,9 @@ class Mat {
   /**
    * @brief The size of a matrix when serialized in bytes.
    */
-  std::size_t ByteSize() const { return Rows() * Cols() * T::ByteSize(); }
+  std::size_t ByteSize() const {
+    return Rows() * Cols() * T::ByteSize();
+  }
 
  private:
   Mat(std::size_t r, std::size_t c, std::vector<T> v)
@@ -445,7 +455,8 @@ Mat<T> Mat<T>::Random(std::size_t n, std::size_t m, PRG& prg) {
 }
 
 template <typename T>
-Mat<T> Mat<T>::Vandermonde(std::size_t n, std::size_t m,
+Mat<T> Mat<T>::Vandermonde(std::size_t n,
+                           std::size_t m,
                            const std::vector<T>& xs) {
   if (xs.size() != n) {
     throw std::invalid_argument("|xs| != number of rows");

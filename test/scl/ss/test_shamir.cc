@@ -23,7 +23,7 @@
 
 #include "../gf7.h"
 #include "scl/math.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 #include "scl/ss/shamir.h"
 
 TEST_CASE("Shamir", "[ss]") {
@@ -32,48 +32,46 @@ TEST_CASE("Shamir", "[ss]") {
 
   const std::size_t t = 2;
 
-  SECTION("Reconstruct") {
-    scl::PRG prg;
-    scl::details::ShamirSSFactory<FF> factory(
-        t, prg, scl::details::SecurityLevel::PASSIVE);
-    auto intr = factory.GetInterpolator();
-
+  SECTION("Recover") {
+    auto prg = scl::PRG::Create();
+    auto factory =
+        scl::ShamirSSFactory<FF>::Create(t, prg, scl::SecurityLevel::PASSIVE);
     auto secret = FF(123);
 
     auto shares = factory.Share(secret);
-    auto s = intr.Reconstruct(shares);
+    auto s = factory.Recover(shares);
     REQUIRE(s == secret);
 
     REQUIRE_THROWS_MATCHES(
-        intr.Reconstruct(shares.SubVector(1)), std::invalid_argument,
+        factory.Recover(shares.SubVector(1)),
+        std::invalid_argument,
         Catch::Matchers::Message("not enough shares to reconstruct"));
   }
 
   SECTION("Detection") {
-    scl::PRG prg;
-    scl::details::ShamirSSFactory<FF> factory(
-        t, prg, scl::details::SecurityLevel::DETECT);
-    auto intr = scl::details::Reconstructor<FF>::Create(
-        t, scl::details::SecurityLevel::DETECT);
+    auto prg = scl::PRG::Create();
+    auto factory =
+        scl::ShamirSSFactory<FF>::Create(t, prg, scl::SecurityLevel::DETECT);
 
     auto secret = FF(555);
     auto shares = factory.Share(secret);
     REQUIRE(shares.Size() == 2 * t + 1);
-    REQUIRE(intr.Reconstruct(shares) == secret);
+    REQUIRE(factory.Recover(shares) == secret);
 
     REQUIRE_THROWS_MATCHES(
-        intr.Reconstruct(shares.SubVector(2)), std::invalid_argument,
+        factory.Recover(shares.SubVector(2)),
+        std::invalid_argument,
         Catch::Matchers::Message("not enough shares to reconstruct"));
 
-    auto ss = intr.ReconstructShare(shares, 2);
+    auto ss = factory.RecoverShare(shares, 2);
     REQUIRE(ss == shares[2]);
-    REQUIRE(intr.Reconstruct(shares, 3) == intr.ReconstructShare(shares, 2));
+    REQUIRE(factory.Recover(shares, 3) == factory.RecoverShare(shares, 2));
   }
 
   SECTION("Robust") {
-    scl::PRG prg;
-    scl::details::ShamirSSFactory<FF> factory(
-        t, prg, scl::details::SecurityLevel::CORRECT);
+    auto prg = scl::PRG::Create();
+    auto factory =
+        scl::ShamirSSFactory<FF>::Create(t, prg, scl::SecurityLevel::CORRECT);
 
     // no errors
     auto secret = FF(123);
@@ -83,9 +81,7 @@ TEST_CASE("Shamir", "[ss]") {
     REQUIRE(reconstructed == secret);
 
     // can also reconstruct with an interpolator
-    auto intr = scl::details::Reconstructor<FF>::Create(
-        t, scl::details::SecurityLevel::CORRECT);
-    REQUIRE(intr.Reconstruct(shares) == secret);
+    REQUIRE(factory.Recover(shares) == secret);
 
     // one error
     shares[0] = FF(63212);
@@ -100,7 +96,8 @@ TEST_CASE("Shamir", "[ss]") {
     // three errors -- that's one too many
     shares[1] = FF(123);
     REQUIRE_THROWS_MATCHES(
-        scl::details::ReconstructShamirRobust(shares, t), std::logic_error,
+        scl::details::ReconstructShamirRobust(shares, t),
+        std::logic_error,
         Catch::Matchers::Message("could not correct shares"));
 
     REQUIRE_THROWS_MATCHES(
@@ -119,7 +116,7 @@ TEST_CASE("Shamir", "[ss]") {
 TEST_CASE("BerlekampWelch", "[ss][math]") {
   // https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Welch_algorithm#Example
 
-  using FF = scl::FF<scl::details::GF7>;
+  using FF = scl::FF<scl_tests::GaloisField7>;
   using Vec = scl::Vec<FF>;
 
   Vec bs = {FF(1), FF(5), FF(3), FF(6), FF(3), FF(2), FF(2)};

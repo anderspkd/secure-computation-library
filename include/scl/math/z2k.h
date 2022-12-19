@@ -25,7 +25,7 @@
 
 #include "scl/math/ring.h"
 #include "scl/math/z2k_ops.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -50,22 +50,30 @@ class Z2k final : public details::RingBase<Z2k<K>> {
   /**
    * @brief The bit size of the ring. Identical to BitSize().
    */
-  constexpr static std::size_t SpecifiedBitSize() { return K; };
+  constexpr static std::size_t SpecifiedBitSize() {
+    return K;
+  };
 
   /**
    * @brief The number of bytes needed to store a ring element.
    */
-  constexpr static std::size_t ByteSize() { return (K - 1) / 8 + 1; };
+  constexpr static std::size_t ByteSize() {
+    return (K - 1) / 8 + 1;
+  };
 
   /**
    * @brief The bit size of the ring. Identical to SpecifiedBitSize().
    */
-  constexpr static std::size_t BitSize() { return SpecifiedBitSize(); };
+  constexpr static std::size_t BitSize() {
+    return SpecifiedBitSize();
+  };
 
   /**
    * @brief A short string representation of this ring.
    */
-  constexpr static const char* Name() { return "Z2k"; };
+  constexpr static const char* Name() {
+    return "Z2k";
+  };
 
   /**
    * @brief Read a ring from a buffer.
@@ -193,7 +201,9 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * particular, an element <code>x</code> is invertible if <code>x.Lsb() ==
    * 1</code>. That is, if it is odd.
    */
-  unsigned Lsb() const { return details::LsbZ2k(mValue); };
+  unsigned Lsb() const {
+    return details::LsbZ2k(mValue);
+  };
 
   /**
    * @brief Check if this element is equal to another element.

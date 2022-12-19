@@ -24,17 +24,15 @@
 #include <iostream>
 #include <sstream>
 
-namespace scl {
-namespace details {
+namespace scl_tests {
 
-struct GF7 {
+struct GaloisField7 {
   using ValueType = unsigned char;
   constexpr static const char* kName = "GF(7)";
   constexpr static const std::size_t kByteSize = 1;
   constexpr static const std::size_t kBitSize = 8;
 };
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl_tests
 
 #endif /* TEST_SCL_GF7_H */

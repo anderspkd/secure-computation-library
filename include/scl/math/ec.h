@@ -26,7 +26,7 @@
 #include "scl/math/ec_ops.h"
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
-#include "scl/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -43,6 +43,11 @@ class EC {
    * @brief The field that this curve is defined over.
    */
   using Field = FF<typename Curve::Field>;
+
+  /**
+   * @brief A large sub-group of this curve.
+   */
+  using Order = FF<typename Curve::Order>;
 
   /**
    * @brief The size of a curve point in bytes.
@@ -62,7 +67,9 @@ class EC {
   /**
    * @brief A string indicating which curve this is.
    */
-  constexpr static const char* Name() { return Curve::kName; };
+  constexpr static const char* Name() {
+    return Curve::kName;
+  };
 
   /**
    * @brief Get the generator of this curve.
@@ -96,7 +103,9 @@ class EC {
   /**
    * @brief Create a new point equal to the point at infinity.
    */
-  explicit constexpr EC() { details::CurveSetPointAtInfinity<Curve>(mValue); };
+  explicit constexpr EC() {
+    details::CurveSetPointAtInfinity<Curve>(mValue);
+  };
 
   /**
    * @brief Add another EC point to this.
@@ -173,7 +182,7 @@ class EC {
    * @param scalar the scalar
    * @return this.
    */
-  EC& operator*=(const FF<typename Curve::Order>& scalar) {
+  EC& operator*=(const Order& scalar) {
     details::CurveScalarMultiply<Curve>(mValue, scalar);
     return *this;
   };
@@ -195,8 +204,7 @@ class EC {
    * @param scalar the scalar
    * @return the point multiplied with the scalar.
    */
-  friend EC operator*(const EC& point,
-                      const FF<typename Curve::Order>& scalar) {
+  friend EC operator*(const EC& point, const Order& scalar) {
     EC copy(point);
     return copy *= scalar;
   };
