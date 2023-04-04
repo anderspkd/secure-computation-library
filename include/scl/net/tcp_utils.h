@@ -1,8 +1,5 @@
-/**
- * @file tcp_utils.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,74 +19,145 @@
 #define SCL_NET_TCP_UTILS_H
 
 #include <memory>
+#include <stdexcept>
 #include <system_error>
+#include <thread>
 
+#include <netinet/in.h>
 #include <sys/socket.h>
 
-namespace scl {
-namespace details {
+#include "scl/net/sys_iface.h"
 
-#define SCL_THROW_SYS_ERROR(error_msg) \
-  throw std::system_error(errno, std::generic_category(), (error_msg))
+namespace scl::net {
 
 /**
- * @brief Create a socket that listens on some port.
- * @param port the port to listen on
- * @param backlog the number of connections to listen for
+ * @brief Socket type. Probably <code>int</code>.
  */
-int CreateServerSocket(int port, int backlog);
+using SocketType = int;
 
 /**
- * @brief Information about an accepted connection.
+ * @brief A connection.
  */
-struct AcceptedConnection {
+struct Connection {
   /**
    * @brief The socket.
    */
-  int socket;
+  SocketType socket;
 
   /**
-   * @brief Information returned as part of accept(2).
+   * @brief The hostname of the remote peer.
    */
-  struct std::shared_ptr<sockaddr> socket_info;
+  std::string hostname;
 };
 
 /**
+ * @brief Create a socket listening on a port.
+ * @tparam Sys interface for system calls
+ * @param port the port to listen on
+ * @param backlog the number of connections to accept
+ * @return A socket.
+ */
+template <typename Sys = SysIFace>
+SocketType CreateServerSocket(int port, int backlog) {
+  SocketType ssock = Sys::Socket(AF_INET, SOCK_STREAM, 0);
+
+  if (ssock < 0) {
+    throw std::system_error(Sys::GetError(),
+                            std::generic_category(),
+                            "could not acquire server socket");
+  }
+
+  int opt = 1;
+  auto options = SO_REUSEADDR | SO_REUSEPORT;
+
+  if (Sys::SetSockOpt(ssock, SOL_SOCKET, options, &opt, sizeof(opt)) < 0) {
+    throw std::system_error(Sys::GetError(),
+                            std::generic_category(),
+                            "could not set socket options");
+  }
+
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = Sys::HostToNet(INADDR_ANY);
+  addr.sin_port = Sys::HostToNet(port);
+
+  struct sockaddr* addr_ptr = (struct sockaddr*)&addr;
+
+  if (Sys::Bind(ssock, addr_ptr, sizeof(addr)) < 0) {
+    throw std::system_error(Sys::GetError(),
+                            std::generic_category(),
+                            "could not bind socket");
+  }
+
+  if (Sys::Listen(ssock, backlog)) {
+    throw std::system_error(Sys::GetError(),
+                            std::generic_category(),
+                            "could not listen on socket");
+  }
+
+  return ssock;
+}
+
+/**
  * @brief Accept a connection.
- * @param server_socket a socket that is listening on connections
- * @return an accepted connection.
+ * @tparam Sys interface for system calls
+ * @param server_socket a socket obtained from CreateServerSocket
+ * @return An accepted connection
  */
-AcceptedConnection AcceptConnection(int server_socket);
+template <typename Sys = SysIFace>
+Connection AcceptConnection(SocketType server_socket) {
+  auto sa = std::make_unique<struct sockaddr>();
+  auto addrsize = sizeof(struct sockaddr_in);
+  SocketType sock = Sys::Accept(server_socket, sa.get(), (socklen_t*)&addrsize);
+
+  if (sock < 0) {
+    throw std::system_error(Sys::GetError(),
+                            std::generic_category(),
+                            "could not accept connection");
+  }
+
+  const auto* p = (struct sockaddr_in*)sa.get();
+  std::string hostname = Sys::NetToAddr(p->sin_addr);
+
+  return {sock, hostname};
+}
 
 /**
- * @brief Extra the hostname of an accepted connection.
+ * @brief Connect to a remote host as a client.
+ * @tparam Sys interface for system calls
+ * @param hostname the hostname of the remote peer
+ * @param port the port of the remote peer
+ * @return A socket.
  */
-std::string GetAddress(const AcceptedConnection& connection);
+template <typename Sys = SysIFace>
+SocketType ConnectAsClient(const std::string& hostname, int port) {
+  using namespace std::chrono_literals;
 
-/**
- * @brief Connect in client mode.
- * @param hostname the hostname of the server
- * @param port the port of the server
- * @return a socket.
- */
-int ConnectAsClient(const std::string& hostname, int port);
+  SocketType sock = Sys::Socket(AF_INET, SOCK_STREAM, 0);
 
-/**
- * @brief Close a socket.
- */
-int CloseSocket(int socket);
+  if (sock < 0) {
+    throw std::system_error(Sys::GetError(),
+                            std::generic_category(),
+                            "could not acquire socket");
+  }
 
-/**
- * @brief Read from a socket.
- */
-ssize_t ReadFromSocket(int socket, unsigned char* dst, std::size_t n);
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = Sys::HostToNet(port);
 
-/**
- * @brief Write to a socket.
- */
-ssize_t WriteToSocket(int socket, const unsigned char* src, std::size_t n);
+  int err = Sys::AddrToBin(AF_INET, hostname.c_str(), &(addr.sin_addr));
 
-}  // namespace details
-}  // namespace scl
+  if (err == 0) {
+    throw std::runtime_error("invalid hostname");
+  }
+
+  while (Sys::Connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    std::this_thread::sleep_for(300ms);
+  }
+
+  return sock;
+}
+
+}  // namespace scl::net
 
 #endif  // SCL_NET_TCP_UTILS_H

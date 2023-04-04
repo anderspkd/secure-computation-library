@@ -1,8 +1,5 @@
-/**
- * @file test_feldman.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,27 +16,28 @@
  */
 
 #include <catch2/catch.hpp>
+#include <stdexcept>
 
 #include "scl/math/curves/secp256k1.h"
 #include "scl/math/ec.h"
-#include "scl/primitives/prg.h"
 #include "scl/ss/feldman.h"
+#include "scl/ss/shamir.h"
+#include "scl/util/prg.h"
+
+using namespace scl;
 
 TEST_CASE("Feldman", "[ss]") {
-  using EC = scl::EC<scl::details::Secp256k1>;
+  using EC = math::EC<math::Secp256k1>;
   using FF = EC::Order;
 
-  auto prg = scl::PRG::Create();
+  auto prg = util::PRG::Create();
   std::size_t t = 4;
 
-  SECTION("Share") {
-    auto factory = scl::FeldmanSSFactory<EC>::Create(t, prg);
-    auto secret = FF(123);
-    auto sb = factory.Share(secret, 24);
-    REQUIRE(sb.shares.Size() == 24);
-    REQUIRE(sb.commitments.Size() == t + 1);
-    REQUIRE(factory.Verify(sb.shares[22], sb.commitments, 22));
-    REQUIRE(factory.Verify(secret, sb.commitments));
-    REQUIRE(factory.Recover(sb.shares) == secret);
-  }
+  auto secret = FF(123);
+  auto sb = ss::FeldmanShare<EC>(secret, 4, 24, prg);
+  REQUIRE(sb.shares.Size() == 24);
+  REQUIRE(sb.commitments.Size() == t + 1);
+  REQUIRE(ss::FeldmanVerify({0, secret}, sb.commitments));
+  REQUIRE(ss::FeldmanVerify({23, sb.shares[22]}, sb.commitments));
+  REQUIRE(ss::ShamirRecoverP(sb.shares.SubVector(5)) == secret);
 }

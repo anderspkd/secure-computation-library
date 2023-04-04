@@ -1,8 +1,5 @@
-/**
- * @file shared_deque.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,8 +22,7 @@
 #include <mutex>
 #include <queue>
 
-namespace scl {
-namespace details {
+namespace scl::net {
 
 /**
  * @brief A simple thread safe double-ended queue.
@@ -125,7 +121,6 @@ std::size_t SharedDeque<T, Allocator>::Size() {
   return size;
 }
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_SHARED_DEQUE_H

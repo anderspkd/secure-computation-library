@@ -3,10 +3,7 @@ build/
 .cache/
 
 # do not track compiled documentation files
-doc/
-
-# build files for examples
-examples/build/
+doc/html
 
 # misc IDE stuff
 secure-computation-library.*

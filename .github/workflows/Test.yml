@@ -35,11 +35,6 @@ jobs:
       shell: bash
       run: bear make -s -j4
 
-    - name: Test
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: ctest -C $BUILD_TYPE
-
     - name: Coverage
       shell: bash
       run: |

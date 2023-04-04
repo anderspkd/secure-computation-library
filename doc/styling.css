@@ -1,0 +1,17 @@
+body, table, div, p, dl, td {
+	font-family: sans-serif;
+  font-size: 13px;
+}
+
+code {
+  background-color: #efefef;
+  border: solid 1px;
+  border-color: #cfcfcf;
+  border-radius: 4px;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+span.lineno {
+  line-height: 1.3;
+}

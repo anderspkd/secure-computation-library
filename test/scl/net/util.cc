@@ -1,8 +1,5 @@
-/**
- * @file util.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,11 +19,11 @@
 
 int test_port = SCL_DEFAULT_TEST_PORT;
 
-int scl_tests::GetPort() {
+int scl::test::GetPort() {
   return test_port++;
 }
 
-bool scl_tests::BufferEquals(const unsigned char* a,
+bool scl::test::BufferEquals(const unsigned char* a,
                              const unsigned char* b,
                              int n) {
   while (n-- > 0 && *a++ == *b++) {

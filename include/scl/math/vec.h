@@ -1,8 +1,5 @@
-/**
- * @file vec.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,12 +25,13 @@
 #include <type_traits>
 #include <vector>
 
-#include "scl/math/mat.h"
-#include "scl/primitives/prg.h"
+#include "scl/util/prg.h"
+#include "scl/util/traits.h"
 
-namespace scl {
+namespace scl::math {
 
-namespace details {
+template <typename Elem>
+class Mat;
 
 /**
  * @brief Computes an unchecked inner product between two iterators.
@@ -50,65 +48,50 @@ T UncheckedInnerProd(I0 xb, I0 xe, I1 yb) {
   return v;
 }
 
-}  // namespace details
-
 /**
  * @brief Vector.
  *
  * This class is a thin wrapper around std::vector meant only to provide some
  * functionality that makes it behave like other classes present in SCUtil.
  */
-template <typename T>
+template <typename Elem>
 class Vec {
+  static_assert(util::Serializable<Elem>::value,
+                "Vector elements must have Read/Write methods");
+
  public:
   /**
    * @brief The type of vector elements.
    */
-  using ValueType = T;
+  using ValueType = Elem;
 
   /**
    * @brief Iterator type.
    */
-  using iterator = typename std::vector<T>::iterator;
+  using iterator = typename std::vector<Elem>::iterator;
 
   /**
    * @brief Const iterator type.
    */
-  using const_iterator = typename std::vector<T>::const_iterator;
+  using const_iterator = typename std::vector<Elem>::const_iterator;
 
   /**
    * @brief Reverse iterator type.
    */
-  using reverse_iterator = typename std::vector<T>::reverse_iterator;
+  using reverse_iterator = typename std::vector<Elem>::reverse_iterator;
 
   /**
    * @brief Reverse const iterator type.
    */
   using const_reverse_iterator =
-      typename std::vector<T>::const_reverse_iterator;
+      typename std::vector<Elem>::const_reverse_iterator;
 
   /**
    * @brief Read a vec from a stream of bytes.
    * @param n the number of elements to read
    * @param src the buffer to read from
    */
-  static Vec<T> Read(std::size_t n, const unsigned char* src);
-
-  /**
-   * @brief Create a partially random Vec.
-   *
-   * This method creates a Vec object where entries satisfying a predicate are
-   * random. Entries for which the predicate is false are default initialized.
-   *
-   * The \p predicate argument should be a callable that accepts an std::size_t
-   * value and outputs something which can be treated as a bool.
-   *
-   * @param n the size of the Vec
-   * @param predicate a predicate indicating what entries to randomize
-   * @param prg a prg for creating random entries
-   */
-  template <typename Pred>
-  static Vec<T> PartialRandom(std::size_t n, Pred predicate, PRG& prg);
+  static Vec<Elem> Read(std::size_t n, const unsigned char* src);
 
   /**
    * @brief Create a Vec and populate it with random elements.
@@ -116,7 +99,7 @@ class Vec {
    * @param prg a PRG used to generate random elements
    * @return a Vec with random elements.
    */
-  static Vec<T> Random(std::size_t n, PRG& prg);
+  static Vec<Elem> Random(std::size_t n, util::PRG& prg);
 
   /**
    * @brief Create a vector with values in a range.
@@ -124,7 +107,16 @@ class Vec {
    * @param end the end value, exclusive
    * @return a vector with values <code>[start, start + 1, ..., end - 1]</code>.
    */
-  static Vec<T> Range(std::size_t start, std::size_t end);
+  static Vec<Elem> Range(std::size_t start, std::size_t end);
+
+  /**
+   * @brief Create a vector with values in a range.
+   * @param end the end value, exclusive.
+   * @return a vector with values <code>[0, ..., end - 1]</code>.
+   */
+  static Vec<Elem> Range(std::size_t end) {
+    return Range(0, end);
+  }
 
   /**
    * @brief Default constructor that creates an empty Vec.
@@ -141,13 +133,19 @@ class Vec {
    * @brief Construct a vector from an initializer_list.
    * @param values an initializer_list
    */
-  Vec(std::initializer_list<T> values) : mValues(values){};
+  Vec(std::initializer_list<Elem> values) : mValues(values){};
 
   /**
    * @brief Construct a vector from an STL vector.
    * @param values an STL vector
    */
-  explicit Vec(const std::vector<T>& values) : mValues(values){};
+  Vec(const std::vector<Elem>& values) : mValues(values){};
+
+  /**
+   * @brief Move construct a vector from an STL vector.
+   * @param values an STL vector
+   */
+  Vec(std::vector<Elem>&& values) : mValues(std::move(values)){};
 
   /**
    * @brief Construct a Vec from a pair of iterators.
@@ -166,16 +164,23 @@ class Vec {
   };
 
   /**
+   * @brief Check if this Vec is empty.
+   */
+  bool Empty() const {
+    return Size() == 0;
+  };
+
+  /**
    * @brief Mutable access to vector elements.
    */
-  T& operator[](std::size_t idx) {
+  Elem& operator[](std::size_t idx) {
     return mValues[idx];
   };
 
   /**
    * @brief Read only access to vector elements.
    */
-  T operator[](std::size_t idx) const {
+  Elem operator[](std::size_t idx) const {
     return mValues[idx];
   };
 
@@ -244,17 +249,17 @@ class Vec {
    * @param other the other vector
    * @return the dot (or inner) product of this and \p other.
    */
-  T Dot(const Vec& other) const {
+  Elem Dot(const Vec& other) const {
     EnsureCompatible(other);
-    return details::UncheckedInnerProd<T>(begin(), end(), other.begin());
+    return UncheckedInnerProd<Elem>(begin(), end(), other.begin());
   };
 
   /**
    * @brief Compute the sum over entries of this vector.
    * @return the sum of the entries of this vector.
    */
-  T Sum() const {
-    T sum;
+  Elem Sum() const {
+    Elem sum;
     for (const auto& v : mValues) {
       sum += v;
     }
@@ -266,8 +271,8 @@ class Vec {
    * @param scalar the scalar
    * @return a scaled version of this vector.
    */
-  Vec ScalarMultiply(const T& scalar) const {
-    std::vector<T> r;
+  Vec ScalarMultiply(const Elem& scalar) const {
+    std::vector<Elem> r;
     r.reserve(Size());
     for (const auto& v : mValues) {
       r.emplace_back(scalar * v);
@@ -280,7 +285,7 @@ class Vec {
    * @param scalar the scalar
    * @return a scaled version of this vector.
    */
-  Vec& ScalarMultiplyInPlace(const T& scalar) {
+  Vec& ScalarMultiplyInPlace(const Elem& scalar) {
     for (auto& v : mValues) {
       v *= scalar;
     }
@@ -306,35 +311,35 @@ class Vec {
    */
   friend bool operator!=(const Vec& left, const Vec& right) {
     return !(left == right);
-  };
+  }
 
   /**
    * @brief Convert this vector into a 1-by-N row matrix.
    */
-  Mat<T> ToRowMatrix() const {
-    return Mat<T>{1, Size(), mValues};
-  };
+  Mat<Elem> ToRowMatrix() const {
+    return Mat<Elem>{1, Size(), mValues};
+  }
 
   /**
    * @brief Convert this vector into a N-by-1 column matrix.
    */
-  Mat<T> ToColumnMatrix() const {
-    return Mat<T>{Size(), 1, mValues};
-  };
+  Mat<Elem> ToColumnMatrix() const {
+    return Mat<Elem>{Size(), 1, mValues};
+  }
 
   /**
    * @brief Convert this Vec object to an std::vector.
    */
-  std::vector<T>& ToStlVector() {
+  std::vector<Elem>& ToStlVector() {
     return mValues;
-  };
+  }
 
   /**
    * @brief Convert this Vec object to a const std::vector.
    */
-  const std::vector<T>& ToStlVector() const {
+  const std::vector<Elem>& ToStlVector() const {
     return mValues;
-  };
+  }
 
   /**
    * @brief Extract a sub-vector
@@ -342,11 +347,11 @@ class Vec {
    * @param end the end index, exclusive
    * @return a sub-vector.
    */
-  Vec<T> SubVector(std::size_t start, std::size_t end) {
+  Vec<Elem> SubVector(std::size_t start, std::size_t end) const {
     if (start > end) {
       throw std::logic_error("invalid range");
     }
-    return Vec<T>(begin() + start, begin() + end);
+    return Vec<Elem>(begin() + start, begin() + end);
   }
 
   /**
@@ -357,9 +362,9 @@ class Vec {
    * @param end the end index, exclusive
    * @return a sub-vector.
    */
-  Vec<T> SubVector(std::size_t end) {
+  Vec<Elem> SubVector(std::size_t end) const {
     return SubVector(0, end);
-  };
+  }
 
   /**
    * @brief Return a string representation of this vector.
@@ -369,9 +374,9 @@ class Vec {
   /**
    * @brief Write a string representation of this vector to a stream.
    */
-  friend std::ostream& operator<<(std::ostream& os, const Vec<T>& v) {
+  friend std::ostream& operator<<(std::ostream& os, const Vec<Elem>& v) {
     return os << v.ToString();
-  };
+  }
 
   /**
    * @brief Write this Vec to a buffer.
@@ -383,162 +388,150 @@ class Vec {
    * @brief Returns the number of bytes that Write writes.
    */
   std::size_t ByteSize() const {
-    return Size() * T::ByteSize();
-  };
+    return Size() * Elem::ByteSize();
+  }
 
   /**
    * @brief Return an iterator pointing to the start of this Vec.
    */
   iterator begin() {
     return mValues.begin();
-  };
+  }
 
   /**
    * @brief Provides a const iterator to the start of this Vec.
    */
   const_iterator begin() const {
     return mValues.begin();
-  };
+  }
 
   /**
    * @brief Provides a const iterator to the start of this Vec.
    */
   const_iterator cbegin() const {
     return mValues.cbegin();
-  };
+  }
 
   /**
    * @brief Provides an iterator pointing to the end of this Vec.
    */
   iterator end() {
     return mValues.end();
-  };
+  }
 
   /**
    * @brief Provides a const iterator pointing to the end of this Vec.
    */
   const_iterator end() const {
     return mValues.end();
-  };
+  }
 
   /**
    * @brief Provides a const iterator pointing to the end of this Vec.
    */
   const_iterator cend() const {
     return mValues.cend();
-  };
+  }
 
   /**
    * @brief Provides a reverse iterator pointing to the end of this Vec.
    */
   reverse_iterator rbegin() {
     return mValues.rbegin();
-  };
+  }
 
   /**
    * @brief Provides a reverse const iterator pointing to the end of this Vec.
    */
   const_reverse_iterator rbegin() const {
     return mValues.rbegin();
-  };
+  }
 
   /**
    * @brief Provides a reverse const iterator pointing to the end of this Vec.
    */
   const_reverse_iterator crbegin() const {
     return mValues.crbegin();
-  };
+  }
 
   /**
    * @brief Provides a reverse iterator pointing to the start of this Vec.
    */
   reverse_iterator rend() {
     return mValues.rend();
-  };
+  }
 
   /**
    * @brief Provides a reverse const iterator pointing to the start of this Vec.
    */
   const_reverse_iterator rend() const {
     return mValues.rend();
-  };
+  }
 
   /**
    * @brief Provides a reverse const iterator pointing to the start of this Vec.
    */
   const_reverse_iterator crend() const {
     return mValues.crend();
-  };
+  }
 
  private:
   void EnsureCompatible(const Vec& other) const {
     if (Size() != other.Size()) {
       throw std::invalid_argument("Vec sizes mismatch");
     }
-  };
+  }
 
-  std::vector<T> mValues;
+  std::vector<Elem> mValues;
 };
 
-template <typename T>
-Vec<T> Vec<T>::Read(std::size_t n, const unsigned char* src) {
-  std::vector<T> r;
+template <typename Elem>
+Vec<Elem> Vec<Elem>::Read(std::size_t n, const unsigned char* src) {
+  std::vector<Elem> r;
   r.reserve(n);
   std::size_t offset = 0;
   while (n-- > 0) {
-    r.emplace_back(T::Read(src + offset));
-    offset += T::ByteSize();
+    r.emplace_back(Elem::Read(src + offset));
+    offset += Elem::ByteSize();
   }
-  return Vec<T>(r);
+  return Vec<Elem>(r);
 }
 
-template <typename T>
-template <typename Pred>
-Vec<T> Vec<T>::PartialRandom(std::size_t n, Pred predicate, PRG& prg) {
-  std::vector<T> v;
-  v.reserve(n);
-  for (std::size_t i = 0; i < n; i++) {
-    if (predicate(i)) {
-      v.emplace_back(T::Random(prg));
-    } else {
-      v.emplace_back(T{});
-    }
-  }
-  return Vec<T>(v);
-}
-
-template <typename T>
-Vec<T> Vec<T>::Range(std::size_t start, std::size_t end) {
+template <typename Elem>
+Vec<Elem> Vec<Elem>::Range(std::size_t start, std::size_t end) {
   if (start > end) {
     throw std::invalid_argument("invalid range");
   }
   if (start == end) {
-    return Vec<T>{};
+    return Vec<Elem>{};
   }
 
-  std::vector<T> v;
+  std::vector<Elem> v;
   v.reserve(end - start);
   for (std::size_t i = start; i < end; ++i) {
-    v.emplace_back(T{(int)i});
+    v.emplace_back(Elem{(int)i});
   }
-  return Vec<T>(v);
+  return Vec<Elem>(v);
 }
 
-template <typename T>
-Vec<T> Vec<T>::Random(std::size_t n, PRG& prg) {
-  return Vec<T>::PartialRandom(
-      n,
-      [](std::size_t i) {
-        (void)i;
-        return true;
-      },
-      prg);
+template <typename Elem>
+Vec<Elem> Vec<Elem>::Random(std::size_t n, util::PRG& prg) {
+  auto buf = std::make_unique<unsigned char[]>(n * Elem::ByteSize());
+  prg.Next(buf.get(), n * Elem::ByteSize());
+
+  std::vector<Elem> elements;
+  elements.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    elements.emplace_back(Elem::Read(buf.get() + i * Elem::ByteSize()));
+  }
+
+  return Vec<Elem>(elements);
 }
 
-template <typename T>
-Vec<T> Vec<T>::Add(const Vec<T>& other) const {
+template <typename Elem>
+Vec<Elem> Vec<Elem>::Add(const Vec<Elem>& other) const {
   EnsureCompatible(other);
-  std::vector<T> r;
+  std::vector<Elem> r;
   auto n = Size();
   r.reserve(n);
   for (std::size_t i = 0; i < n; i++) {
@@ -547,10 +540,10 @@ Vec<T> Vec<T>::Add(const Vec<T>& other) const {
   return Vec(r);
 }
 
-template <typename T>
-Vec<T> Vec<T>::Subtract(const Vec<T>& other) const {
+template <typename Elem>
+Vec<Elem> Vec<Elem>::Subtract(const Vec<Elem>& other) const {
   EnsureCompatible(other);
-  std::vector<T> r;
+  std::vector<Elem> r;
   auto n = Size();
   r.reserve(n);
   for (std::size_t i = 0; i < n; i++) {
@@ -559,10 +552,10 @@ Vec<T> Vec<T>::Subtract(const Vec<T>& other) const {
   return Vec(r);
 }
 
-template <typename T>
-Vec<T> Vec<T>::MultiplyEntryWise(const Vec<T>& other) const {
+template <typename Elem>
+Vec<Elem> Vec<Elem>::MultiplyEntryWise(const Vec<Elem>& other) const {
   EnsureCompatible(other);
-  std::vector<T> r;
+  std::vector<Elem> r;
   auto n = Size();
   r.reserve(n);
   for (std::size_t i = 0; i < n; i++) {
@@ -571,8 +564,8 @@ Vec<T> Vec<T>::MultiplyEntryWise(const Vec<T>& other) const {
   return Vec(r);
 }
 
-template <typename T>
-bool Vec<T>::Equals(const Vec<T>& other) const {
+template <typename Elem>
+bool Vec<Elem>::Equals(const Vec<Elem>& other) const {
   if (Size() != other.Size()) {
     return false;
   }
@@ -585,32 +578,30 @@ bool Vec<T>::Equals(const Vec<T>& other) const {
   return equal;
 }
 
-template <typename T>
-std::string Vec<T>::ToString() const {
-  std::string str;
-  if (Size()) {
-    std::stringstream ss;
-    ss << "[";
-    std::size_t i = 0;
-    for (; i < Size() - 1; i++) {
-      ss << mValues[i] << ", ";
-    }
-    ss << mValues[i] << "]";
-    str = ss.str();
-  } else {
-    str = "[ EMPTY_VECTOR ]";
+template <typename Elem>
+std::string Vec<Elem>::ToString() const {
+  if (Empty()) {
+    return "[ EMPTY VECTOR ]";
   }
-  return str;
+
+  std::stringstream ss;
+  ss << "[";
+  std::size_t i = 0;
+  for (; i < Size() - 1; i++) {
+    ss << mValues[i] << ", ";
+  }
+  ss << mValues[i] << "]";
+  return ss.str();
 }
 
-template <typename T>
-void Vec<T>::Write(unsigned char* dest) const {
+template <typename Elem>
+void Vec<Elem>::Write(unsigned char* dest) const {
   for (const auto& v : mValues) {
     v.Write(dest);
-    dest += T::ByteSize();
+    dest += Elem::ByteSize();
   }
 }
 
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_VEC_H

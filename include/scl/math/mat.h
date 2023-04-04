@@ -1,8 +1,5 @@
-/**
- * @file mat.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,23 +27,28 @@
 #include <string>
 #include <vector>
 
-#include "scl/primitives/prg.h"
+#include "scl/math/lagrange.h"
+#include "scl/util/prg.h"
+#include "scl/util/traits.h"
 
-namespace scl {
+namespace scl::math {
 
-template <typename T>
+template <typename Elem>
 class Vec;
 
 /**
  * @brief Matrix.
  */
-template <typename T>
+template <typename Elem>
 class Mat {
+  static_assert(util::Serializable<Elem>::value,
+                "Matrix elements must have Read/Write methods");
+
  public:
   /**
    * @brief The type of the matrix elements.
    */
-  using ValueType = T;
+  using ValueType = Elem;
 
   /**
    * @brief Read a matrix from a stream of bytes.
@@ -55,7 +57,7 @@ class Mat {
    * @param src the bytes
    * @return a matrix.
    */
-  static Mat<T> Read(std::size_t n, std::size_t m, const unsigned char* src);
+  static Mat<Elem> Read(std::size_t n, std::size_t m, const unsigned char* src);
 
   /**
    * @brief Create a Matrix and populate it with random elements.
@@ -64,45 +66,60 @@ class Mat {
    * @param prg the prg used to generate random elements
    * @return a Matrix with random elements.
    */
-  static Mat<T> Random(std::size_t n, std::size_t m, PRG& prg);
+  static Mat<Elem> Random(std::size_t n, std::size_t m, util::PRG& prg);
 
   /**
    * @brief Create an N-by-M Vandermonde matrix.
-   * @param n the number of rows
-   * @param m the number of columns
-   * @param xs a \p n length vector containing the x values to use
+   * @param n the number of rows.
+   * @param m the number of columns.
+   * @param xs vector containing the x values to use.
    * @return a Vandermonde matrix.
+   *
+   * Let \p xs be a list \f$(x_1, x_2, \dots, x_n)\f$ where \f$x_i \neq x_j\f$
+   * for all \f$i\neq j\f$. A <i>Vandermonde</i> matrix, is the \f$n\times m\f$
+   * matrix
+   *
+   * \f$
+   * V =
+   * \begin{bmatrix}
+   * 1 & x_1 & x_1^2 & \dots & x_1^{m-1} \\
+   * 1 & x_2 & x_2^2 & \dots & x_2^{m-1} \\
+   * \ldots \\
+   * 1 & x_n & x_n^2 & \dots & x_n^{m-1}
+   * \end{bmatrix}
+   * \f$
+   *
+   * @see https://en.wikipedia.org/wiki/Vandermonde_matrix
    */
-  static Mat<T> Vandermonde(std::size_t n,
-                            std::size_t m,
-                            const std::vector<T>& xs);
+  static Mat<Elem> Vandermonde(std::size_t n,
+                               std::size_t m,
+                               const Vec<Elem>& xs);
 
   /**
    * @brief Create an N-by-M Vandermonde matrix.
-   * @param n the number of rows
-   * @param m the number of columns
+   * @param n the number of rows.
+   * @param m the number of columns.
    * @return a Vandermonde matrix.
+   *
+   * This function returns a Vandermonde matrix using \f$(1, 2, \dots, n + 1)\f$
+   * as the set of x values.
+   *
+   * @see Mat::Vandermonde.
    */
-  static Mat<T> Vandermonde(std::size_t n, std::size_t m) {
-    std::vector<T> xs;
-    xs.reserve(n);
-    for (std::size_t i = 0; i < n; ++i) {
-      xs.emplace_back(T(i + 1));
-    }
-    return Mat<T>::Vandermonde(n, m, xs);
+  static Mat<Elem> Vandermonde(std::size_t n, std::size_t m) {
+    return Mat<Elem>::Vandermonde(n, m, Vec<Elem>::Range(1, n + 1));
   }
 
   /**
    * @brief Create an N-by-M hyper-invertible matrix.
+   * @param n the number of rows.
+   * @param m the number of columns.
+   * @return a Hyperinvertible matrix.
    *
    * A hyper-invertible matrix is a matrix where every square sub-matrix is
    * invertible.
-   *
-   * @param n the number of rows
-   * @param m the number of columns
-   * @return a Hyperinvertible matrix.
    */
-  static Mat<T> HyperInvertible(std::size_t n, std::size_t m);
+  static Mat<Elem> HyperInvertible(std::size_t n, std::size_t m);
 
   /**
    * @brief Create a matrix from a vector.
@@ -120,22 +137,22 @@ class Mat {
    * @param vec the elements of the matrix
    * @return a Matrix.
    */
-  static Mat<T> FromVector(std::size_t n,
-                           std::size_t m,
-                           const std::vector<T>& vec) {
+  static Mat<Elem> FromVector(std::size_t n,
+                              std::size_t m,
+                              const std::vector<Elem>& vec) {
     if (vec.size() != n * m) {
       throw std::invalid_argument("invalid dimensions");
     }
-    return Mat<T>(n, m, vec);
-  };
+    return Mat<Elem>(n, m, vec);
+  }
 
   /**
    * @brief Construct an n-by-n identity matrix.
    */
-  static Mat<T> Identity(std::size_t n) {
-    Mat<T> I(n);
+  static Mat<Elem> Identity(std::size_t n) {
+    Mat<Elem> I(n);
     for (std::size_t i = 0; i < n; ++i) {
-      I(i, i) = T(1);
+      I(i, i) = Elem(1);
     }
     return I;
   }  // LCOV_EXCL_LINE
@@ -143,7 +160,7 @@ class Mat {
   /**
    * @brief Construct an empty 0-by-0 matrix.
    */
-  Mat() : mRows(0), mCols(0){};
+  Mat() : mRows(0), mCols(0) {}
 
   /**
    * @brief Create an N-by-M matrix with default initialized values.
@@ -154,11 +171,11 @@ class Mat {
     if (n == 0 || m == 0) {
       throw std::invalid_argument("n or m cannot be 0");
     }
-    std::vector<T> v(n * m);
+    std::vector<Elem> v(n * m);
     mRows = n;
     mCols = m;
     mValues = v;
-  };
+  }
 
   /**
    * @brief Create a square matrix with default initialized values.
@@ -171,14 +188,14 @@ class Mat {
    */
   std::size_t Rows() const {
     return mRows;
-  };
+  }
 
   /**
    * @brief The number of columns of this matrix.
    */
   std::size_t Cols() const {
     return mCols;
-  };
+  }
 
   /**
    * @brief Provides mutable access to a matrix element.
@@ -186,9 +203,9 @@ class Mat {
    * @param column the column of the element being queried
    * @return an element of the matrix.
    */
-  T& operator()(std::size_t row, std::size_t column) {
+  Elem& operator()(std::size_t row, std::size_t column) {
     return mValues[mCols * row + column];
-  };
+  }
 
   /**
    * @brief Provides read-only access to a matrix element.
@@ -196,9 +213,9 @@ class Mat {
    * @param column the column of the element being queried
    * @return an element of the matrix.
    */
-  T operator()(std::size_t row, std::size_t column) const {
+  Elem operator()(std::size_t row, std::size_t column) const {
     return mValues[mCols * row + column];
-  };
+  }
 
   /**
    * @brief Add this matrix with another matrix of the same dimensions.
@@ -210,7 +227,7 @@ class Mat {
   Mat Add(const Mat& other) const {
     Mat copy(mRows, mCols, mValues);
     return copy.AddInPlace(other);
-  };
+  }
 
   /**
    * @brief Add this matrix with another matrix of the same dimensions in-place.
@@ -226,7 +243,7 @@ class Mat {
       mValues[i] += other.mValues[i];
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Subtract this matrix with another matrix of the same dimensions.
@@ -238,7 +255,7 @@ class Mat {
   Mat Subtract(const Mat& other) const {
     Mat copy(mRows, mCols, mValues);
     return copy.SubtractInPlace(other);
-  };
+  }
 
   /**
    * @brief Subtract this matrix with another matrix of the same dimensions
@@ -255,7 +272,7 @@ class Mat {
       mValues[i] -= other.mValues[i];
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Multiply this matrix with another matrix of the same dimensions.
@@ -267,7 +284,7 @@ class Mat {
   Mat MultiplyEntryWise(const Mat& other) const {
     Mat copy(mRows, mCols, mValues);
     return copy.MultiplyEntryWiseInPlace(other);
-  };
+  }
 
   /**
    * @brief Multiply this matrix with another matrix of the same dimensions.
@@ -283,7 +300,7 @@ class Mat {
       mValues[i] *= other.mValues[i];
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Performs a matrix multiplication.
@@ -299,29 +316,29 @@ class Mat {
    * @param scalar the scalar
    * @return this scaled by \p scalar.
    */
-  Mat ScalarMultiply(const T& scalar) const {
+  Mat ScalarMultiply(const Elem& scalar) const {
     Mat copy(mRows, mCols, mValues);
     return copy.ScalarMultiplyInPlace(scalar);
-  };
+  }
 
   /**
    * @brief Multiply this matrix with a scalar in-place.
    * @param scalar the scalar
    * @return this scaled by \p scalar.
    */
-  Mat& ScalarMultiplyInPlace(const T& scalar) {
+  Mat& ScalarMultiplyInPlace(const Elem& scalar) {
     for (auto& v : mValues) {
       v *= scalar;
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Check if this matrix is square.
    */
   bool IsSquare() const {
     return Rows() == Cols();
-  };
+  }
 
   /**
    * @brief Transpose this matrix.
@@ -341,7 +358,7 @@ class Mat {
     mRows = rows;
     mCols = cols;
     return *this;
-  };
+  }
 
   /**
    * @brief Returns true if this matrix is the identity matrix.
@@ -356,9 +373,9 @@ class Mat {
   /**
    * @brief Write a string representation of this vector to a stream.
    */
-  friend std::ostream& operator<<(std::ostream& os, const Mat<T>& v) {
+  friend std::ostream& operator<<(std::ostream& os, const Mat<Elem>& v) {
     return os << v.ToString();
-  };
+  }
 
   /**
    * @brief Test if this matrix is equal to another.
@@ -373,7 +390,7 @@ class Mat {
       equal &= mValues[i] == other.mValues[i];
     }
     return equal;
-  };
+  }
 
   /**
    * @brief Write this matrix to a buffer.
@@ -394,77 +411,68 @@ class Mat {
    * @brief The size of a matrix when serialized in bytes.
    */
   std::size_t ByteSize() const {
-    return Rows() * Cols() * T::ByteSize();
+    return Rows() * Cols() * Elem::ByteSize();
   }
 
  private:
-  Mat(std::size_t r, std::size_t c, std::vector<T> v)
+  Mat(std::size_t r, std::size_t c, std::vector<Elem> v)
       : mRows(r), mCols(c), mValues(v){};
 
   void EnsureCompatible(const Mat& other) {
     if (mRows != other.mRows || mCols != other.mCols) {
       throw std::invalid_argument("incompatible matrices");
     }
-  };
+  }
 
   std::size_t mRows;
   std::size_t mCols;
-  std::vector<T> mValues;
+  std::vector<Elem> mValues;
 
-  friend class Vec<T>;
+  friend class Vec<Elem>;
 };
 
-template <typename T>
-Mat<T> Mat<T>::Read(std::size_t n, std::size_t m, const unsigned char* src) {
+template <typename Elem>
+Mat<Elem> Mat<Elem>::Read(std::size_t n,
+                          std::size_t m,
+                          const unsigned char* src) {
   const auto* ptr = src;
   auto total = n * m;
 
   // write all elements now that we know we'll not exceed the maximum read size.
-  std::vector<T> elements;
+  std::vector<Elem> elements;
   elements.reserve(total);
   for (std::size_t i = 0; i < total; i++) {
-    elements.emplace_back(T::Read(ptr));
-    ptr += T::ByteSize();
+    elements.emplace_back(Elem::Read(ptr));
+    ptr += Elem::ByteSize();
   }
   return Mat(n, m, elements);
 }
 
-template <typename T>
-void Mat<T>::Write(unsigned char* dest) const {
+template <typename Elem>
+void Mat<Elem>::Write(unsigned char* dest) const {
   for (const auto& v : mValues) {
     v.Write(dest);
-    dest += T::ByteSize();
+    dest += Elem::ByteSize();
   }
 }
 
-template <typename T>
-Mat<T> Mat<T>::Random(std::size_t n, std::size_t m, PRG& prg) {
+template <typename Elem>
+Mat<Elem> Mat<Elem>::Random(std::size_t n, std::size_t m, util::PRG& prg) {
   std::size_t nelements = n * m;
-  std::vector<T> elements;
-  elements.reserve(nelements);
-
-  std::size_t buffer_size = nelements * T::ByteSize();
-  auto buffer = std::make_unique<unsigned char[]>(buffer_size);
-  auto* ptr = buffer.get();
-  prg.Next(buffer.get(), buffer_size);
-  for (std::size_t i = 0; i < nelements; i++) {
-    elements.emplace_back(T::Read(ptr + i * T::ByteSize()));
-  }
-
-  return Mat(n, m, elements);
+  return Mat(n, m, Vec<Elem>::Random(nelements, prg).ToStlVector());
 }
 
-template <typename T>
-Mat<T> Mat<T>::Vandermonde(std::size_t n,
-                           std::size_t m,
-                           const std::vector<T>& xs) {
-  if (xs.size() != n) {
+template <typename Elem>
+Mat<Elem> Mat<Elem>::Vandermonde(std::size_t n,
+                                 std::size_t m,
+                                 const Vec<Elem>& xs) {
+  if (xs.Size() != n) {
     throw std::invalid_argument("|xs| != number of rows");
   }
 
-  Mat<T> v(n, m);
+  Mat<Elem> v(n, m);
   for (std::size_t i = 0; i < n; ++i) {
-    v(i, 0) = T(1);
+    v(i, 0) = Elem(1);
     for (std::size_t j = 1; j < m; ++j) {
       v(i, j) = v(i, j - 1) * xs[i];
     }
@@ -472,42 +480,23 @@ Mat<T> Mat<T>::Vandermonde(std::size_t n,
   return v;
 }  // LCOV_EXCL_LINE
 
-namespace details {
+template <typename Elem>
+Mat<Elem> Mat<Elem>::HyperInvertible(std::size_t n, std::size_t m) {
+  Mat<Elem> him(n, m);
 
-/**
- * @brief Compute a particular Lagrange coefficient.
- */
-template <typename T>
-T LagrangeCoefficient(std::size_t i, std::size_t j, std::size_t n) {
-  const T b(i);
-  const T a(j);
-  T lm(1);
-  for (std::size_t k = 0; k < n; ++k) {
-    if (k == j) {
-      lm *= (b - T(k)) / (a - T(k));
-    }
-  }
-  return lm;
-}
-
-}  // namespace details
-
-template <typename T>
-Mat<T> Mat<T>::HyperInvertible(std::size_t n, std::size_t m) {
-  Mat<T> him(n, m);
-  const auto mx = std::max(n, m);
+  const auto vs = Vec<Elem>::Range(1, m + 1);
 
   for (std::size_t i = 0; i < n; ++i) {
+    const auto r = ComputeLagrangeBasis(vs, -i);
     for (std::size_t j = 0; j < m; ++j) {
-      him(i, j) = details::LagrangeCoefficient<T>(i, j, mx);
+      him(i, j) = r[j];
     }
   }
-
   return him;
 }
 
-template <typename T>
-Mat<T> Mat<T>::Multiply(const Mat<T>& other) const {
+template <typename Elem>
+Mat<Elem> Mat<Elem>::Multiply(const Mat<Elem>& other) const {
   if (Cols() != other.Rows()) {
     throw std::invalid_argument("invalid matrix dimensions for multiply");
   }
@@ -526,8 +515,8 @@ Mat<T> Mat<T>::Multiply(const Mat<T>& other) const {
   return result;
 }  // LCOV_EXCL_LINE
 
-template <typename T>
-Mat<T> Mat<T>::Transpose() const {
+template <typename Elem>
+Mat<Elem> Mat<Elem>::Transpose() const {
   Mat t(Cols(), Rows());
   for (std::size_t i = 0; i < Rows(); i++) {
     for (std::size_t j = 0; j < Cols(); j++) {
@@ -537,8 +526,8 @@ Mat<T> Mat<T>::Transpose() const {
   return t;
 }
 
-template <typename T>
-bool Mat<T>::IsIdentity() const {
+template <typename Elem>
+bool Mat<Elem>::IsIdentity() const {
   if (!IsSquare()) {
     return false;
   }
@@ -547,17 +536,17 @@ bool Mat<T>::IsIdentity() const {
   for (std::size_t i = 0; i < Rows(); ++i) {
     for (std::size_t j = 0; j < Cols(); ++j) {
       if (i == j) {
-        is_ident &= operator()(i, j) == T{1};
+        is_ident &= operator()(i, j) == Elem{1};
       } else {
-        is_ident &= operator()(i, j) == T{0};
+        is_ident &= operator()(i, j) == Elem{0};
       }
     }
   }
   return is_ident;
 }
 
-template <typename T>
-std::string Mat<T>::ToString() const {
+template <typename Elem>
+std::string Mat<Elem>::ToString() const {
   // this method converts a matrix to something like
   //  [ a0 a1 a2 ... ]
   //  [ b0 b1 ..     ]
@@ -567,7 +556,7 @@ std::string Mat<T>::ToString() const {
   const auto m = Cols();
 
   if (!(n && m)) {
-    return "[ EMPTY_MATRIX ]";
+    return "[ EMPTY MATRIX ]";
   }
 
   // convert all elements to strings and find the widest string in each column
@@ -607,6 +596,6 @@ std::string Mat<T>::ToString() const {
   return ss.str();
 }
 
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_MAT_H

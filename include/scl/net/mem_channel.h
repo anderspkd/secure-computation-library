@@ -1,8 +1,5 @@
-/**
- * @file mem_channel.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,14 +24,14 @@
 #include "scl/net/channel.h"
 #include "scl/net/shared_deque.h"
 
-namespace scl {
+namespace scl::net {
 
 /**
  * @brief Channel that communicates through in-memory buffers.
  */
-class InMemoryChannel final : public Channel {
+class MemoryBackedChannel final : public Channel {
  private:
-  using Buffer = details::SharedDeque<std::vector<unsigned char>>;
+  using Buffer = SharedDeque<std::vector<unsigned char>>;
 
  public:
   /**
@@ -43,20 +40,20 @@ class InMemoryChannel final : public Channel {
    * This method returns a pair of channels that shared their buffers such that
    * what is sent on one can be retrieved on the other.
    */
-  static std::array<std::shared_ptr<InMemoryChannel>, 2> CreatePaired() {
+  static std::array<std::shared_ptr<MemoryBackedChannel>, 2> CreatePaired() {
     auto buf0 = std::make_shared<Buffer>();
     auto buf1 = std::make_shared<Buffer>();
-    auto chl0 = std::make_shared<InMemoryChannel>(buf0, buf1);
-    auto chl1 = std::make_shared<InMemoryChannel>(buf1, buf0);
+    auto chl0 = std::make_shared<MemoryBackedChannel>(buf0, buf1);
+    auto chl1 = std::make_shared<MemoryBackedChannel>(buf1, buf0);
     return {chl0, chl1};
   };
 
   /**
    * @brief Create a channel that sends to itself.
    */
-  static std::shared_ptr<InMemoryChannel> CreateSelfConnecting() {
+  static std::shared_ptr<MemoryBackedChannel> CreateLoopback() {
     auto buf = std::make_shared<Buffer>();
-    return std::make_shared<InMemoryChannel>(buf, buf);
+    return std::make_shared<MemoryBackedChannel>(buf, buf);
   }
 
   /**
@@ -64,19 +61,11 @@ class InMemoryChannel final : public Channel {
    * @param in_buffer the buffer to read incoming messages from
    * @param out_buffer the buffer to put outgoing messages
    */
-  InMemoryChannel(std::shared_ptr<Buffer> in_buffer,
-                  std::shared_ptr<Buffer> out_buffer)
+  MemoryBackedChannel(std::shared_ptr<Buffer> in_buffer,
+                      std::shared_ptr<Buffer> out_buffer)
       : mIn(std::move(in_buffer)), mOut(std::move(out_buffer)){};
 
-  /**
-   * @brief Flush the incomming buffer;
-   */
-  void Flush() {
-    while (mIn->Size() > 0) {
-      mIn->PopFront();
-    }
-    mOverflow.clear();
-  };
+  ~MemoryBackedChannel(){};
 
   void Send(const unsigned char* src, std::size_t n) override;
   std::size_t Recv(unsigned char* dst, std::size_t n) override;
@@ -93,6 +82,6 @@ class InMemoryChannel final : public Channel {
   std::vector<unsigned char> mOverflow;
 };
 
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_MEM_CHANNEL_H

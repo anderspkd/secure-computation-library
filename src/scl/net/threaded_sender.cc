@@ -1,8 +1,5 @@
-/**
- * @file threaded_sender.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,8 +19,8 @@
 
 #include <future>
 
-scl::ThreadedSenderChannel::ThreadedSenderChannel(int socket)
-    : mChannel(scl::TcpChannel(socket)) {
+scl::net::ThreadedSenderChannel::ThreadedSenderChannel(int socket)
+    : mChannel(TcpChannel(socket)) {
   mSender = std::async(std::launch::async, [&]() {
     while (true) {
       auto data = mSendBuffer.Peek();
@@ -36,7 +33,7 @@ scl::ThreadedSenderChannel::ThreadedSenderChannel(int socket)
   });
 }
 
-void scl::ThreadedSenderChannel::Close() {
+void scl::net::ThreadedSenderChannel::Close() {
   mChannel.Close();
   unsigned char stop_signal = 1;
   Send(&stop_signal, 1);

@@ -1,8 +1,5 @@
-/**
- * @file ff.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,22 +24,18 @@
 
 #include "scl/math/ff_ops.h"
 #include "scl/math/ring.h"
-#include "scl/primitives/prg.h"
+#include "scl/util/prg.h"
 
-namespace scl {
+namespace scl::math {
 
 /**
- * @brief Elements of the finite field \f$\mathbb{F}\f$.
- *
- * <p>scl::FF defines the interface for finite field elements used throughout
- * SCL. Behaviour of a particular finite field is given through the \p Field
- * template parameter (which acts sort of like a tagging class), combined with
- * appropriate specializations for the functions in ff_ops.h.</p>
- *
- * @tparam Field the finite field.
+ * @brief Finite Field interface.
+ * @tparam Field finite field definition
+ * @see Mersenne61
+ * @see Mersenne127
  */
 template <typename Field>
-class FF final : details::RingBase<FF<Field>> {
+class FF final : Ring<FF<Field>> {
  public:
   /**
    * @brief Size in bytes of a field element.
@@ -69,11 +62,11 @@ class FF final : details::RingBase<FF<Field>> {
    * @brief Read a field element from a buffer.
    * @param src the buffer
    * @return a field element.
-   * @see scl::details::FieldFromBytes
+   * @see scl::FieldFromBytes
    */
   static FF Read(const unsigned char* src) {
     FF e;
-    details::FieldFromBytes<Field>(e.mValue, src);
+    FieldFromBytes<Field>(e.mValue, src);
     return e;
   }
 
@@ -82,7 +75,7 @@ class FF final : details::RingBase<FF<Field>> {
    * @param prg the PRG
    * @return a random element.
    */
-  static FF Random(PRG& prg) {
+  static FF Random(util::PRG& prg) {
     unsigned char buffer[FF<Field>::ByteSize()];
     prg.Next(buffer, FF<Field>::ByteSize());
     return FF<Field>::Read(buffer);
@@ -92,11 +85,11 @@ class FF final : details::RingBase<FF<Field>> {
    * @brief Create a field element from a string.
    * @param str the string
    * @return a finite field element.
-   * @see scl::details::FieldFromString
+   * @see scl::FieldFromString
    */
   static FF FromString(const std::string& str) {
     FF e;
-    details::FieldFromString<Field>(e.mValue, str);
+    FieldFromString<Field>(e.mValue, str);
     return e;
   };
 
@@ -119,10 +112,10 @@ class FF final : details::RingBase<FF<Field>> {
   /**
    * @brief Create a new element from an int.
    * @param value the value to interpret as a field element
-   * @see scl::details::FieldConvertIn
+   * @see scl::FieldConvertIn
    */
   explicit constexpr FF(int value) {
-    details::FieldConvertIn<Field>(mValue, value);
+    FieldConvertIn<Field>(mValue, value);
   };
 
   /**
@@ -134,10 +127,10 @@ class FF final : details::RingBase<FF<Field>> {
    * @brief Add another field element to this.
    * @param other the other element
    * @return this set to this + \p other.
-   * @see scl::details::FieldAdd
+   * @see scl::FieldAdd
    */
   FF& operator+=(const FF& other) {
-    details::FieldAdd<Field>(mValue, other.mValue);
+    FieldAdd<Field>(mValue, other.mValue);
     return *this;
   };
 
@@ -145,10 +138,10 @@ class FF final : details::RingBase<FF<Field>> {
    * @brief Subtract another field element to this.
    * @param other the other element
    * @return this set to this - \p other.
-   * @see scl::details::FieldSubtract
+   * @see scl::FieldSubtract
    */
   FF& operator-=(const FF& other) {
-    details::FieldSubtract<Field>(mValue, other.mValue);
+    FieldSubtract<Field>(mValue, other.mValue);
     return *this;
   };
 
@@ -156,10 +149,10 @@ class FF final : details::RingBase<FF<Field>> {
    * @brief Multiply another field element to this.
    * @param other the other element
    * @return this set to this * \p other.
-   * @see scl::details::FieldMultiply
+   * @see scl::FieldMultiply
    */
   FF& operator*=(const FF& other) {
-    details::FieldMultiply<Field>(mValue, other.mValue);
+    FieldMultiply<Field>(mValue, other.mValue);
     return *this;
   };
 
@@ -179,10 +172,10 @@ class FF final : details::RingBase<FF<Field>> {
   /**
    * @brief Negates this element.
    * @return this set to -this.
-   * @see scl::details::FieldNegate
+   * @see scl::FieldNegate
    */
   FF& Negate() {
-    details::FieldNegate<Field>(mValue);
+    FieldNegate<Field>(mValue);
     return *this;
   };
 
@@ -194,7 +187,7 @@ class FF final : details::RingBase<FF<Field>> {
   FF Negated() const {
     auto copy = mValue;
     FF r;
-    details::FieldNegate<Field>(copy);
+    FieldNegate<Field>(copy);
     r.mValue = copy;
     return r;
   };
@@ -202,10 +195,10 @@ class FF final : details::RingBase<FF<Field>> {
   /**
    * @brief Inverts this element.
    * @return this set to its inverse.
-   * @see scl::details::FieldInvert
+   * @see scl::FieldInvert
    */
   FF& Invert() {
-    details::FieldInvert<Field>(mValue);
+    FieldInvert<Field>(mValue);
     return *this;
   };
 
@@ -223,37 +216,37 @@ class FF final : details::RingBase<FF<Field>> {
    * @brief Checks if this element is equal to another.
    * @param other the other element
    * @return true if this is equal to \p other.
-   * @see scl::details::FieldEqual
+   * @see scl::FieldEqual
    */
   bool Equal(const FF& other) const {
-    return details::FieldEqual<Field>(mValue, other.mValue);
+    return FieldEqual<Field>(mValue, other.mValue);
   };
 
   /**
    * @brief Returns a string representation of this element.
    * @return a string representation of this field element.
-   * @see scl::details::FieldToString
+   * @see scl::FieldToString
    */
   std::string ToString() const {
-    return details::FieldToString<Field>(mValue);
+    return FieldToString<Field>(mValue);
   };
 
   /**
    * @brief Write this element to a byte buffer.
    * @param dest the buffer. Must have space for \ref ByteSize() bytes.
-   * @see scl::details::FieldToBytes
+   * @see scl::FieldToBytes
    */
   void Write(unsigned char* dest) const {
-    details::FieldToBytes<Field>(dest, mValue);
+    FieldToBytes<Field>(dest, mValue);
   };
 
  private:
   typename Field::ValueType mValue;
 
   template <typename T>
-  friend class SCL_FF_Extras;
+  friend class FFAccess;
 };
 
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_FF_H

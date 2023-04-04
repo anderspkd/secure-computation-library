@@ -1,8 +1,5 @@
-/**
- * @file ff_ops.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,8 +23,7 @@
 #include <string>
 #include <type_traits>
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 /**
  * @brief Convert an int into a field element.
@@ -89,9 +85,6 @@ bool FieldEqual(const typename F::ValueType& in1,
  * @brief Convert a field element to bytes.
  * @param dest the field element to convert
  * @param src where to store the converted element
- *
- * For types that are trivially copyable, this function has a default
- * implementation based on std::memcpy.
  */
 template <typename F>
 void FieldToBytes(unsigned char* dest, const typename F::ValueType& src);
@@ -120,7 +113,6 @@ std::string FieldToString(const typename F::ValueType& in);
 template <typename F>
 void FieldFromString(typename F::ValueType& out, const std::string& src);
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_FF_OPS_H

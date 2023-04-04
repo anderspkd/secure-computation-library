@@ -1,8 +1,5 @@
-/**
- * @file number.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,9 +23,9 @@
 
 #include <gmp.h>
 
-#include "scl/primitives/prg.h"
+#include "scl/util/prg.h"
 
-namespace scl {
+namespace scl::math {
 
 /**
  * @brief Arbitrary precision integer.
@@ -41,7 +38,7 @@ class Number {
    * @param prg a prg for generating the random number
    * @return a random Number
    */
-  static Number Random(std::size_t bits, PRG& prg);
+  static Number Random(std::size_t bits, util::PRG& prg);
 
   /**
    * @brief Read a Number from a string
@@ -377,6 +374,6 @@ class Number {
   mpz_t mValue;
 };
 
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_NUMBER_H

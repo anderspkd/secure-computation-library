@@ -1,8 +1,5 @@
-/**
- * @file network.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,72 +21,50 @@
 
 #include "scl/net/channel.h"
 #include "scl/net/mem_channel.h"
+#include "scl/net/sys_iface.h"
 #include "scl/net/tcp_utils.h"
 #include "scl/net/threaded_sender.h"
 
-std::shared_ptr<scl::Channel> scl::details::CreateChannelConnectingToSelf() {
-  return scl::InMemoryChannel::CreateSelfConnecting();
-}
-
-void scl::details::SCL_AcceptConnections(
-    std::vector<std::shared_ptr<scl::Channel>>& channels,
-    const scl::NetworkConfig& config) {
-  // Act as server for all clients with an ID strictly greater than ours.
-  auto my_id = config.Id();
-  auto n = config.NetworkSize() - my_id - 1;
-  if (n > 0) {
-    auto port = config.GetParty(my_id).port;
-    int ssock = scl::details::CreateServerSocket(port, static_cast<int>(n));
-    for (std::size_t i = config.Id() + 1; i < config.NetworkSize(); ++i) {
-      auto ac = scl::details::AcceptConnection(ssock);
-      std::shared_ptr<scl::Channel> channel =
-          std::make_shared<scl::TcpChannel>(ac.socket);
-      unsigned id;
-      channel->Recv(id);
-      channels[id] = channel;
-    }
-    scl::details::CloseSocket(ssock);
-  }
-}
-
-scl::FakeNetwork scl::CreateFakeNetwork(unsigned id, std::size_t n) {
-  std::vector<std::shared_ptr<scl::Channel>> channels;
-  std::vector<std::shared_ptr<scl::Channel>> remotes;
+scl::net::FakeNetwork scl::net::FakeNetwork::Create(unsigned id,
+                                                    std::size_t n) {
+  std::vector<std::shared_ptr<Channel>> channels;
+  std::vector<std::shared_ptr<Channel>> remotes;
   channels.reserve(n);
   remotes.reserve(n);
 
   for (std::size_t i = 0; i < n; ++i) {
     if (i == id) {
-      channels.emplace_back(scl::details::CreateChannelConnectingToSelf());
+      channels.emplace_back(MemoryBackedChannel::CreateLoopback());
       remotes.emplace_back(nullptr);
     } else {
-      auto chls = scl::InMemoryChannel::CreatePaired();
+      auto chls = MemoryBackedChannel::CreatePaired();
       channels.emplace_back(chls[0]);
       remotes.emplace_back(chls[1]);
     }
   }
 
-  return FakeNetwork{id, Network{channels}, remotes};
+  return FakeNetwork{id, Network{channels, id}, remotes};
 }
 
-std::vector<scl::Network> scl::CreateFullyConnectedInMemory(std::size_t n) {
-  std::vector<std::vector<std::shared_ptr<scl::Channel>>> channels(n);
+std::vector<scl::net::Network> scl::net::CreateMemoryBackedNetwork(
+    std::size_t n) {
+  std::vector<std::vector<std::shared_ptr<Channel>>> channels(n);
 
   for (std::size_t i = 0; i < n; ++i) {
-    channels[i] = std::vector<std::shared_ptr<scl::Channel>>(n);
+    channels[i] = std::vector<std::shared_ptr<Channel>>(n);
   }
 
-  std::vector<scl::Network> networks;
+  std::vector<Network> networks;
   networks.reserve(n);
 
   for (std::size_t i = 0; i < n; ++i) {
-    channels[i][i] = scl::details::CreateChannelConnectingToSelf();
+    channels[i][i] = MemoryBackedChannel::CreateLoopback();
     for (std::size_t j = i + 1; j < n; ++j) {
-      auto chls = scl::InMemoryChannel::CreatePaired();
+      auto chls = MemoryBackedChannel::CreatePaired();
       channels[i][j] = chls[0];
       channels[j][i] = chls[1];
     }
-    networks.emplace_back(Network{channels[i]});
+    networks.emplace_back(Network{channels[i], i});
   }
 
   return networks;

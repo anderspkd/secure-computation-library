@@ -36,22 +36,28 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native -Wall -Wextra -pedantic -
 
 set(SCL_SOURCE_FILES
   src/scl/util/str.cc
-
-  src/scl/primitives/prg.cc
-  src/scl/primitives/sha3.cc
-  src/scl/primitives/sha256.cc
+  src/scl/util/prg.cc
+  src/scl/util/sha3.cc
+  src/scl/util/sha256.cc
 
   src/scl/math/mersenne61.cc
   src/scl/math/mersenne127.cc
 
   src/scl/net/config.cc
   src/scl/net/mem_channel.cc
-  src/scl/net/tcp_channel.cc
   src/scl/net/threaded_sender.cc
-  src/scl/net/tcp_utils.cc
   src/scl/net/network.cc
   src/scl/net/discovery/server.cc
-  src/scl/net/discovery/client.cc)
+  src/scl/net/discovery/client.cc
+
+  src/scl/simulation/simulator.cc
+  src/scl/simulation/simulate_recv_time.cc
+  src/scl/simulation/config.cc
+  src/scl/simulation/event.cc
+  src/scl/simulation/measurement.cc
+  src/scl/simulation/result.cc
+  src/scl/simulation/channel.cc
+  src/scl/simulation/context.cc)
 
 if(WITH_EC MATCHES ON)
   set(SCL_SOURCE_FILES ${SCL_SOURCE_FILES}
@@ -86,12 +92,15 @@ endif()
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
 
+  enable_testing()
+
   set(SCL_TEST_SOURCE_FILES
     test/scl/main.cc
 
-    test/scl/primitives/test_prg.cc
-    test/scl/primitives/test_sha3.cc
-    test/scl/primitives/test_sha256.cc
+    test/scl/util/test_prg.cc
+    test/scl/util/test_sha3.cc
+    test/scl/util/test_sha256.cc
+    test/scl/util/test_traits.cc
 
     test/scl/gf7.cc
     test/scl/math/test_mersenne61.cc
@@ -101,21 +110,33 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/math/test_la.cc
     test/scl/math/test_ff.cc
     test/scl/math/test_z2k.cc
+    test/scl/math/test_poly.cc
 
     test/scl/ss/test_additive.cc
-    test/scl/ss/test_poly.cc
     test/scl/ss/test_shamir.cc
     test/scl/ss/test_feldman.cc
 
     test/scl/net/util.cc
     test/scl/net/test_config.cc
     test/scl/net/test_mem_channel.cc
+    test/scl/net/test_tcp.cc
     test/scl/net/test_tcp_channel.cc
     test/scl/net/test_threaded_sender.cc
     test/scl/net/test_network.cc
     test/scl/net/test_discover.cc
+    test/scl/net/test_shared_deque.cc
+    test/scl/net/test_channel.cc
 
-    test/scl/p/test_simple.cc)
+    test/scl/protocol/test_protocol.cc
+
+    test/scl/simulation/test_simulator.cc
+    test/scl/simulation/test_config.cc
+    test/scl/simulation/test_event.cc
+    test/scl/simulation/test_context.cc
+    test/scl/simulation/test_result.cc
+    test/scl/simulation/test_measurement.cc
+    test/scl/simulation/test_mem_channel_buffer.cc
+    test/scl/simulation/test_env.cc)
 
   if(WITH_EC MATCHES ON)
     set(SCL_TEST_SOURCE_FILES ${SCL_TEST_SOURCE_FILES}

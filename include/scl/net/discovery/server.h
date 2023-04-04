@@ -1,8 +1,5 @@
-/**
- * @file server.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,9 +18,14 @@
 #ifndef SCL_NET_DISCOVERY_SERVER_H
 #define SCL_NET_DISCOVERY_SERVER_H
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "scl/net/config.h"
 #include "scl/net/network.h"
-#include "scl/p/simple.h"
+#include "scl/protocol/base.h"
+#include "scl/protocol/env.h"
 
 /**
  * @brief The maximum number of parties we allow to be discovered.
@@ -39,109 +41,61 @@
 #define DEFAULT_DISCOVERY_PORT 9999
 #endif
 
-namespace scl {
+namespace scl::net {
 
 /**
- * @brief Server for coordinating party discovery.
+ * @brief Protocol definition for the discovery server.
  */
-class DiscoveryServer {
- public:
-  /**
-   * @brief Create a new discovery coordination server.
-   * @param discovery_port the port this server should listen on
-   * @param number_of_parties the number of parties to coordinate
-   */
-  DiscoveryServer(int discovery_port, std::size_t number_of_parties)
-      : mPort(discovery_port), mNumberOfParties(number_of_parties) {
-    if (number_of_parties > MAX_DISCOVER_PARTIES) {
-      throw std::invalid_argument("number_of_parties exceeds max");
-    }
-  };
-
-  /**
-   * @brief Create a new discovery coordination server.
-   * @param number_of_parties the number of parties to coordinate
-   */
-  DiscoveryServer(std::size_t number_of_parties)
-      : DiscoveryServer(DEFAULT_DISCOVERY_PORT, number_of_parties){};
-
-  /**
-   * @brief Run the discovery coordination protocol.
-   * @param me ID, port and hostname information for this party
-   * @return A network configuration.
-   */
-  NetworkConfig Run(const Party& me) const;
-
-  class CollectIdsAndPorts;
-  class SendNetworkConfig;
-
-  /**
-   * @brief Context object for the discovery server protocol.
-   */
-  struct Ctx {
-    /**
-     * @brief Information about the server.
-     */
-    Party me;
-    /**
-     * @brief Network for communication.
-     */
-    Network network;
-  };
-
- private:
-  int mPort;
-  std::size_t mNumberOfParties;
+struct DiscoveryServer {
+  class RecvInfo;
+  class SendConfig;
 };
 
 /**
- * @brief First step of discovery: Collects IDs and computation ports.
- *
- * Using connections establish in the previous connection, this step receives
- * from each party its ID and the port it wishes to use for further
- * communication (i.e., the port that will be included in the network config).
+ * @brief Discovery server protocol step where the server receives IDs and ports
+ * from peers.
  */
-class DiscoveryServer::CollectIdsAndPorts
-    : scl::ProtocolStep<DiscoveryServer::CollectIdsAndPorts,
-                        DiscoveryServer::Ctx> {
+class DiscoveryServer::RecvInfo : public proto::Protocol {
  public:
   /**
-   * @brief Constructor.
+   * @brief Constructo a new RecvInfo protocol.
+   * @param me the server's information in the output config.
+   * @param hostnames hostnames of all the peers.
    */
-  CollectIdsAndPorts(const std::vector<std::string>& hostnames)
-      : mHostnames(hostnames){};
+  RecvInfo(const Party& me, const std::vector<std::string>& hostnames)
+      : mMe(me), mHostnames(hostnames){};
 
-  /**
-   * @brief Run this protocol step.
-   */
-  DiscoveryServer::SendNetworkConfig Run(DiscoveryServer::Ctx& ctx);
+  std::unique_ptr<proto::Protocol> Run(
+      proto::ProtocolEnvironment& env) override;
 
  private:
+  Party mMe;
   std::vector<std::string> mHostnames;
 };
 
 /**
- * @brief Final step of discovery: Send the network config object to all
- * parties.
+ * @brief Discovery server protocol step where the server sends the network
+ * config to all the other parties.
  */
-class DiscoveryServer::SendNetworkConfig
-    : scl::LastProtocolStep<DiscoveryServer::SendNetworkConfig,
-                            DiscoveryServer::Ctx> {
+class DiscoveryServer::SendConfig : public proto::Protocol {
  public:
   /**
-   * @brief Constructor.
+   * @brief Construct a new SendConfig protocol.
+   * @param config the config to send.
    */
-  SendNetworkConfig(const NetworkConfig& config) : mConfig(config){};
+  SendConfig(const NetworkConfig& config) : mConfig(config){};
 
-  /**
-   * @brief Run the final step of the discovery protocol.
-   */
-  NetworkConfig Finalize(DiscoveryServer::Ctx& ctx);
+  std::unique_ptr<proto::Protocol> Run(
+      proto::ProtocolEnvironment& env) override;
+
+  std::any Output() const override {
+    return mConfig;
+  }
 
  private:
   NetworkConfig mConfig;
 };
 
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_DISCOVERY_SERVER_H

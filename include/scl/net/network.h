@@ -1,8 +1,5 @@
-/**
- * @file network.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,6 +21,7 @@
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -31,35 +29,39 @@
 
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
+#include "scl/net/mem_channel.h"
+#include "scl/net/sys_iface.h"
+#include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
 
-namespace scl {
+namespace scl::net {
 
 /**
- * @brief A collection of channels.
+ * @brief A Network.
  */
 class Network {
  public:
   /**
    * @brief Create a network using a network config.
+   * @param config the network configuration to use
+   * @tparam ChannelT the channel type
    *
    * This creates a network where parties are connected using private
    * peer-to-peer channels.
-   *
-   * @param config the network configuration to use
-   * @tparam ChannelT the channel type
    */
   template <typename ChannelT>
   static Network Create(const NetworkConfig& config);
 
-  Network() = default;
-
   /**
    * @brief Create a new network.
    * @param channels a list of peer-to-peer channels
+   * @param my_id the ID of the local party
    */
-  Network(const std::vector<std::shared_ptr<Channel>>& channels)
-      : mChannels(channels){};
+  Network(const std::vector<std::shared_ptr<Channel>>& channels,
+          std::size_t my_id)
+      : mChannels(channels), mMyId(my_id){};
+
+  Network() = default;
 
   /**
    * @brief Get a channel to a particular party.
@@ -70,10 +72,46 @@ class Network {
   }
 
   /**
+   * @brief Get the next party according to its ID.
+   */
+  Channel* Next() {
+    const auto next_id = mMyId == Size() - 1 ? 0 : mMyId + 1;
+    return mChannels[next_id].get();
+  }
+
+  /**
+   * @brief Get the previous party according to its ID.
+   */
+  Channel* Previous() {
+    const auto prev_id = mMyId == 0 ? Size() - 1 : mMyId - 1;
+    return mChannels[prev_id].get();
+  }
+
+  /**
+   * @brief Get the other party in the network.
+   *
+   * If the network has more than two parties then this method throws an
+   * std::logic_error as the concept of "other" party is ambigious in that case.
+   */
+  Channel* Other() {
+    if (Size() != 2) {
+      throw std::logic_error("other party ambiguous for more than 2 parties");
+    }
+    return mChannels[1 - mMyId].get();
+  }
+
+  /**
    * @brief The size of the network.
    */
   std::size_t Size() const {
     return mChannels.size();
+  };
+
+  /**
+   * @brief The ID of the local party.
+   */
+  std::size_t MyId() const {
+    return mMyId;
   };
 
   /**
@@ -87,12 +125,21 @@ class Network {
 
  private:
   std::vector<std::shared_ptr<Channel>> mChannels;
+  std::size_t mMyId;
 };
 
 /**
  * @brief A fake network. Useful for testing.
  */
 struct FakeNetwork {
+  /**
+   * @brief Create a fake network of some size for a specific party.
+   * @param id the ID of the party owning the fake network
+   * @param n the size of the network
+   * @return a FakeNetwork.
+   */
+  static FakeNetwork Create(unsigned id, std::size_t n);
+
   /**
    * @brief The ID of the party owning this fake network.
    */
@@ -114,65 +161,54 @@ struct FakeNetwork {
 };
 
 /**
- * @brief Create a fake network of some size for a specific party.
- * @param id the ID of the party owning the fake network
- * @param n the size of the network
- * @return a FakeNetwork.
- */
-FakeNetwork CreateFakeNetwork(unsigned id, std::size_t n);
-
-/**
  * @brief Create a fully connected network that resides in memory.
- *
- * This function creates a fully connected network consisting of
- * scl::InMemoryChannel's. Data sent to party <code>j</code> on network
- * <code>i</code> can be received by receiving from <code>i</code> on network
- * <code>j</code>.
- *
  * @param n the size of the network
  * @return a fully connected network.
- */
-std::vector<Network> CreateFullyConnectedInMemory(std::size_t n);
-
-namespace details {
-
-/**
- * @brief Create a channel that connects to itself.
  *
- * This simply creates a channel where calls to scl::Channel::Send can be read
- * by calling scl::Channel::Recv.
+ * This function creates a list of networks of \p n parties where each pair of
+ * parties are connected to eachother by a InMemoryChannel.
  */
-std::shared_ptr<Channel> CreateChannelConnectingToSelf();
-
-// Internal helper function for Network::Create. This is used by a server thread
-// to construct channel objects for all parties where the ID is strictly greater
-// than our own.
-void SCL_AcceptConnections(std::vector<std::shared_ptr<Channel>>& channels,
-                           const NetworkConfig& config);
-}  // namespace details
+std::vector<Network> CreateMemoryBackedNetwork(std::size_t n);
 
 template <typename ChannelT>
-Network Network::Create(const scl::NetworkConfig& config) {
-  std::vector<std::shared_ptr<scl::Channel>> channels(config.NetworkSize());
+Network Network::Create(const NetworkConfig& config) {
+  std::vector<std::shared_ptr<Channel>> channels(config.NetworkSize());
 
-  channels[config.Id()] = scl::details::CreateChannelConnectingToSelf();
+  // connect to ourselves.
+  channels[config.Id()] = MemoryBackedChannel::CreateLoopback();
 
-  std::thread server(
-      scl::details::SCL_AcceptConnections, std::ref(channels), config);
+  // This thread runs a server which accepts connections from all parties with
+  // an ID strictly greater than ours.
+  std::thread connector([&channels, &config]() {
+    const auto id = config.Id();
+    const auto m = config.NetworkSize() - id - 1;
+    if (m > 0) {
+      auto port = config.GetParty(id).port;
+      auto server_socket = CreateServerSocket<>((int)port, (int)m);
+      for (std::size_t i = id + 1; i < config.NetworkSize(); ++i) {
+        auto conn = AcceptConnection(server_socket);
+        std::shared_ptr<Channel> channel =
+            std::make_shared<ChannelT>(conn.socket);
+        unsigned id;
+        channel->Recv(id);
+        channels[id] = channel;
+      }
+      SysIFace::Close(server_socket);
+    }
+  });
 
-  for (std::size_t i = 0; i < static_cast<std::size_t>(config.Id()); ++i) {
+  for (std::size_t i = 0; i < config.Id(); ++i) {
     const auto party = config.GetParty(i);
-    auto socket = scl::details::ConnectAsClient(party.hostname, party.port);
-    std::shared_ptr<scl::Channel> channel = std::make_shared<ChannelT>(socket);
+    auto socket = ConnectAsClient<>(party.hostname, (int)party.port);
+    std::shared_ptr<Channel> channel = std::make_shared<ChannelT>(socket);
     channel->Send((unsigned)config.Id());
     channels[i] = channel;
   }
 
-  server.join();
-
-  return Network{channels};
+  connector.join();
+  return Network{channels, config.Id()};
 }
 
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_NETWORK_H

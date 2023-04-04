@@ -1,8 +1,5 @@
-/**
- * @file fp.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,50 +24,45 @@
 #include "scl/math/fields/mersenne127.h"
 #include "scl/math/fields/mersenne61.h"
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 #define SCL_IN_RANGE(v, l, u) ((l) <= (v) && (v) <= (u))
 
 /**
  * @brief Select a suitable Finite Field based on a provided bitlevel.
  */
-template <unsigned Bits>
+template <std::size_t Bits>
 struct FieldSelector {
+  static_assert(Bits > 0 && Bits < 128, "Bits not in range [1, 127]");
+
   /**
    * @brief The field.
    */
-  // clang-format off
   using Field =
-      std::conditional_t<
-      SCL_IN_RANGE(Bits, 1, 61),
-      Mersenne61,
-
-      std::conditional_t<
-      SCL_IN_RANGE(Bits, 62, 127),
-      Mersenne127,
-
-      void>>;
-  // clang-format on
+      std::conditional_t<SCL_IN_RANGE(Bits, 1, 61), Mersenne61, Mersenne127>;
 };
 
 #undef SCL_IN_RANGE
 
-}  // namespace details
-
 /**
  * @brief A suitable pre-defined field with space for \p Bits computation.
+ * @tparam Bits the size in bits of the finite field
  *
- * <p>scl::FF picks a suitable pre-defined finite field implementation based on
- * the number of bits of computation the user wants. At the moment, there are
- * two different fields supported: One based on a 61-bit Mersenne prime, and one
- * based on a 127-bit mersenne prime. Depending on \p Bits, the smaller of the
- * fields will be picked and a compile-time error is thrown if \p Bits exceed
- * 127.</p>
+ * Fp is an alias for FF instantiated with a prime order Finite Field of an
+ * appropriate size indicated by the \p Bits parameter. Currently, only \p Bits
+ * have to be in the range <code>[1, 127]</code> as SCL only has support for two
+ * fields:
+ * <ul>
+ * <li>A 61-bit Finite Field defined over a \f$p=2^{61}-1\f$</li>
+ * <li>A 127-bit Finite Field defined over a \f$p=2^{127}-1\f$</li>
+ * </ul>
+ *
+ * @see Mersenne61
+ * @see Mersenne127
  */
-template <unsigned Bits>
-using Fp = FF<typename details::FieldSelector<Bits>::Field>;
+template <std::size_t Bits>
+using Fp = FF<typename FieldSelector<Bits>::Field>;
 
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_FP_H

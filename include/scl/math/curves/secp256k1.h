@@ -1,8 +1,5 @@
-/**
- * @file secp256k1.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,11 +23,10 @@
 #include "scl/math/ec.h"
 #include "scl/math/ff.h"
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 /**
- * @brief Secp256k1 elliptic curve definition.
+ * @brief Elliptic curve definition for secp256k1.
  */
 struct Secp256k1 {
   /**
@@ -86,7 +82,7 @@ struct Secp256k1 {
   /**
    * @brief Secp256k1 curve elements are stored in projective coordinates.
    */
-  using ValueType = std::array<scl::FF<Field>, 3>;
+  using ValueType = std::array<FF<Field>, 3>;
 
   /**
    * @brief Name of the secp256k1 curve.
@@ -94,7 +90,6 @@ struct Secp256k1 {
   constexpr static const char* kName = "secp256k1";
 };
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_CURVES_SECP256K1_H

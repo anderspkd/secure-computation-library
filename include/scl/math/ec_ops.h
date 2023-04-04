@@ -1,8 +1,5 @@
-/**
- * @file ec_ops.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,8 +21,7 @@
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 /**
  * @brief Set a point equal to the point-at-infinity.
@@ -66,7 +62,7 @@ void CurveSetAffine(typename C::ValueType& out,
  * @return a set of affine coordinates.
  */
 template <typename C>
-std::array<scl::FF<typename C::Field>, 2> CurveToAffine(
+std::array<FF<typename C::Field>, 2> CurveToAffine(
     const typename C::ValueType& point);
 
 /**
@@ -152,7 +148,6 @@ void CurveToBytes(unsigned char* dest,
 template <typename C>
 std::string CurveToString(const typename C::ValueType& point);
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_EC_OPS_H

@@ -1,8 +1,5 @@
-/**
- * @file client.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,92 +22,65 @@
 #include <string>
 
 #include "scl/net/config.h"
-#include "scl/net/discovery/server.h"
 #include "scl/net/network.h"
-#include "scl/p/simple.h"
+#include "scl/protocol/base.h"
+#include "scl/protocol/env.h"
 
-namespace scl {
+namespace scl::net {
 
 /**
- * @brief Client that receives a network config from a remote server.
+ * @brief Protocol definition for a discovery client.
  */
-class DiscoveryClient {
- public:
-  /**
-   * @brief Create a new client in a discovery protocol.
-   * @param discovery_port the port of the discovery server
-   * @param discovery_hostname the hostname of the discovery server
-   */
-  DiscoveryClient(const std::string& discovery_hostname, int discovery_port)
-      : mHostname(discovery_hostname), mPort(discovery_port){};
-
-  /**
-   * @brief Create a new client in a discovery protocol.
-   * @param discovery_hostname the hostname of the discovery server
-   */
-  DiscoveryClient(const std::string& discovery_hostname)
-      : DiscoveryClient(discovery_hostname, DEFAULT_DISCOVERY_PORT){};
-
-  /**
-   * @brief Run the discovery protocol.
-   * @param id the ID of this party
-   * @param port the port of this party
-   * @return A network configuration.
-   */
-  NetworkConfig Run(int id, int port) const;
-
-  class SendIdAndPort;
-  class ReceiveNetworkConfig;
-
- private:
-  std::string mHostname;
-  int mPort;
+struct DiscoveryClient {
+  class SendInfo;
+  class RecvConfig;
 };
 
 /**
- * @brief Send this party's ID and port to the discovery server.
+ * @brief Client discovery step where the client sends its ID and port.
  */
-class DiscoveryClient::SendIdAndPort
-    : scl::ProtocolStep<DiscoveryClient::SendIdAndPort,
-                        std::shared_ptr<Channel>> {
+class DiscoveryClient::SendInfo : public proto::Protocol {
  public:
   /**
-   * @brief Constructor.
+   * @brief Construct a new SendInfo protocol.
+   * @param my_id the ID of this party in the output config.
+   * @param my_port the port that this party wishes to use in the output config.
    */
-  SendIdAndPort(int id, int port) : mId(id), mPort(port){};
+  SendInfo(std::size_t my_id, std::size_t my_port)
+      : mId(my_id), mPort(my_port){};
 
-  /**
-   * @brief Run this protocol step.
-   */
-  DiscoveryClient::ReceiveNetworkConfig Run(
-      const std::shared_ptr<Channel>& ctx) const;
+  std::unique_ptr<proto::Protocol> Run(
+      proto::ProtocolEnvironment& env) override;
 
  private:
-  int mId;
-  int mPort;
+  std::size_t mId;
+  std::size_t mPort;
 };
 
 /**
- * @brief Receive a network configuration from a discovery server.
+ * @brief Client discovery step where the network config is received.
  */
-class DiscoveryClient::ReceiveNetworkConfig
-    : scl::LastProtocolStep<DiscoveryClient::ReceiveNetworkConfig,
-                            std::shared_ptr<Channel>> {
+class DiscoveryClient::RecvConfig : public proto::Protocol {
  public:
   /**
-   * @brief Constructor.
+   * @brief Construct a new RecvConfig protocol.
+   * @param my_id the ID of this party in the output config.
    */
-  ReceiveNetworkConfig(int id) : mId(id){};
+  RecvConfig(std::size_t my_id) : mId(my_id){};
 
-  /**
-   * @brief Finalize the discovery protocol.
-   */
-  NetworkConfig Finalize(const std::shared_ptr<Channel>& ctx) const;
+  std::unique_ptr<proto::Protocol> Run(
+      proto::ProtocolEnvironment& env) override;
+
+  std::any Output() const override {
+    return mConfig;
+  }
 
  private:
-  int mId;
+  std::size_t mId;
+
+  NetworkConfig mConfig;
 };
 
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_DISCOVERY_CLIENT_H

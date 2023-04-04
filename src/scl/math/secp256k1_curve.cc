@@ -1,8 +1,5 @@
-/**
- * @file secp256k1_curve.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,14 +19,14 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "./secp256k1_extras.h"
+#include "./secp256k1_helpers.h"
 #include "scl/math/curves/secp256k1.h"
 #include "scl/math/ec.h"
 #include "scl/math/ec_ops.h"
 #include "scl/math/fp.h"
 
-using Curve = scl::details::Secp256k1;
-using Field = scl::FF<Curve::Field>;
+using Curve = scl::math::Secp256k1;
+using Field = scl::math::FF<Curve::Field>;
 using Point = Curve::ValueType;
 
 // clang-format off
@@ -43,7 +40,7 @@ using Point = Curve::ValueType;
 static const Field kCurveB(7);
 
 template <>
-void scl::details::CurveSetPointAtInfinity<Curve>(Point& out) {
+void scl::math::CurveSetPointAtInfinity<Curve>(Point& out) {
   out = POINT_AT_INFINITY;
 }
 
@@ -58,9 +55,9 @@ bool Valid(const Field& x, const Field& y) {
 }  // namespace
 
 template <>
-void scl::details::CurveSetAffine<Curve>(Point& out,
-                                         const Field& x,
-                                         const Field& y) {
+void scl::math::CurveSetAffine<Curve>(Point& out,
+                                      const Field& x,
+                                      const Field& y) {
   if (Valid(x, y)) {
     out = {x, y, Field(1)};
   } else {
@@ -69,13 +66,13 @@ void scl::details::CurveSetAffine<Curve>(Point& out,
 }
 
 template <>
-std::array<Field, 2> scl::details::CurveToAffine<Curve>(const Point& point) {
+std::array<Field, 2> scl::math::CurveToAffine<Curve>(const Point& point) {
   const auto Z = GET_Z(point);
   return {GET_X(point) / Z, GET_Y(point) / Z};
 }
 
 template <>
-bool scl::details::CurveEqual<Curve>(const Point& in1, const Point& in2) {
+bool scl::math::CurveEqual<Curve>(const Point& in1, const Point& in2) {
   const auto Z1 = GET_Z(in1);
   const auto Z2 = GET_Z(in2);
   // (X1, Y1, Z1) eqv (X2, Y2, Z2) <==> (X1 * Z2, Y1 * Z2) == (X2 * Z1, Y2 * Z2)
@@ -84,12 +81,12 @@ bool scl::details::CurveEqual<Curve>(const Point& in1, const Point& in2) {
 }
 
 template <>
-bool scl::details::CurveIsPointAtInfinity<Curve>(const Point& point) {
+bool scl::math::CurveIsPointAtInfinity<Curve>(const Point& point) {
   return CurveEqual<Curve>(point, POINT_AT_INFINITY);
 }
 
 template <>
-std::string scl::details::CurveToString<Curve>(const Point& point) {
+std::string scl::math::CurveToString<Curve>(const Point& point) {
   std::string str;
   if (CurveIsPointAtInfinity<Curve>(point)) {
     str = "EC{POINT_AT_INFINITY}";
@@ -100,10 +97,10 @@ std::string scl::details::CurveToString<Curve>(const Point& point) {
     str = ss.str();
   }
   return str;
-}
+}  // LCOV_EXCL_LINE
 
 template <>
-void scl::details::CurveSetGenerator<Curve>(Point& out) {
+void scl::math::CurveSetGenerator<Curve>(Point& out) {
   static const Point gen = {
       Field::FromString(
           "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
@@ -115,7 +112,7 @@ void scl::details::CurveSetGenerator<Curve>(Point& out) {
 }
 
 template <>
-void scl::details::CurveDouble<Curve>(Point& out) {
+void scl::math::CurveDouble<Curve>(Point& out) {
   if (!CurveIsPointAtInfinity<Curve>(out)) {
     if (GET_Y(out) == Field::Zero()) {
       CurveSetPointAtInfinity<Curve>(out);
@@ -139,7 +136,7 @@ void scl::details::CurveDouble<Curve>(Point& out) {
 }
 
 template <>
-void scl::details::CurveAdd<Curve>(Point& out, const Point& in) {
+void scl::math::CurveAdd<Curve>(Point& out, const Point& in) {
   if (CurveIsPointAtInfinity<Curve>(out)) {
     out = in;
   } else if (!CurveIsPointAtInfinity<Curve>(in)) {
@@ -177,7 +174,7 @@ void scl::details::CurveAdd<Curve>(Point& out, const Point& in) {
 }
 
 template <>
-void scl::details::CurveNegate<Curve>(Point& out) {
+void scl::math::CurveNegate<Curve>(Point& out) {
   if (GET_Y(out) == Field::Zero()) {
     CurveSetPointAtInfinity<Curve>(out);
   } else {
@@ -186,15 +183,14 @@ void scl::details::CurveNegate<Curve>(Point& out) {
 }
 
 template <>
-void scl::details::CurveSubtract<Curve>(Point& out, const Point& in) {
+void scl::math::CurveSubtract<Curve>(Point& out, const Point& in) {
   Point copy(in);
   CurveNegate<Curve>(copy);
   CurveAdd<Curve>(out, copy);
 }
 
 template <>
-void scl::details::CurveScalarMultiply<Curve>(Point& out,
-                                              const Number& scalar) {
+void scl::math::CurveScalarMultiply<Curve>(Point& out, const Number& scalar) {
   if (!CurveIsPointAtInfinity<Curve>(out)) {
     const auto n = scalar.BitSize();
     Point res;
@@ -211,16 +207,16 @@ void scl::details::CurveScalarMultiply<Curve>(Point& out,
 }
 
 template <>
-void scl::details::CurveScalarMultiply<Curve>(Point& out,
-                                              const FF<Curve::Order>& scalar) {
+void scl::math::CurveScalarMultiply<Curve>(Point& out,
+                                           const FF<Curve::Order>& scalar) {
   if (!CurveIsPointAtInfinity<Curve>(out)) {
-    auto x = scl::SCL_FF_Extras<Curve::Order>::FromMonty(scalar);
-    const auto n = scl::SCL_FF_Extras<Curve::Order>::HigestSetBit(x);
+    auto x = FFAccess<Curve::Order>::FromMonty(scalar);
+    const auto n = FFAccess<Curve::Order>::HigestSetBit(x);
     Point res;
     CurveSetPointAtInfinity<Curve>(res);
     for (auto i = n; i-- > 0;) {
       CurveDouble<Curve>(res);
-      if (scl::SCL_FF_Extras<Curve::Order>::TestBit(x, i)) {
+      if (FFAccess<Curve::Order>::TestBit(x, i)) {
         CurveAdd<Curve>(res, out);
       }
     }
@@ -245,18 +241,18 @@ namespace {
 
 Field ComputeOtherCoordinate(const Field& x) {
   auto y_sqr = x * x * x + kCurveB;
-  auto z = scl::SCL_FF_Extras<Curve::Field>::ComputeSqrt(y_sqr);
+  auto z = scl::math::FFAccess<Curve::Field>::ComputeSqrt(y_sqr);
   return z;
 }
 
 bool IsSmaller(const Field& y, const Field& y_neg) {
-  return scl::SCL_FF_Extras<Curve::Field>::IsSmaller(y, y_neg);
+  return scl::math::FFAccess<Curve::Field>::IsSmaller(y, y_neg);
 }
 
 }  // namespace
 
 template <>
-void scl::details::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
+void scl::math::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
   const auto flags = *src;
 
   if (IS_POINT_AT_INFINITY(flags)) {
@@ -294,9 +290,9 @@ void scl::details::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
 #define MARK_SELECT_SMALLER(buf) (*(buf) |= SELECT_SMALLER_FLAG)
 
 template <>
-void scl::details::CurveToBytes<Curve>(unsigned char* dest,
-                                       const Point& in,
-                                       bool compress) {
+void scl::math::CurveToBytes<Curve>(unsigned char* dest,
+                                    const Point& in,
+                                    bool compress) {
   // Make sure flag byte is zeroed.
   *dest = 0;
 

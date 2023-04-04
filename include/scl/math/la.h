@@ -1,8 +1,5 @@
-/**
- * @file la.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,8 +21,7 @@
 #include "scl/math/mat.h"
 #include "scl/math/vec.h"
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 /**
  * @brief Swap two rows of a matrix in-place.
@@ -306,7 +302,6 @@ bool SolveLinearSystem(Vec<T>& x, const Mat<T>& A, const Vec<T>& b) {
   return true;
 }
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_LA_H

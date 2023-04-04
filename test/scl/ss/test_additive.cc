@@ -1,8 +1,5 @@
-/**
- * @file test_additive.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,28 +17,25 @@
 
 #include <catch2/catch.hpp>
 
-#include "scl/math.h"
-#include "scl/primitives/prg.h"
+#include "scl/math/fp.h"
 #include "scl/ss/additive.h"
+#include "scl/util/prg.h"
+
+using namespace scl;
 
 TEST_CASE("AdditiveSS", "[ss]") {
-  using FF = scl::Fp<61>;
-  auto prg = scl::PRG::Create();
+  using FF = math::Fp<61>;
+  auto prg = util::PRG::Create();
 
   auto secret = FF(12345);
 
-  auto shares = scl::CreateAdditiveShares(secret, 10, prg);
+  auto shares = ss::AdditiveShare(secret, 10, prg);
   REQUIRE(shares.Size() == 10);
-  REQUIRE(scl::ReconstructAdditive(shares) == secret);
+  REQUIRE(shares.Sum() == secret);
 
   auto x = FF(55555);
-  auto shr_x = scl::CreateAdditiveShares(x, 10, prg);
+  auto shr_x = ss::AdditiveShare(x, 10, prg);
   auto sum = shares.Add(shr_x);
 
-  REQUIRE(scl::ReconstructAdditive(sum) == secret + x);
-
-  REQUIRE_THROWS_MATCHES(
-      scl::CreateAdditiveShares(secret, 0, prg),
-      std::invalid_argument,
-      Catch::Matchers::Message("cannot create shares for 0 people"));
+  REQUIRE(sum.Sum() == secret + x);
 }

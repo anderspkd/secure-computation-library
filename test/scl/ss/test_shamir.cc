@@ -1,8 +1,5 @@
-/**
- * @file test_shamir.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,116 +19,96 @@
 #include <stdexcept>
 
 #include "../gf7.h"
-#include "scl/math.h"
-#include "scl/primitives/prg.h"
+#include "scl/math/fp.h"
+#include "scl/math/lagrange.h"
+#include "scl/math/vec.h"
 #include "scl/ss/shamir.h"
+#include "scl/util/prg.h"
 
-TEST_CASE("Shamir", "[ss]") {
-  using FF = scl::Fp<61>;
-  using Vec = scl::Vec<FF>;
+using namespace scl;
 
-  const std::size_t t = 2;
+using FF = math::Fp<61>;
 
-  SECTION("Recover") {
-    auto prg = scl::PRG::Create();
-    auto factory =
-        scl::ShamirSSFactory<FF>::Create(t, prg, scl::SecurityLevel::PASSIVE);
-    auto secret = FF(123);
+TEST_CASE("Shamir share passive", "[ss]") {
+  auto prg = util::PRG::Create("shamir passive");
+  const auto shares = ss::ShamirShare(FF(123), 3, 4, prg);
 
-    auto shares = factory.Share(secret);
-    auto s = factory.Recover(shares);
-    REQUIRE(s == secret);
+  REQUIRE(shares.Size() == 4);
+  REQUIRE(ss::ShamirRecoverP(shares) == FF(123));
+}
 
-    REQUIRE_THROWS_MATCHES(
-        factory.Recover(shares.SubVector(1)),
-        std::invalid_argument,
-        Catch::Matchers::Message("not enough shares to reconstruct"));
-  }
+TEST_CASE("Shamir reconstruct", "[ss]") {
+  auto prg = util::PRG::Create("shamir recons");
+  const auto shares = ss::ShamirShare(FF(123), 5, 100, prg);
 
-  SECTION("Detection") {
-    auto prg = scl::PRG::Create();
-    auto factory =
-        scl::ShamirSSFactory<FF>::Create(t, prg, scl::SecurityLevel::DETECT);
+  REQUIRE(shares.Size() == 100);
 
-    auto secret = FF(555);
-    auto shares = factory.Share(secret);
-    REQUIRE(shares.Size() == 2 * t + 1);
-    REQUIRE(factory.Recover(shares) == secret);
+  const auto lb_0 =
+      math::ComputeLagrangeBasis<FF>({FF(4), FF(5), FF(6), FF(7), FF(8), FF(9)},
+                                     0);
+  const auto r_0 = math::UncheckedInnerProd<FF>(shares.begin() + 3,
+                                                shares.begin() + 9,
+                                                lb_0.begin());
+  const auto r_0_alt = shares.SubVector(3, 9).Dot(lb_0);
 
-    REQUIRE_THROWS_MATCHES(
-        factory.Recover(shares.SubVector(2)),
-        std::invalid_argument,
-        Catch::Matchers::Message("not enough shares to reconstruct"));
+  REQUIRE(r_0 == FF(123));
+  REQUIRE(r_0_alt == r_0);
 
-    auto ss = factory.RecoverShare(shares, 2);
-    REQUIRE(ss == shares[2]);
-    REQUIRE(factory.Recover(shares, 3) == factory.RecoverShare(shares, 2));
-  }
+  const auto lb_27 =
+      math::ComputeLagrangeBasis<FF>({FF(4), FF(5), FF(6), FF(7), FF(8), FF(9)},
+                                     27);
 
-  SECTION("Robust") {
-    auto prg = scl::PRG::Create();
-    auto factory =
-        scl::ShamirSSFactory<FF>::Create(t, prg, scl::SecurityLevel::CORRECT);
+  const auto r_27 = math::UncheckedInnerProd<FF>(shares.begin() + 3,
+                                                 shares.begin() + 9,
+                                                 lb_27.begin());
+  REQUIRE(r_27 == shares[26]);
+}
 
-    // no errors
-    auto secret = FF(123);
-    auto shares = factory.Share(secret);
-    REQUIRE(shares.Size() == 3 * t + 1);
-    auto reconstructed = scl::details::ReconstructShamirRobust(shares, t);
-    REQUIRE(reconstructed == secret);
+TEST_CASE("Shamir reconstruct detect", "[ss]") {
+  auto prg = util::PRG::Create("shamir detect");
+  auto shares = ss::ShamirShare(FF(123), 4, 9, prg);
 
-    // can also reconstruct with an interpolator
-    REQUIRE(factory.Recover(shares) == secret);
+  REQUIRE(ss::ShamirRecoverD(shares) == FF(123));
 
-    // one error
-    shares[0] = FF(63212);
-    auto reconstructed_1 = scl::details::ReconstructShamirRobust(shares, t);
-    REQUIRE(reconstructed_1 == secret);
+  shares[2] = FF(4);
+  REQUIRE_THROWS_MATCHES(
+      ss::ShamirRecoverD(shares),
+      std::logic_error,
+      Catch::Matchers::Message("error detected during recovery"));
+}
 
-    // two errors
-    shares[2] = FF(63212211);
-    auto reconstructed_2 = scl::details::ReconstructShamirRobust(shares, t);
-    REQUIRE(reconstructed_2 == secret);
+TEST_CASE("Shamir reconstruct correct", "[sim]") {
+  auto prg = util::PRG::Create("shamir correct");
+  auto shares = ss::ShamirShare(FF(123), 2, 7, prg);
 
-    // three errors -- that's one too many
-    shares[1] = FF(123);
-    REQUIRE_THROWS_MATCHES(
-        scl::details::ReconstructShamirRobust(shares, t),
-        std::logic_error,
-        Catch::Matchers::Message("could not correct shares"));
+  REQUIRE(ss::ShamirRecoverC(shares).f.Evaluate(FF{0}) == FF(123));
 
-    REQUIRE_THROWS_MATCHES(
-        scl::details::ReconstructShamirRobust(shares, t + 1),
-        std::invalid_argument,
-        Catch::Matchers::Message(
-            "not enough shares to reconstruct with error correction"));
-    REQUIRE_THROWS_MATCHES(
-        scl::details::ReconstructShamirRobust(shares, Vec{}, t),
-        std::invalid_argument,
-        Catch::Matchers::Message(
-            "not enough alphas to reconstruct with error correction"));
-  }
+  shares[0] = FF(22);
+  shares[1] = FF(23);
+
+  REQUIRE(ss::ShamirRecoverC(shares).f.Evaluate(FF{0}) == FF(123));
+
+  shares[2] = FF(24);
+
+  REQUIRE_THROWS_MATCHES(ss::ShamirRecoverC(shares),
+                         std::logic_error,
+                         Catch::Matchers::Message("could not correct shares"));
 }
 
 TEST_CASE("BerlekampWelch", "[ss][math]") {
   // https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Welch_algorithm#Example
 
-  using FF = scl::FF<scl_tests::GaloisField7>;
-  using Vec = scl::Vec<FF>;
+  using FF = math::FF<test::GaloisField7>;
 
-  Vec bs = {FF(1), FF(5), FF(3), FF(6), FF(3), FF(2), FF(2)};
-  Vec as = {FF(0), FF(1), FF(2), FF(3), FF(4), FF(5), FF(6)};
-  Vec corrected = {FF(1), FF(6), FF(3), FF(6), FF(1), FF(2), FF(2)};
+  math::Vec bs = {FF(1), FF(5), FF(3), FF(6), FF(3), FF(2), FF(2)};
+  math::Vec corrected = {FF(1), FF(6), FF(3), FF(6), FF(1), FF(2), FF(2)};
 
-  auto pe = scl::details::ReconstructShamirRobust(bs, as, 2);
-  auto p = std::get<0>(pe);
-  auto e = std::get<1>(pe);
-
+  auto s = ss::ShamirRecoverC(bs);
   // errors
-  REQUIRE(e.Evaluate(FF(1)) == FF{});
-  REQUIRE(e.Evaluate(FF(4)) == FF{});
+  REQUIRE(s.err.Evaluate(FF(2)) == FF::Zero());
+  REQUIRE(s.err.Evaluate(FF(5)) == FF::Zero());
 
-  for (std::size_t i = 0; i < as.Size(); ++i) {
-    REQUIRE(p.Evaluate(as[i]) == corrected[i]);
+  for (std::size_t i = 0; i < bs.Size(); ++i) {
+    REQUIRE(s.f.Evaluate(FF(i + 1)) == corrected[i]);
   }
 }

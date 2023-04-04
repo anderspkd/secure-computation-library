@@ -1,8 +1,5 @@
-/**
- * @file str.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,8 +21,7 @@
 #include <iomanip>
 #include <stdexcept>
 
-namespace scl {
-namespace details {
+namespace scl::util {
 
 #define SCL_TO_HEX(v, c)                                                \
   do {                                                                  \
@@ -41,11 +37,10 @@ namespace details {
 
 /**
  * @brief Convert a string in hex.
+ * @tparam T the output type
  *
  * Normal conventions for hex strings apply, although the <code>0x</code> prefix
  * is not permitted. The input is assumed to encode an integer in big endian.
- *
- * @tparam T the output type
  */
 template <typename T>
 T FromHexString(const std::string& s) {
@@ -99,7 +94,6 @@ std::string ToHexString(It begin, It end) {
 template <>
 std::string ToHexString(const __uint128_t& v);
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::util
 
 #endif  // SCL_UTIL_STR_H
