@@ -1,8 +1,5 @@
-/**
- * @file ec.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,15 +23,17 @@
 #include "scl/math/ec_ops.h"
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
-#include "scl/primitives/prg.h"
 
-namespace scl {
+namespace scl::math {
 
 /**
  * @brief Elliptic Curve interface.
+ * @tparam Curve elliptic curve definition
  *
- * scl::EC defines the interface for an Elliptic Curve group. The actual curve
- * definition is provided through the \p Curve template parameter.
+ * TODO.
+ *
+ * @see FF
+ * @see Secp256k1
  */
 template <typename Curve>
 class EC {
@@ -76,7 +75,7 @@ class EC {
    */
   constexpr static EC Generator() {
     EC g;
-    details::CurveSetGenerator<Curve>(g.mValue);
+    CurveSetGenerator<Curve>(g.mValue);
     return g;
   };
 
@@ -87,7 +86,7 @@ class EC {
    */
   static EC Read(const unsigned char* src) {
     EC e;
-    details::CurveFromBytes<Curve>(e.mValue, src);
+    CurveFromBytes<Curve>(e.mValue, src);
     return e;
   };
 
@@ -96,7 +95,7 @@ class EC {
    */
   static EC FromAffine(const Field& x, const Field& y) {
     EC e;
-    details::CurveSetAffine<Curve>(e.mValue, x, y);
+    CurveSetAffine<Curve>(e.mValue, x, y);
     return e;
   };
 
@@ -104,7 +103,7 @@ class EC {
    * @brief Create a new point equal to the point at infinity.
    */
   explicit constexpr EC() {
-    details::CurveSetPointAtInfinity<Curve>(mValue);
+    CurveSetPointAtInfinity<Curve>(mValue);
   };
 
   /**
@@ -113,7 +112,7 @@ class EC {
    * @return this
    */
   EC& operator+=(const EC& other) {
-    details::CurveAdd<Curve>(mValue, other.mValue);
+    CurveAdd<Curve>(mValue, other.mValue);
     return *this;
   };
 
@@ -133,7 +132,7 @@ class EC {
    * @return this after doubling.
    */
   EC& DoubleInPlace() {
-    details::CurveDouble<Curve>(mValue);
+    CurveDouble<Curve>(mValue);
     return *this;
   };
 
@@ -152,7 +151,7 @@ class EC {
    * @return this.
    */
   EC& operator-=(const EC& other) {
-    details::CurveSubtract<Curve>(mValue, other.mValue);
+    CurveSubtract<Curve>(mValue, other.mValue);
     return *this;
   };
 
@@ -173,7 +172,7 @@ class EC {
    * @return this.
    */
   EC& operator*=(const Number& scalar) {
-    details::CurveScalarMultiply<Curve>(mValue, scalar);
+    CurveScalarMultiply<Curve>(mValue, scalar);
     return *this;
   };
 
@@ -183,7 +182,7 @@ class EC {
    * @return this.
    */
   EC& operator*=(const Order& scalar) {
-    details::CurveScalarMultiply<Curve>(mValue, scalar);
+    CurveScalarMultiply<Curve>(mValue, scalar);
     return *this;
   };
 
@@ -235,7 +234,7 @@ class EC {
    * @return this.
    */
   EC& Negate() {
-    details::CurveNegate<Curve>(mValue);
+    CurveNegate<Curve>(mValue);
     return *this;
   }
 
@@ -254,7 +253,7 @@ class EC {
    * @return true if the two points are equal and false otherwise.
    */
   bool Equal(const EC& other) const {
-    return details::CurveEqual<Curve>(mValue, other.mValue);
+    return CurveEqual<Curve>(mValue, other.mValue);
   };
 
   /**
@@ -276,7 +275,7 @@ class EC {
    * @return true if this point is equal to the point at inifity.
    */
   bool PointAtInfinity() const {
-    return details::CurveIsPointAtInfinity<Curve>(mValue);
+    return CurveIsPointAtInfinity<Curve>(mValue);
   };
 
   /**
@@ -284,14 +283,14 @@ class EC {
    * @return this point as a pair of affine coordinates.
    */
   std::array<Field, 2> ToAffine() const {
-    return details::CurveToAffine<Curve>(mValue);
+    return CurveToAffine<Curve>(mValue);
   };
 
   /**
    * @brief Output this point as a string.
    */
   std::string ToString() const {
-    return details::CurveToString<Curve>(mValue);
+    return CurveToString<Curve>(mValue);
   };
 
   /**
@@ -308,18 +307,23 @@ class EC {
    * @param compress whether to compress the point
    */
   void Write(unsigned char* dest, bool compress = true) const {
-    details::CurveToBytes<Curve>(dest, mValue, compress);
+    CurveToBytes<Curve>(dest, mValue, compress);
   };
 
  private:
   typename Curve::ValueType mValue;
 };
 
-// This class is used internally to provide some extra access to
-// scl::details::FF for the sake of point serialization.
+/**
+ * @brief Helper class for working with finite field elements.
+ *
+ * This class is a private friend of FF. Specialization of this class therefore
+ * allows direct access to the internal representation of a finite field
+ * element.
+ */
 template <typename T>
-class SCL_FF_Extras {};
+class FFAccess {};
 
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_EC_H

@@ -1,8 +1,5 @@
-/**
- * @file gf7.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,22 +19,22 @@
 
 #include "scl/math/ff_ops.h"
 
-using GF7 = scl_tests::GaloisField7;
+using GF7 = scl::test::GaloisField7;
 
 template <>
-void scl::details::FieldConvertIn<GF7>(unsigned char& out, int v) {
+void scl::math::FieldConvertIn<GF7>(unsigned char& out, int v) {
   auto r = v % 7;
   out = r < 0 ? 7 + r : r;
 }
 
 template <>
-void scl::details::FieldAdd<GF7>(unsigned char& out, const unsigned char& op) {
+void scl::math::FieldAdd<GF7>(unsigned char& out, const unsigned char& op) {
   out = (out + op) % 7;
 }
 
 template <>
-void scl::details::FieldSubtract<GF7>(unsigned char& out,
-                                      const unsigned char& op) {
+void scl::math::FieldSubtract<GF7>(unsigned char& out,
+                                   const unsigned char& op) {
   if (out < op) {
     out = 7 + out - op;
   } else {
@@ -46,18 +43,18 @@ void scl::details::FieldSubtract<GF7>(unsigned char& out,
 }
 
 template <>
-void scl::details::FieldMultiply<GF7>(unsigned char& out,
-                                      const unsigned char& op) {
+void scl::math::FieldMultiply<GF7>(unsigned char& out,
+                                   const unsigned char& op) {
   out = (out * op) % 7;
 }
 
 template <>
-void scl::details::FieldNegate<GF7>(unsigned char& out) {
+void scl::math::FieldNegate<GF7>(unsigned char& out) {
   out = (7 - out) % 7;
 }
 
 template <>
-void scl::details::FieldInvert<GF7>(unsigned char& out) {
+void scl::math::FieldInvert<GF7>(unsigned char& out) {
   unsigned char inv;
   switch (out) {
     case 1:
@@ -83,26 +80,26 @@ void scl::details::FieldInvert<GF7>(unsigned char& out) {
 }
 
 template <>
-bool scl::details::FieldEqual<GF7>(const unsigned char& in1,
-                                   const unsigned char& in2) {
+bool scl::math::FieldEqual<GF7>(const unsigned char& in1,
+                                const unsigned char& in2) {
   return in1 == in2;
 }
 
 template <>
-void scl::details::FieldFromBytes<GF7>(unsigned char& dest,
-                                       const unsigned char* src) {
+void scl::math::FieldFromBytes<GF7>(unsigned char& dest,
+                                    const unsigned char* src) {
   dest = *src;
   dest = dest % 7;
 }
 
 template <>
-void scl::details::FieldToBytes<GF7>(unsigned char* dest,
-                                     const unsigned char& src) {
+void scl::math::FieldToBytes<GF7>(unsigned char* dest,
+                                  const unsigned char& src) {
   *dest = src;
 }
 
 template <>
-std::string scl::details::FieldToString<GF7>(const unsigned char& in) {
+std::string scl::math::FieldToString<GF7>(const unsigned char& in) {
   std::stringstream ss;
   ss << (int)in;
   return ss.str();

@@ -1,8 +1,5 @@
-/**
- * @file server.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,63 +19,78 @@
 
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
+#include "scl/net/config.h"
+#include "scl/net/discovery/discovery.h"
 #include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
+#include "scl/protocol/base.h"
 
-using Server = scl::DiscoveryServer;
+using namespace scl;
 
-scl::NetworkConfig Server::Run(const scl::Party& me) const {
-  // one of the parties is us, which we do not connect to.
-  int backlog = static_cast<int>(mNumberOfParties - 1);
-  auto ssock = scl::details::CreateServerSocket(mPort, backlog);
-  std::vector<std::shared_ptr<scl::Channel>> channels;
+net::NetworkConfig net::Discovery::RunServer(std::size_t number_of_parties,
+                                             const Party& me) {
+  if (number_of_parties > MAX_DISCOVER_PARTIES) {
+    throw std::invalid_argument("number of parties to discover exceeds max");
+  }
+
+  int backlog = (int)(number_of_parties - 1);
+  auto server_sock = CreateServerSocket<>((int)me.port, backlog);
+  std::vector<std::shared_ptr<Channel>> channels;
   std::vector<std::string> hostnames;
 
-  for (std::size_t i = 0; i < mNumberOfParties; ++i) {
-    if (i == static_cast<std::size_t>(me.id)) {
+  for (std::size_t i = 0; i < number_of_parties; ++i) {
+    if (i == me.id) {
       channels.emplace_back(nullptr);
       hostnames.emplace_back(me.hostname);
     } else {
-      auto ac = scl::details::AcceptConnection(ssock);
-      auto hostname = scl::details::GetAddress(ac);
-      auto channel = std::make_shared<scl::TcpChannel>(ac.socket);
-      channels.emplace_back(channel);
-      hostnames.emplace_back(hostname);
+      auto acc = AcceptConnection<>(server_sock);
+      channels.emplace_back(std::make_shared<TcpChannel<>>(acc.socket));
+      hostnames.emplace_back(acc.hostname);
     }
   }
 
-  Server::CollectIdsAndPorts discovery(hostnames);
-  Server::Ctx ctx{me, scl::Network{channels}};
-  return scl::Evaluate(discovery, ctx);
+  Network network(channels, me.id);
+  auto p = std::make_unique<DiscoveryServer::RecvInfo>(me, hostnames);
+  NetworkConfig config;
+
+  proto::Evaluate(std::move(p), network, [&config](std::any output) {
+    config = std::any_cast<NetworkConfig>(output);
+  });
+
+  return config;
 }
 
-Server::SendNetworkConfig Server::CollectIdsAndPorts::Run(Server::Ctx& ctx) {
-  auto my_id = static_cast<std::size_t>(ctx.me.id);
-  std::vector<scl::Party> parties(mHostnames.size());
-  parties[my_id] = ctx.me;
+std::unique_ptr<proto::Protocol> net::DiscoveryServer::RecvInfo::Run(
+    proto::ProtocolEnvironment& env) {
+  const auto me = mMe.id;
+  std::vector<Party> parties(mHostnames.size());
+  parties[me] = mMe;
 
   for (std::size_t i = 0; i < mHostnames.size(); ++i) {
-    if (my_id != i) {
-      int id;
-      ctx.network.Party(i)->Recv(id);
-      if (static_cast<std::size_t>(id) >= parties.size()) {
+    if (i != me) {
+      std::size_t id;
+      env.network.Party(i)->Recv(id);
+
+      if (id >= parties.size()) {
         throw std::logic_error("received invalid party ID");
       }
-      int port;
-      ctx.network.Party(i)->Recv(port);
-      parties[id] = scl::Party{id, mHostnames[id], port};
+
+      std::size_t port;
+      env.network.Party(i)->Recv(port);
+      parties[id] = Party{id, mHostnames[id], port};
     }
   }
 
-  scl::NetworkConfig cfg(ctx.me.id, parties);
-  return Server::SendNetworkConfig(cfg);
+  net::NetworkConfig config{mMe.id, parties};
+  return std::make_unique<net::DiscoveryServer::SendConfig>(config);
 }
 
 namespace {
 
-void SendHostname(scl::Channel* channel, const std::string& hostname) {
+void SendHostname(scl::net::Channel* channel, const std::string& hostname) {
   std::size_t len = hostname.size();
   const unsigned char* ptr =
       reinterpret_cast<const unsigned char*>(hostname.c_str());
@@ -87,7 +99,8 @@ void SendHostname(scl::Channel* channel, const std::string& hostname) {
   channel->Send(ptr, len);
 }
 
-void SendConfig(scl::Channel* channel, const scl::NetworkConfig& config) {
+void SendNetworkConfig(scl::net::Channel* channel,
+                       const scl::net::NetworkConfig& config) {
   channel->Send(config.NetworkSize());
   for (std::size_t i = 0; i < config.NetworkSize(); ++i) {
     auto party = config.Parties()[i];
@@ -98,16 +111,15 @@ void SendConfig(scl::Channel* channel, const scl::NetworkConfig& config) {
 }
 
 }  // namespace
-scl::NetworkConfig Server::SendNetworkConfig::Finalize(Server::Ctx& ctx) {
-  std::size_t network_size = mConfig.NetworkSize();
-  for (std::size_t i = 0; i < network_size; ++i) {
-    if (i == static_cast<std::size_t>(mConfig.Id())) {
-      continue;
-    }
 
-    auto* channel = ctx.network.Party(i);
-    SendConfig(channel, mConfig);
+std::unique_ptr<proto::Protocol> net::DiscoveryServer::SendConfig::Run(
+    proto::ProtocolEnvironment& env) {
+  std::size_t sz = mConfig.NetworkSize();
+  for (std::size_t i = 0; i < sz; ++i) {
+    if (i != mConfig.Id()) {
+      SendNetworkConfig(env.network.Party(i), mConfig);
+    }
   }
 
-  return mConfig;
+  return nullptr;
 }

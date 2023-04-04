@@ -1,0 +1,43 @@
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "Secure Computation Library"
+PROJECT_NUMBER         = 0.1
+PROJECT_BRIEF          = "Utility library for common Secure Computation primitives."
+
+OUTPUT_DIRECTORY       = ./doc
+
+WARN_AS_ERROR          = YES
+
+INPUT                  = doc/mainpage.md \
+                         include/scl/ \
+                         include/scl/util \
+                         include/scl/math \
+                         include/scl/math/fields \
+			 include/scl/math/curves \
+                         include/scl/ss \
+                         include/scl/net \
+                         include/scl/net/discovery \
+                         include/scl/simulation \
+                         include/scl/protocol
+FILE_PATTERNS          = *.h
+EXCLUDE_SYMBOLS        = SCL_*
+
+REPEAT_BRIEF           = NO
+
+SORT_MEMBER_DOCS       = NO
+SORT_BRIEF_DOCS        = NO
+SORT_MEMBERS_CTORS_1ST = YES
+
+SHOW_USED_FILES        = NO
+SHOW_FILES             = NO
+
+USE_MDFILE_AS_MAINPAGE = doc/mainpage.md
+HTML_EXTRA_STYLESHEET  = doc/styling.css
+
+GENERATE_TREEVIEW      = YES
+CLASS_DIAGRAMS         = NO
+
+USE_MATHJAX            = YES
+
+HAVE_DOT               = NO
+GENERATE_LATEX         = NO
+GENERATE_LEGEND        = NO

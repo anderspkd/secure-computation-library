@@ -1,8 +1,5 @@
-/**
- * @file threaded_sender.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,11 +25,10 @@
 #include "scl/net/shared_deque.h"
 #include "scl/net/tcp_channel.h"
 
-namespace scl {
+namespace scl::net {
 
 /**
- * @brief A decorator for scl::TcpChannel that runs Send calls in a separate
- * thread.
+ * @brief A decorator for TcpChannel which does Send calls in a separate thread
  *
  * The purpose of this class is to avoid situations where calls to Send may
  * block, for example if we're trying to send more that what can fit in the TCP
@@ -45,6 +41,13 @@ class ThreadedSenderChannel final : public Channel {
    * @param socket an open socket used to construct scl::TcpChannel
    */
   ThreadedSenderChannel(int socket);
+
+  /**
+   * @brief Destroying a ThreadedSenderChannel closes the connection.
+   */
+  ~ThreadedSenderChannel() {
+    Close();
+  };
 
   void Close() override;
 
@@ -61,11 +64,11 @@ class ThreadedSenderChannel final : public Channel {
   };
 
  private:
-  TcpChannel mChannel;
-  details::SharedDeque<std::vector<unsigned char>> mSendBuffer;
+  TcpChannel<> mChannel;
+  SharedDeque<std::vector<unsigned char>> mSendBuffer;
   std::future<void> mSender;
 };
 
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_THREADED_SENDER_H

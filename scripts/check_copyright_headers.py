@@ -3,10 +3,7 @@
 import os
 
 header = """\
-/**
- * @file {filename}
- *
- * SCL --- Secure Computation Library
+/* SCL --- Secure Computation Library
  * ---- THIS LINE IS IGNORED ----
  *
  * This program is free software: you can redistribute it and/or modify
@@ -24,17 +21,17 @@ header = """\
  */
 """
 
-copyright_line = " * Copyright (C) 2022"
+copyright_line = " * Copyright (C) 2023"
 
 def check_file(filename, path):
-    expected_header = header.format(filename=filename).rstrip().split("\n")
+    expected_header = header.rstrip().split("\n")
     with open(path, 'r') as f:
-        lines = f.readlines()
+        lines = f.readlines()[:len(expected_header) + 1]
         n = 0
         good = True
         for a, b in zip(expected_header, lines):
             ## copyright line
-            if n == 4:
+            if n == 1:
                 if not b.startswith(copyright_line):
                     good = False
                     break
@@ -50,7 +47,7 @@ def check_file(filename, path):
 
 
 all_good = True
-directories_to_check = ["include", "src", "test", "examples"]
+directories_to_check = ["include", "src", "test"]
 
 for d in directories_to_check:
     for path, __, names in os.walk(d):

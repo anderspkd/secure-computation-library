@@ -1,8 +1,5 @@
-/**
- * @file feldman.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,134 +23,90 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "scl/math/lagrange.h"
 #include "scl/math/vec.h"
-#include "scl/primitives/prg.h"
 #include "scl/ss/shamir.h"
+#include "scl/util/prg.h"
 
-namespace scl {
+namespace scl::ss {
 
 /**
- * @brief Class for working with Feldman secret-shares.
- *
- * <p>This class allows creation, verification and reconstruction of
- * secret-shares from Feldman's verifiable secret-sharing scheme over a suitable
- * elliptic curve.</p>
- *
- * <p>The factory is instantiated with a type \p V which should be \ref EC
- * for some curve definition. In particular, <code>V::Order</code> is assumed to
- * be an \ref FF type.</p>
+ * @brief A Feldman secret-sharing.
  */
-template <typename V>
-class FeldmanSSFactory {
+template <typename G>
+struct FeldmanSharing {
   /**
-   * @brief The type of secret-shares.
+   * @brief The shares.
    */
-  using T = typename V::Order;
-
- public:
-  /**
-   * @brief Create a new FeldmanSSFactory object.
-   * @param threshold the privacy threshold
-   * @param prg a prg to use for generating randomness
-   */
-  static FeldmanSSFactory Create(std::size_t threshold, PRG& prg) {
-    return FeldmanSSFactory(
-        threshold,
-        ShamirSSFactory<T>::Create(threshold, prg, SecurityLevel::PASSIVE));
-  };
+  math::Vec<typename G::Order> shares;
 
   /**
-   * @brief The result of calling Share
+   * @brief The commitments.
    */
-  struct ShareBundle {
-    /**
-     * @brief The secret shares.
-     */
-    Vec<T> shares;
-    /**
-     * @brief Commitments of the shares plus the secret.
-     */
-    Vec<V> commitments;
-  };
-
-  /**
-   * @brief Secret share a value.
-   * @param secret the secret to share
-   * @param number_of_shares the number of shares to generate
-   * @return shares and commitments of shares.
-   */
-  ShareBundle Share(const T& secret, std::size_t number_of_shares) const {
-    auto shares = mBase.Share(secret, number_of_shares);
-    return {shares, ComputeCommitments(shares)};
-  };
-
-  /**
-   * @brief Check that a share is consistent with a set of commitments.
-   */
-  bool Verify(const T& share, const Vec<V>& commitments, int party_index) const;
-
-  /**
-   * @brief Check that a secret is consistent with a set of commitments.
-   */
-  bool Verify(const T& secret, const Vec<V>& commitments) const {
-    return Verify(secret, commitments, -1);
-  };
-
-  /**
-   * @brief Recover the value corresponding to a particular index
-   * @param shares the shares to recover
-   * @param index the index. Defaults to 0
-   */
-  T Recover(const Vec<T>& shares, int index = 0) const {
-    return mBase.Recover(shares, index);
-  };
-
-  /**
-   * @brief Recover a share of a particular party
-   * @param shares the shares
-   * @param party_index the index of a the party whose share to recover
-   */
-  T RecoverShare(const Vec<T>& shares, int party_index = 0) const {
-    return mBase.RecoverShare(shares, party_index);
-  };
-
- private:
-  FeldmanSSFactory(std::size_t threshold, ShamirSSFactory<T> base)
-      : mThreshold(threshold), mBase(base){};
-
-  std::size_t mThreshold;
-  // mutable because calling Recover on this might trigger computation of new
-  // lagrange coefficients.
-  mutable ShamirSSFactory<T> mBase;
-
-  Vec<V> ComputeCommitments(const Vec<T>& shares) const;
+  math::Vec<G> commitments;
 };
 
-template <typename V>
-bool FeldmanSSFactory<V>::Verify(const T& share,
-                                 const Vec<V>& commitments,
-                                 int party_index) const {
-  if (commitments.Size() < mThreshold + 1) {
-    throw std::invalid_argument("insufficient commitments for verification");
+/**
+ * @brief Create a Feldman secret-sharing.
+ * @param secret the secret to secret-share.
+ * @param t the privacy threshold.
+ * @param n the number of shares to create.
+ * @param prg a PRG for creating randomness.
+ * @return a Feldman secret-sharing.
+ */
+template <typename G>
+FeldmanSharing<G> FeldmanShare(const typename G::Order& secret,
+                               std::size_t t,
+                               std::size_t n,
+                               util::PRG& prg) {
+  const auto shares = ShamirShare(secret, t, n, prg);
+
+  std::vector<G> comm;
+  comm.reserve(t + 1);
+  const auto gen = G::Generator();
+  for (std::size_t i = 0; i < t + 1; ++i) {
+    comm.emplace_back(shares[i] * gen);
   }
-  // coefficients are indexed one-off.
-  auto& coeff = mBase.GetLagrangeCoefficients(party_index + 1);
-  auto v = details::UncheckedInnerProd<V>(
-      coeff.begin(), coeff.end(), commitments.begin());
-  return v == V::Generator() * share;
+
+  return {shares, math::Vec<G>{comm}};
 }
 
-template <typename V>
-Vec<V> FeldmanSSFactory<V>::ComputeCommitments(const Vec<T>& shares) const {
-  std::vector<V> c;
-  c.reserve(mThreshold + 1);
-  auto gen = V::Generator();
-  for (std::size_t i = 0; i < mThreshold + 1; ++i) {
-    c.emplace_back(shares[i] * gen);
-  }
-  return Vec<V>{c};
+/**
+ * @brief A Feldman secret-share and the owner's index.
+ */
+template <typename G>
+struct ShareAndIndex {
+  /**
+   * @brief The index.
+   */
+  std::size_t index;
+
+  /**
+   * @brief The share.
+   */
+  typename G::Order share;
+};
+
+/**
+ * @brief Verify a share given a set of commitments.
+ * @param share_and_index the secret-share and its index.
+ * @param commits a set of commitments.
+ * @return true if the provided share is valid for that index, and false
+ * otherwise.
+ *
+ * This function checks if a provided share is consistent with a set of
+ * commitments.
+ */
+template <typename G>
+bool FeldmanVerify(const ShareAndIndex<G>& share_and_index,
+                   const math::Vec<G>& commits) {
+  const auto ns = math::Vec<typename G::Order>::Range(1, commits.Size() + 1);
+  const auto lb = math::ComputeLagrangeBasis(ns, share_and_index.index);
+  const auto v =
+      math::UncheckedInnerProd<G>(lb.begin(), lb.end(), commits.begin());
+  return v == G::Generator() * share_and_index.share;
 }
 
-}  // namespace scl
+}  // namespace scl::ss
 
 #endif  // SCL_SS_FELDMAN_H

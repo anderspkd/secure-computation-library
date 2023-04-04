@@ -1,8 +1,5 @@
-/**
- * @file client.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,55 +17,71 @@
 
 #include "scl/net/discovery/client.h"
 
+#include <any>
 #include <memory>
 
+#include "scl/net/config.h"
+#include "scl/net/discovery/discovery.h"
+#include "scl/net/network.h"
 #include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
 
-using Client = scl::DiscoveryClient;
+using namespace scl;
 
-scl::NetworkConfig Client::Run(int id, int port) const {
-  auto socket = scl::details::ConnectAsClient(mHostname, mPort);
-  std::shared_ptr<scl::Channel> server =
-      std::make_shared<scl::TcpChannel>(socket);
+net::NetworkConfig net::Discovery::RunClient(const std::string& server_hostname,
+                                             std::size_t server_port,
+                                             std::size_t my_id,
+                                             std::size_t my_port) {
+  auto socket = ConnectAsClient(server_hostname, (int)server_port);
+  std::shared_ptr<Channel> channel = std::make_shared<TcpChannel<>>(socket);
+  Network network({channel, nullptr}, 1);
 
-  Client::SendIdAndPort discovery(id, port);
-  return scl::Evaluate(discovery, server);
+  std::unique_ptr<proto::Protocol> d =
+      std::make_unique<DiscoveryClient::SendInfo>(my_id, my_port);
+  NetworkConfig config;
+
+  proto::Evaluate(std::move(d), network, [&config](std::any output) {
+    config = std::any_cast<NetworkConfig>(output);
+  });
+
+  return config;
 }
 
-Client::ReceiveNetworkConfig Client::SendIdAndPort::Run(
-    const std::shared_ptr<scl::Channel>& ctx) const {
-  ctx->Send(mId);
-  ctx->Send(mPort);
-  return Client::ReceiveNetworkConfig{mId};
+std::unique_ptr<proto::Protocol> net::DiscoveryClient::SendInfo::Run(
+    proto::ProtocolEnvironment& env) {
+  env.network.Party(0)->Send(mId);
+  env.network.Party(0)->Send(mPort);
+
+  return std::make_unique<DiscoveryClient::RecvConfig>(mId);
 }
 
 namespace {
 
-std::string ReceiveHostname(const std::shared_ptr<scl::Channel>& ctx) {
-  std::size_t len;
-  ctx->Recv(len);
-  auto buf = std::make_unique<char[]>(len);
-  ctx->Recv(reinterpret_cast<unsigned char*>(buf.get()), len);
-  return std::string(buf.get(), buf.get() + len);
+std::string RecvHostname(net::Channel* server) {
+  std::size_t sl;
+  server->Recv(sl);
+  auto buf = std::make_unique<char[]>(sl);
+  server->Recv((unsigned char*)buf.get(), sl);
+  return std::string(buf.get(), buf.get() + sl);
 }
 
 }  // namespace
 
-scl::NetworkConfig Client::ReceiveNetworkConfig::Finalize(
-    const std::shared_ptr<scl::Channel>& ctx) const {
-  std::size_t number_of_parties;
-  ctx->Recv(number_of_parties);
+std::unique_ptr<proto::Protocol> net::DiscoveryClient::RecvConfig::Run(
+    proto::ProtocolEnvironment& env) {
+  std::size_t n;
+  env.network.Party(0)->Recv(n);
 
-  std::vector<scl::Party> parties(number_of_parties);
-  for (std::size_t i = 0; i < number_of_parties; ++i) {
-    scl::Party party;
-    ctx->Recv(party.id);
-    ctx->Recv(party.port);
-    auto hostname = ReceiveHostname(ctx);
-    party.hostname = hostname;
+  std::vector<Party> parties(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Party party;
+    env.network.Party(0)->Recv(party.id);
+    env.network.Party(0)->Recv(party.port);
+    party.hostname = RecvHostname(env.network.Party(0));
     parties[party.id] = party;
   }
 
-  return scl::NetworkConfig{mId, parties};
+  mConfig = NetworkConfig{mId, parties};
+
+  return nullptr;
 }

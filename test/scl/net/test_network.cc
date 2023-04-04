@@ -1,8 +1,5 @@
-/**
- * @file test_network.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,91 +22,160 @@
 #include "scl/net/network.h"
 #include "scl/net/tcp_channel.h"
 
-TEST_CASE("Network", "[network]") {
-  SECTION("Mock") {
-    auto fake = scl::CreateFakeNetwork(0, 3);
+using namespace scl;
 
-    auto network = fake.my_network;
-    auto remotes = fake.incoming;
+TEST_CASE("Network fake", "[net]") {
+  auto fake = net::FakeNetwork::Create(0, 3);
 
-    REQUIRE(network.Size() == 3);
-    REQUIRE(remotes[0] == nullptr);
+  auto network = fake.my_network;
+  auto remotes = fake.incoming;
 
-    remotes[1]->Send((int)123);
+  REQUIRE(network.Size() == 3);
+  REQUIRE(remotes[0] == nullptr);
 
-    int x;
-    network.Party(1)->Recv(x);
+  remotes[1]->Send((int)123);
 
-    REQUIRE(x == 123);
+  int x;
+  network.Party(1)->Recv(x);
 
-    network.Party(0)->Send((int)1111);
-    network.Party(0)->Recv(x);
+  REQUIRE(x == 123);
 
-    REQUIRE(x == 1111);
-  }
+  network.Party(0)->Send((int)1111);
+  network.Party(0)->Recv(x);
 
-  SECTION("Full") {
-    auto networks = scl::CreateFullyConnectedInMemory(3);
-    REQUIRE(networks.size() == 3);
+  REQUIRE(x == 1111);
+}
 
-    auto network0 = networks[0];
-    auto network1 = networks[1];
+TEST_CASE("Network fully connected", "[net]") {
+  auto networks = net::CreateMemoryBackedNetwork(3);
+  REQUIRE(networks.size() == 3);
 
-    network0.Party(1)->Send((int)444);
+  auto network0 = networks[0];
+  auto network1 = networks[1];
 
-    int x;
-    network1.Party(0)->Recv(x);
+  network0.Party(1)->Send((int)444);
 
-    REQUIRE(x == 444);
+  int x;
+  network1.Party(0)->Recv(x);
 
-    auto network2 = networks[2];
-    network2.Party(0)->Send((int)555);
+  REQUIRE(x == 444);
 
-    network0.Party(2)->Recv(x);
+  auto network2 = networks[2];
+  network2.Party(0)->Send((int)555);
 
-    REQUIRE(x == 555);
-  }
+  network0.Party(2)->Recv(x);
 
-  SECTION("TCP") {
-    scl::Network network0;
-    scl::Network network1;
-    scl::Network network2;
+  REQUIRE(x == 555);
+}
 
-    std::thread t0([&]() {
-      network0 = scl::Network::Create<scl::TcpChannel>(
-          scl::NetworkConfig::Localhost(0, 3));
-    });
-    std::thread t1([&]() {
-      network1 = scl::Network::Create<scl::TcpChannel>(
-          scl::NetworkConfig::Localhost(1, 3));
-    });
-    std::thread t2([&]() {
-      network2 = scl::Network::Create<scl::TcpChannel>(
-          scl::NetworkConfig::Localhost(2, 3));
-    });
+TEST_CASE("Network TCP", "[net]") {
+  net::Network network0;
+  net::Network network1;
+  net::Network network2;
 
-    t0.join();
-    t1.join();
-    t2.join();
+  std::thread t0([&]() {
+    network0 = net::Network::Create<net::TcpChannel<>>(
+        net::NetworkConfig::Localhost(0, 3));
+  });
+  std::thread t1([&]() {
+    network1 = net::Network::Create<net::TcpChannel<>>(
+        net::NetworkConfig::Localhost(1, 3));
+  });
+  std::thread t2([&]() {
+    network2 = net::Network::Create<net::TcpChannel<>>(
+        net::NetworkConfig::Localhost(2, 3));
+  });
 
-    for (std::size_t i = 0; i < 3; ++i) {
-      // Alive doesn't exist on InMemoryChannel
-      if (i != 0) {
-        REQUIRE(((scl::TcpChannel*)network0.Party(i))->Alive());
-      }
-      if (i != 1) {
-        REQUIRE(((scl::TcpChannel*)network1.Party(i))->Alive());
-      }
-      if (i != 2) {
-        REQUIRE(((scl::TcpChannel*)network2.Party(i))->Alive());
-      }
+  t0.join();
+  t1.join();
+  t2.join();
+
+  for (std::size_t i = 0; i < 3; ++i) {
+    // Alive doesn't exist on InMemoryChannel
+    if (i != 0) {
+      REQUIRE(((net::TcpChannel<>*)network0.Party(i))->Alive());
     }
-
-    network0.Party(2)->Send((int)5555);
-
-    int x;
-    network2.Party(0)->Recv(x);
-
-    REQUIRE(x == 5555);
+    if (i != 1) {
+      REQUIRE(((net::TcpChannel<>*)network1.Party(i))->Alive());
+    }
+    if (i != 2) {
+      REQUIRE(((net::TcpChannel<>*)network2.Party(i))->Alive());
+    }
   }
+
+  network0.Party(2)->Send((int)5555);
+
+  int x;
+  network2.Party(0)->Recv(x);
+
+  REQUIRE(x == 5555);
+}
+
+struct ChannelMock final : net::Channel {
+  void Close() override {
+    close_called++;
+  }
+
+  void Send(const unsigned char* src, std::size_t n) override {
+    (void)src;
+    (void)n;
+    send_called++;
+  }
+
+  std::size_t Recv(unsigned char* dst, std::size_t n) override {
+    (void)dst;
+    (void)n;
+    return 0;
+  }
+
+  bool HasData() override {
+    return false;
+  }
+
+  std::size_t close_called = 0;
+  std::size_t send_called = 0;
+};
+
+TEST_CASE("Network party getters") {
+  const auto chl0 = std::make_shared<ChannelMock>();
+  const auto chl1 = std::make_shared<ChannelMock>();
+  const auto chl2 = std::make_shared<ChannelMock>();
+
+  net::Network nw({chl0, chl1, chl2}, 1);
+
+  REQUIRE(chl2->send_called == 0);
+  nw.Next()->Send(true);
+  REQUIRE(chl2->send_called == 1);
+
+  REQUIRE(chl0->send_called == 0);
+  nw.Previous()->Send(true);
+  REQUIRE(chl0->send_called == 1);
+
+  REQUIRE_THROWS_MATCHES(nw.Other(),
+                         std::logic_error,
+                         Catch::Matchers::Message(
+                             "other party ambiguous for more than 2 parties"));
+
+  net::Network two_parties({chl0, chl1}, 1);
+
+  two_parties.Other()->Send(true);
+  REQUIRE(chl0->send_called == 2);
+}
+
+TEST_CASE("Network close") {
+  const auto chl0 = std::make_shared<ChannelMock>();
+  const auto chl1 = std::make_shared<ChannelMock>();
+  const auto chl2 = std::make_shared<ChannelMock>();
+
+  net::Network nw({chl0, chl1, chl2}, 1);
+
+  REQUIRE(chl0->close_called == 0);
+  REQUIRE(chl1->close_called == 0);
+  REQUIRE(chl2->close_called == 0);
+
+  nw.Close();
+
+  REQUIRE(chl0->close_called == 1);
+  REQUIRE(chl1->close_called == 1);
+  REQUIRE(chl2->close_called == 1);
 }

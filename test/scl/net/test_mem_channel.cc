@@ -1,8 +1,5 @@
-/**
- * @file test_mem_channel.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,135 +20,147 @@
 #include <iostream>
 #include <vector>
 
-#include "scl/math.h"
+#include "scl/math/fp.h"
+#include "scl/math/vec.h"
 #include "scl/net/mem_channel.h"
-#include "scl/primitives/prg.h"
+#include "scl/util/prg.h"
 #include "util.h"
 
-void PrintBuf(const unsigned char* b, std::size_t n) {
-  for (std::size_t i = 0; i < n; ++i) {
-    std::cout << (int)b[i] << " ";
-  }
-  std::cout << ""
-            << "\n";
+using namespace scl;
+
+TEST_CASE("MemoryBackedChannel close", "[net]") {
+  auto channel = net::MemoryBackedChannel::CreateLoopback();
+  channel->Close();
 }
 
-TEST_CASE("InMemoryChannel", "[network]") {
-  auto channels = scl::InMemoryChannel::CreatePaired();
+TEST_CASE("MemoryBackedChannel send/recv", "[net]") {
+  auto channels = net::MemoryBackedChannel::CreatePaired();
   auto chl0 = channels[0];
   auto chl1 = channels[1];
 
-  auto prg = scl::PRG::Create();
+  auto prg = util::PRG::Create();
   unsigned char data_in[200] = {0};
   prg.Next(data_in, 200);
 
-  SECTION("Send and receive") {
-    unsigned char data_out[200] = {0};
-    REQUIRE(!chl1->HasData());
-    chl0->Send(data_in, 200);
-    REQUIRE(!chl0->HasData());
-    REQUIRE(chl1->HasData());
-    chl1->Recv(data_out, 200);
-    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
-  }
+  unsigned char data_out[200] = {0};
+  REQUIRE(!chl1->HasData());
+  chl0->Send(data_in, 200);
+  REQUIRE(!chl0->HasData());
+  REQUIRE(chl1->HasData());
+  chl1->Recv(data_out, 200);
+  REQUIRE(test::BufferEquals(data_in, data_out, 200));
+}
 
-  chl0->Flush();
-  chl1->Flush();
+TEST_CASE("MemoryBackedChannel send chunked", "[net]") {
+  auto channels = net::MemoryBackedChannel::CreatePaired();
+  auto chl0 = channels[0];
+  auto chl1 = channels[1];
 
-  SECTION("Send chunked") {
-    unsigned char data_out[200] = {0};
+  auto prg = util::PRG::Create();
+  unsigned char data_in[200] = {0};
+  unsigned char data_out[200] = {0};
 
-    chl0->Send(data_in, 50);
-    chl0->Send(data_in + 50, 50);
-    chl0->Send(data_in + 100, 100);
-    chl1->Recv(data_out, 200);
+  prg.Next(data_in, 200);
 
-    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
-  }
+  chl0->Send(data_in, 50);
+  chl0->Send(data_in + 50, 50);
+  chl0->Send(data_in + 100, 100);
+  chl1->Recv(data_out, 200);
 
-  chl0->Flush();
-  chl1->Flush();
+  REQUIRE(test::BufferEquals(data_in, data_out, 200));
+}
 
-  SECTION("Recv chunked") {
-    unsigned char data_out[200] = {0};
-    chl0->Send(data_in, 100);
-    chl0->Send(data_in + 100, 100);
-    chl1->Recv(data_out, 100);
-    chl1->Recv(data_out + 100, 100);
+TEST_CASE("MemoryBackedChannel recv chunked", "[net]") {
+  auto channels = net::MemoryBackedChannel::CreatePaired();
+  auto chl0 = channels[0];
+  auto chl1 = channels[1];
 
-    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
-  }
+  auto prg = util::PRG::Create();
+  unsigned char data_in[200] = {0};
+  unsigned char data_out[200] = {0};
 
-  chl0->Flush();
-  chl1->Flush();
+  prg.Next(data_in, 200);
 
-  SECTION("Send trivial data") {
-    scl::Channel* c0 = chl0.get();
-    scl::Channel* c1 = chl1.get();
-    int x = 123;
-    c0->Send(x);
-    int y;
-    c1->Recv(y);
-    REQUIRE(x == y);
-  }
+  chl0->Send(data_in, 100);
+  chl0->Send(data_in + 100, 100);
+  chl1->Recv(data_out, 100);
+  chl1->Recv(data_out + 100, 100);
 
-  chl0->Flush();
-  chl1->Flush();
+  REQUIRE(test::BufferEquals(data_in, data_out, 200));
+}
 
-  SECTION("Send vector trivial data") {
-    scl::Channel* c0 = chl0.get();
-    scl::Channel* c1 = chl1.get();
-    std::vector<long> data = {1, 2, 3, 4, 11111111};
-    c0->Send(data);
-    std::vector<long> recv;
-    c1->Recv(recv);
-    REQUIRE(data == recv);
-    REQUIRE(recv.size() == data.size());
-  }
+TEST_CASE("MemoryBackedChannel trivial data", "[net]") {
+  auto channels = net::MemoryBackedChannel::CreatePaired();
+  auto chl0 = channels[0];
+  auto chl1 = channels[1];
 
-  using FF = scl::Fp<61>;
-  using Vec = scl::Vec<FF>;
+  net::Channel* c0 = chl0.get();
+  net::Channel* c1 = chl1.get();
+  int x = 123;
+  c0->Send(x);
+  int y;
+  c1->Recv(y);
+  REQUIRE(x == y);
+}
 
-  chl0->Flush();
-  chl1->Flush();
+TEST_CASE("MemoryBackedChannel std::vector", "[net]") {
+  auto channels = net::MemoryBackedChannel::CreatePaired();
+  auto chl0 = channels[0];
+  auto chl1 = channels[1];
 
-  SECTION("Send Vec") {
-    scl::Channel* c0 = chl0.get();
-    scl::Channel* c1 = chl1.get();
-    Vec v = {FF(1), FF(5), FF(2) - FF(10)};
-    c0->Send(v);
-    Vec w;
-    c1->Recv(w);
-    REQUIRE(v.Equals(w));
-  }
+  net::Channel* c0 = chl0.get();
+  net::Channel* c1 = chl1.get();
+  std::vector<long> data = {1, 2, 3, 4, 11111111};
+  c0->Send(data);
+  std::vector<long> recv;
+  c1->Recv(recv);
+  REQUIRE(data == recv);
+  REQUIRE(recv.size() == data.size());
+}
 
-  chl0->Flush();
-  chl1->Flush();
+TEST_CASE("MemoryBackedChannel Vec", "[net]") {
+  using FF = math::Fp<61>;
+  auto channels = net::MemoryBackedChannel::CreatePaired();
+  auto chl0 = channels[0];
+  auto chl1 = channels[1];
 
-  using Mat = scl::Mat<FF>;
+  net::Channel* c0 = chl0.get();
+  net::Channel* c1 = chl1.get();
+  math::Vec<FF> v = {FF(1), FF(5), FF(2) - FF(10)};
+  c0->Send(v);
+  math::Vec<FF> w;
+  c1->Recv(w);
+  REQUIRE(v.Equals(w));
+}
 
-  SECTION("Send mat") {
-    scl::Channel* c0 = chl0.get();
-    scl::Channel* c1 = chl1.get();
-    auto m = Mat::Random(5, 7, prg);
-    c0->Send(m);
-    Mat a;
-    c1->Recv(a);
-    REQUIRE(m.Equals(a));
-  }
+TEST_CASE("MemoryBackedChannel Mat", "[net]") {
+  using FF = math::Fp<61>;
+  auto channels = net::MemoryBackedChannel::CreatePaired();
+  auto chl0 = channels[0];
+  auto chl1 = channels[1];
+  auto prg = util::PRG::Create("MemoryBackedChannel Mat");
 
-  SECTION("Send self") {
-    auto c = scl::InMemoryChannel::CreateSelfConnecting();
+  net::Channel* c0 = chl0.get();
+  net::Channel* c1 = chl1.get();
+  auto m = math::Mat<FF>::Random(5, 7, prg);
+  c0->Send(m);
+  math::Mat<FF> a;
+  c1->Recv(a);
+  REQUIRE(m.Equals(a));
+}
 
-    c->Send(data_in, 20);
-    c->Send(data_in + 20, 100);
-    c->Send(data_in + 120, 80);
+TEST_CASE("MemoryBackedChannel send to self", "[net]") {
+  auto c = net::MemoryBackedChannel::CreateLoopback();
+  unsigned char data_in[200] = {0};
 
-    unsigned char data_out[200] = {0};
-    c->Recv(data_out, 10);
-    c->Recv(data_out + 10, 100);
-    c->Recv(data_out + 110, 90);
+  c->Send(data_in, 20);
+  c->Send(data_in + 20, 100);
+  c->Send(data_in + 120, 80);
 
-    REQUIRE(scl_tests::BufferEquals(data_in, data_out, 200));
-  }
+  unsigned char data_out[200] = {0};
+  c->Recv(data_out, 10);
+  c->Recv(data_out + 10, 100);
+  c->Recv(data_out + 110, 90);
+
+  REQUIRE(test::BufferEquals(data_in, data_out, 200));
 }

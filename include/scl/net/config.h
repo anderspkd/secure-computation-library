@@ -1,8 +1,5 @@
-/**
- * @file config.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,6 +18,7 @@
 #ifndef SCL_NET_CONFIG_H
 #define SCL_NET_CONFIG_H
 
+#include <cstddef>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -33,7 +31,7 @@
 #define DEFAULT_PORT_OFFSET 9900
 #endif
 
-namespace scl {
+namespace scl::net {
 
 /**
  * @brief Connection information for a party.
@@ -42,7 +40,7 @@ struct Party {
   /**
    * @brief The id of this party.
    */
-  int id;
+  std::size_t id;
 
   /**
    * @brief The hostname.
@@ -52,7 +50,7 @@ struct Party {
   /**
    * @brief The base port.
    */
-  int port;
+  std::size_t port;
 };
 
 /**
@@ -68,7 +66,7 @@ class NetworkConfig {
    * @param id the identity of this party
    * @param filename the filename
    */
-  static NetworkConfig Load(int id, const std::string& filename);
+  static NetworkConfig Load(std::size_t id, const std::string& filename);
 
   /**
    * @brief Create a network config where all parties are running locally.
@@ -82,14 +80,16 @@ class NetworkConfig {
    * @param size the size of the network
    * @param port_base the base port
    */
-  static NetworkConfig Localhost(int id, int size, int port_base);
+  static NetworkConfig Localhost(std::size_t id,
+                                 std::size_t size,
+                                 std::size_t port_base);
 
   /**
    * @brief Create a network config where all parties are running locally.
    * @param id the identity of this party
    * @param size the size of the network
    */
-  static NetworkConfig Localhost(int id, int size) {
+  static NetworkConfig Localhost(std::size_t id, std::size_t size) {
     return NetworkConfig::Localhost(id, size, DEFAULT_PORT_OFFSET);
   };
 
@@ -98,7 +98,7 @@ class NetworkConfig {
    * @param id the id of the local party
    * @param parties a list of parties
    */
-  NetworkConfig(int id, const std::vector<Party>& parties)
+  NetworkConfig(std::size_t id, const std::vector<Party>& parties)
       : mId(id), mParties(parties) {
     Validate();
   };
@@ -112,7 +112,7 @@ class NetworkConfig {
   /**
    * @brief Gets the identity of this party.
    */
-  int Id() const {
+  std::size_t Id() const {
     return mId;
   };
 
@@ -145,10 +145,10 @@ class NetworkConfig {
  private:
   void Validate();
 
-  int mId;
+  std::size_t mId;
   std::vector<Party> mParties;
 };
 
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_CONFIG_H

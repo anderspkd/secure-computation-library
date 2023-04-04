@@ -1,8 +1,5 @@
-/**
- * @file ops_gmp_ff.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "./ops_gmp_ff.h"
+#include "scl/math/ops_gmp_ff.h"
 
-std::size_t scl::details::FindFirstNonZero(const std::string& s) {
+std::size_t scl::math::FindFirstNonZero(const std::string& s) {
   int n = 0;
   for (const auto c : s) {
     if (c != '0') {

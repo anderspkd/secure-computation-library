@@ -1,8 +1,5 @@
-/**
- * @file z2k_ops.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,14 +25,13 @@
 
 #include "scl/util/str.h"
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 /**
  * @brief Add two values modulo a power of 2 without normalization.
  */
 template <typename T>
-void AddZ2k(T& dst, const T& op) {
+void Z2kAdd(T& dst, const T& op) {
   dst += op;
 }
 
@@ -43,7 +39,7 @@ void AddZ2k(T& dst, const T& op) {
  * @brief Subtract two values modulo a power of 2 without normalization.
  */
 template <typename T>
-void SubtractZ2k(T& dst, const T& op) {
+void Z2kSubtract(T& dst, const T& op) {
   dst -= op;
 }
 
@@ -51,7 +47,7 @@ void SubtractZ2k(T& dst, const T& op) {
  * @brief Multiply two values modulo a power of 2 without normalization.
  */
 template <typename T>
-void MultiplyZ2k(T& dst, const T& op) {
+void Z2kMultiply(T& dst, const T& op) {
   dst *= op;
 }
 
@@ -59,7 +55,7 @@ void MultiplyZ2k(T& dst, const T& op) {
  * @brief Negate a value modulo a power of 2 without normalization.
  */
 template <typename T>
-void NegateZ2k(T& v) {
+void Z2kNegate(T& v) {
   v = -v;
 }
 
@@ -67,7 +63,7 @@ void NegateZ2k(T& v) {
  * @brief Get the least significant bit of a value.
  */
 template <typename T>
-unsigned LsbZ2k(T& v) {
+unsigned Z2kLsb(T& v) {
   return v & 1;
 }
 
@@ -81,8 +77,8 @@ unsigned LsbZ2k(T& v) {
  * @param v the value to invert
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
-void InvertZ2k(T& v) {
-  if (!LsbZ2k(v)) {
+void Z2kInvert(T& v) {
+  if (!Z2kLsb(v)) {
     throw std::invalid_argument("value not invertible modulo 2^K");
   }
 
@@ -102,7 +98,7 @@ void InvertZ2k(T& v) {
  * @brief Compute equality modulo a power of 2.
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
-bool EqualZ2k(const T& a, const T& b) {
+bool Z2kEqual(const T& a, const T& b) {
   return (a & SCL_MASK(T, K)) == (b & SCL_MASK(T, K));
 }
 
@@ -110,7 +106,7 @@ bool EqualZ2k(const T& a, const T& b) {
  * @brief Read a value from a buffer and truncate it to a power of 2.
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
-void ReadZ2k(T& v, const unsigned char* src) {
+void Z2kFromBytes(T& v, const unsigned char* src) {
   v = *(const T*)src;
   v &= SCL_MASK(T, K);
 }
@@ -119,7 +115,7 @@ void ReadZ2k(T& v, const unsigned char* src) {
  * @brief Write a value modulo a power of 2 to a buffer.
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
-void WriteZ2k(const T& v, unsigned char* dest) {
+void Z2kToBytes(const T& v, unsigned char* dest) {
   // normalization is deferred until elements are written somewhere, so we v
   // needs to be normalized before we can write it.
   auto w = v & SCL_MASK(T, K);
@@ -132,8 +128,8 @@ void WriteZ2k(const T& v, unsigned char* dest) {
  * @param str the string
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
-void FromStringZ2k(T& v, const std::string& str) {
-  v = FromHexString<T>(str);
+void Z2kFromString(T& v, const std::string& str) {
+  v = util::FromHexString<T>(str);
   v &= SCL_MASK(T, K);
 }
 
@@ -142,12 +138,11 @@ void FromStringZ2k(T& v, const std::string& str) {
  * @param v the value
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
-std::string ToStringZ2k(const T& v) {
+std::string Z2kToString(const T& v) {
   auto w = v & SCL_MASK(T, K);
-  return ToHexString(w);
+  return util::ToHexString(w);
 }
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_Z2K_OPS_H

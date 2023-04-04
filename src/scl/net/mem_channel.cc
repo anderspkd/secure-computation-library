@@ -1,8 +1,5 @@
-/**
- * @file mem_channel.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,11 +22,13 @@
 // used to silence narrowing conversion errors. x will have type std::size_t
 #define DIFF_T(x) static_cast<std::vector<unsigned char>::difference_type>((x))
 
-void scl::InMemoryChannel::Send(const unsigned char* src, std::size_t n) {
+void scl::net::MemoryBackedChannel::Send(const unsigned char* src,
+                                         std::size_t n) {
   mOut->PushBack(std::vector<unsigned char>(src, src + n));
 }
 
-std::size_t scl::InMemoryChannel::Recv(unsigned char* dst, std::size_t n) {
+std::size_t scl::net::MemoryBackedChannel::Recv(unsigned char* dst,
+                                                std::size_t n) {
   std::size_t rem = n;
 
   // if there's any leftovers from previous calls to recv, then we retrieve

@@ -1,8 +1,5 @@
-/**
- * @file z2k.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,40 +22,40 @@
 
 #include "scl/math/ring.h"
 #include "scl/math/z2k_ops.h"
-#include "scl/primitives/prg.h"
+#include "scl/util/prg.h"
 
-namespace scl {
+namespace scl::math {
 
 /**
  * @brief Elements of the ring \f$\mathbb{Z}_{2^K}\f$ for integer \f$K\f$.
+ * @tparam Bits the size of the ring.
  *
  * This class defines the ring of integers modulo a power of two. The bitsize
  * specified in the template parameter corresponds to the power of two
  * used. When elements of Z2k are serialized, they are padded to the nearest
  * byte (so Z2k<6> and Z2k<8> take up the same amount of space).
- *
- * @tparam K the size of the ring.
  */
-template <std::size_t K>
-class Z2k final : public details::RingBase<Z2k<K>> {
+template <std::size_t Bits>
+class Z2k final : public Ring<Z2k<Bits>> {
  public:
   /**
    * @brief The raw type of a Z2k element.
    */
-  using ValueType = std::conditional_t<(K <= 64), std::uint64_t, __uint128_t>;
+  using ValueType =
+      std::conditional_t<(Bits <= 64), std::uint64_t, __uint128_t>;
 
   /**
    * @brief The bit size of the ring. Identical to BitSize().
    */
   constexpr static std::size_t SpecifiedBitSize() {
-    return K;
+    return Bits;
   };
 
   /**
    * @brief The number of bytes needed to store a ring element.
    */
   constexpr static std::size_t ByteSize() {
-    return (K - 1) / 8 + 1;
+    return (Bits - 1) / 8 + 1;
   };
 
   /**
@@ -83,7 +80,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    */
   static Z2k Read(const unsigned char* src) {
     Z2k e;
-    details::ReadZ2k<ValueType, BitSize()>(e.mValue, src);
+    Z2kFromBytes<ValueType, BitSize()>(e.mValue, src);
     return e;
   };
 
@@ -92,7 +89,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * @param prg a prg used to generate the random element
    * @return a random element.
    */
-  static Z2k Random(PRG& prg) {
+  static Z2k Random(util::PRG& prg) {
     unsigned char buffer[ByteSize()];
     prg.Next(buffer, ByteSize());
     return Z2k::Read(buffer);
@@ -105,8 +102,24 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    */
   static Z2k FromString(const std::string& str) {
     Z2k e;
-    details::FromStringZ2k<ValueType, BitSize()>(e.mValue, str);
+    Z2kFromString<ValueType, BitSize()>(e.mValue, str);
     return e;
+  };
+
+  /**
+   * @brief Get the additive identity of this ring.
+   */
+  static Z2k Zero() {
+    static Z2k zero;
+    return zero;
+  };
+
+  /**
+   * @brief Get the multiplicative identity of this ring.
+   */
+  static Z2k One() {
+    static Z2k one(1);
+    return one;
   };
 
   /**
@@ -126,7 +139,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * @return this incremented by \p other.
    */
   Z2k& operator+=(const Z2k& other) {
-    details::AddZ2k(mValue, other.mValue);
+    Z2kAdd(mValue, other.mValue);
     return *this;
   };
 
@@ -136,7 +149,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * @return this decremented by \p other.
    */
   Z2k& operator-=(const Z2k& other) {
-    details::SubtractZ2k(mValue, other.mValue);
+    Z2kSubtract(mValue, other.mValue);
     return *this;
   };
 
@@ -146,7 +159,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * @return this scaled by \p other.
    */
   Z2k& operator*=(const Z2k& other) {
-    details::MultiplyZ2k(mValue, other.mValue);
+    Z2kMultiply(mValue, other.mValue);
     return *this;
   };
 
@@ -157,7 +170,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * @throws std::invalid_argument if \p other is not invertible.
    */
   Z2k& operator/=(const Z2k& other) {
-    details::MultiplyZ2k(mValue, other.Inverse().mValue);
+    Z2kMultiply(mValue, other.Inverse().mValue);
     return *this;
   };
 
@@ -165,7 +178,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * @brief Negates this element.
    */
   Z2k& Negate() {
-    details::NegateZ2k(mValue);
+    Z2kNegate(mValue);
     return *this;
   };
 
@@ -182,7 +195,7 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * @throws std::invalid_argument if this element is not invertible.
    */
   Z2k& Invert() {
-    details::InvertZ2k<ValueType, BitSize()>(mValue);
+    Z2kInvert<ValueType, BitSize()>(mValue);
     return *this;
   };
 
@@ -202,34 +215,34 @@ class Z2k final : public details::RingBase<Z2k<K>> {
    * 1</code>. That is, if it is odd.
    */
   unsigned Lsb() const {
-    return details::LsbZ2k(mValue);
+    return Z2kLsb(mValue);
   };
 
   /**
    * @brief Check if this element is equal to another element.
    */
   bool Equal(const Z2k& other) const {
-    return details::EqualZ2k<ValueType, K>(mValue, other.mValue);
+    return Z2kEqual<ValueType, Bits>(mValue, other.mValue);
   };
 
   /**
    * @brief Return a string representation of this element.
    */
   std::string ToString() const {
-    return details::ToStringZ2k<ValueType, BitSize()>(mValue);
+    return Z2kToString<ValueType, BitSize()>(mValue);
   };
 
   /**
    * @brief Write this element to a buffer.
    */
   void Write(unsigned char* dest) const {
-    details::WriteZ2k<ValueType, BitSize()>(mValue, dest);
+    Z2kToBytes<ValueType, BitSize()>(mValue, dest);
   };
 
  private:
   ValueType mValue;
 };
 
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_Z2K_H

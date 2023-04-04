@@ -1,8 +1,5 @@
-/**
- * @file util.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +18,7 @@
 #ifndef TEST_SCL_NET_UTIL_H
 #define TEST_SCL_NET_UTIL_H
 
-namespace scl_tests {
+namespace scl::test {
 
 /**
  * @brief The default starting point for ports.
@@ -45,6 +42,6 @@ int GetPort();
  */
 bool BufferEquals(const unsigned char* a, const unsigned char* b, int n);
 
-}  // namespace scl_tests
+}  // namespace scl::test
 
 #endif  // TEST_SCL_NET_UTIL_H

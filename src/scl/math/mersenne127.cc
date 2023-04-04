@@ -1,8 +1,5 @@
-/**
- * @file mersenne127.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,28 +20,30 @@
 #include <cstring>
 #include <sstream>
 
-#include "./ops_small_fp.h"
 #include "scl/math/ff_ops.h"
+#include "scl/math/ops_small_fp.h"
 #include "scl/util/str.h"
 
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
 
+// The prime p = 2^127 - 1.
 static const u128 p = (((u128)0x7FFFFFFFFFFFFFFF) << 64) | 0xFFFFFFFFFFFFFFFF;
-using Mersenne127 = scl::details::Mersenne127;
+
+using Mersenne127 = scl::math::Mersenne127;
 
 template <>
-void scl::details::FieldConvertIn<Mersenne127>(u128& out, const int value) {
+void scl::math::FieldConvertIn<Mersenne127>(u128& out, const int value) {
   out = value < 0 ? value + p : value;
 }
 
 template <>
-void scl::details::FieldAdd<Mersenne127>(u128& out, const u128& op) {
+void scl::math::FieldAdd<Mersenne127>(u128& out, const u128& op) {
   ModAdd(out, op, p);
 }
 
 template <>
-void scl::details::FieldSubtract<Mersenne127>(u128& out, const u128& op) {
+void scl::math::FieldSubtract<Mersenne127>(u128& out, const u128& op) {
   ModSub(out, op, p);
 }
 
@@ -78,7 +77,7 @@ u256 MultiplyFull(const u128 x, const u128 y) {
 }  // namespace
 
 template <>
-void scl::details::FieldMultiply<Mersenne127>(u128& out, const u128& op) {
+void scl::math::FieldMultiply<Mersenne127>(u128& out, const u128& op) {
   u256 z = MultiplyFull(out, op);
   out = z.high << 1;
   u128 b = z.low;
@@ -90,41 +89,41 @@ void scl::details::FieldMultiply<Mersenne127>(u128& out, const u128& op) {
 }
 
 template <>
-void scl::details::FieldNegate<Mersenne127>(u128& out) {
+void scl::math::FieldNegate<Mersenne127>(u128& out) {
   ModNeg(out, p);
 }
 
 template <>
-void scl::details::FieldInvert<Mersenne127>(u128& out) {
+void scl::math::FieldInvert<Mersenne127>(u128& out) {
   ModInv<u128, __int128_t>(out, out, p);
 }
 
 template <>
-bool scl::details::FieldEqual<Mersenne127>(const u128& in1, const u128& in2) {
+bool scl::math::FieldEqual<Mersenne127>(const u128& in1, const u128& in2) {
   return in1 == in2;
 }
 
 template <>
-void scl::details::FieldFromBytes<Mersenne127>(u128& dest,
-                                               const unsigned char* src) {
+void scl::math::FieldFromBytes<Mersenne127>(u128& dest,
+                                            const unsigned char* src) {
   dest = *(const u128*)src;
   dest = dest % p;
 }
 
 template <>
-void scl::details::FieldToBytes<Mersenne127>(unsigned char* dest,
-                                             const u128& src) {
+void scl::math::FieldToBytes<Mersenne127>(unsigned char* dest,
+                                          const u128& src) {
   std::memcpy(dest, &src, sizeof(u128));
 }
 
 template <>
-std::string scl::details::FieldToString<Mersenne127>(const u128& in) {
-  return ToHexString(in);
+std::string scl::math::FieldToString<Mersenne127>(const u128& in) {
+  return util::ToHexString(in);
 }
 
 template <>
-void scl::details::FieldFromString<Mersenne127>(u128& out,
-                                                const std::string& src) {
-  out = FromHexString<u128>(src);
+void scl::math::FieldFromString<Mersenne127>(u128& out,
+                                             const std::string& src) {
+  out = util::FromHexString<u128>(src);
   out = out % p;
 }

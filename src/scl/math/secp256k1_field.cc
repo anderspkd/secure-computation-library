@@ -1,8 +1,5 @@
-/**
- * @file secp256k1_field.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,16 +18,23 @@
 #include <array>
 #include <sstream>
 
-#include "./ops_gmp_ff.h"
-#include "./secp256k1_extras.h"
+#include "./secp256k1_helpers.h"
 #include "scl/math/curves/secp256k1.h"
 #include "scl/math/ff_ops.h"
 #include "scl/math/number.h"
+#include "scl/math/ops_gmp_ff.h"
 
-using Field = scl::details::Secp256k1::Field;
+using Field = scl::math::Secp256k1::Field;
 using Elem = Field::ValueType;
 
 #define NUM_LIMBS 4
+
+#define SCL_COPY(out, in, size)                \
+  do {                                         \
+    for (std::size_t i = 0; i < (size); ++i) { \
+      *((out) + i) = *((in) + i);              \
+    }                                          \
+  } while (0)
 
 // The prime modulus p
 static const mp_limb_t kPrime[] = {
@@ -52,36 +56,36 @@ static const mp_limb_t kMontyN[] = {
 #define PTR(X) (X).data()
 
 template <>
-void scl::details::FieldConvertIn<Field>(Elem& out, const int value) {
+void scl::math::FieldConvertIn<Field>(Elem& out, const int value) {
   out = {0};
-  FromInt<NUM_LIMBS>(PTR(out), value, kPrime);
+  MontyInFromInt<NUM_LIMBS>(PTR(out), value, kPrime);
 }
 
 template <>
-void scl::details::FieldAdd<Field>(Elem& out, const Elem& op) {
-  ModAdd<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
+void scl::math::FieldAdd<Field>(Elem& out, const Elem& op) {
+  MontyModAdd<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
 }
 
 template <>
-void scl::details::FieldSubtract<Field>(Elem& out, const Elem& op) {
-  ModSub<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
+void scl::math::FieldSubtract<Field>(Elem& out, const Elem& op) {
+  MontyModSub<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
 }
 
 template <>
-void scl::details::FieldNegate<Field>(Elem& out) {
-  ModNeg<NUM_LIMBS>(PTR(out), kPrime);
+void scl::math::FieldNegate<Field>(Elem& out) {
+  MontyModNeg<NUM_LIMBS>(PTR(out), kPrime);
 }
 
 template <>
-void scl::details::FieldMultiply<Field>(Elem& out, const Elem& op) {
-  ModMul<NUM_LIMBS>(PTR(out), PTR(op), kPrime, kMontyN);
+void scl::math::FieldMultiply<Field>(Elem& out, const Elem& op) {
+  MontyModMul<NUM_LIMBS>(PTR(out), PTR(op), kPrime, kMontyN);
 }
 
 #define ONE \
   { 0x1000003D1, 0, 0, 0 }
 
 template <>
-void scl::details::FieldInvert<Field>(Elem& out) {
+void scl::math::FieldInvert<Field>(Elem& out) {
   static const mp_limb_t kPrimeMinus2[NUM_LIMBS] = {
       0xFFFFFFFEFFFFFC2D,  //
       0xFFFFFFFFFFFFFFFF,  //
@@ -90,44 +94,45 @@ void scl::details::FieldInvert<Field>(Elem& out) {
   };
 
   Elem res = ONE;
-  ModInvFermat<NUM_LIMBS>(PTR(res), PTR(out), kPrime, kPrimeMinus2, kMontyN);
+  MontyModInv<NUM_LIMBS>(PTR(res), PTR(out), kPrime, kPrimeMinus2, kMontyN);
   out = res;
 }
 
 template <>
-bool scl::details::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
+bool scl::math::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
   return CompareValues<NUM_LIMBS>(PTR(in1), PTR(in2)) == 0;
 }
 
 template <>
-void scl::details::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
-  ValueFromBytes<NUM_LIMBS>(PTR(dest), src, kPrime);
+void scl::math::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
+  MontyFromBytes<NUM_LIMBS>(PTR(dest), src, kPrime);
 }
 
 template <>
-void scl::details::FieldToBytes<Field>(unsigned char* dest, const Elem& src) {
-  ValueToBytes<NUM_LIMBS>(dest, PTR(src), kPrime, kMontyN);
+void scl::math::FieldToBytes<Field>(unsigned char* dest, const Elem& src) {
+  MontyToBytes<NUM_LIMBS>(dest, PTR(src), kPrime, kMontyN);
 }
 
 template <>
-void scl::details::FieldFromString<Field>(Elem& out, const std::string& src) {
+void scl::math::FieldFromString<Field>(Elem& out, const std::string& src) {
   out = {0};
-  FromString<NUM_LIMBS>(PTR(out), kPrime, src);
+  MontyFromString<NUM_LIMBS>(PTR(out), kPrime, src);
 }
 
 template <>
-std::string scl::details::FieldToString<Field>(const Elem& in) {
-  return ToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
+std::string scl::math::FieldToString<Field>(const Elem& in) {
+  return MontyToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
 }
 
-bool scl::SCL_FF_Extras<Field>::IsSmaller(
-    const scl::FF<details::Secp256k1::Field>& lhs,
-    const scl::FF<details::Secp256k1::Field>& rhs) {
-  auto c = details::CompareValues<NUM_LIMBS>(PTR(lhs.mValue), PTR(rhs.mValue));
+bool scl::math::FFAccess<Field>::IsSmaller(
+    const scl::math::FF<Secp256k1::Field>& lhs,
+    const scl::math::FF<Secp256k1::Field>& rhs) {
+  auto c = CompareValues<NUM_LIMBS>(PTR(lhs.mValue), PTR(rhs.mValue));
   return c <= 0;
 }
 
-scl::FF<Field> scl::SCL_FF_Extras<Field>::ComputeSqrt(const scl::FF<Field>& x) {
+scl::math::FF<Field> scl::math::FFAccess<Field>::ComputeSqrt(
+    const scl::math::FF<Field>& x) {
   // (p + 1) / 4. We assume the input is a square mod p, so x^{e} gives a square
   // root of x.
   static const mp_limb_t e[NUM_LIMBS] = {
@@ -137,9 +142,9 @@ scl::FF<Field> scl::SCL_FF_Extras<Field>::ComputeSqrt(const scl::FF<Field>& x) {
       0x3FFFFFFFFFFFFFFF   //
   };
 
-  scl::FF<Field> out;
+  FF<Field> out;
   Elem res = ONE;
-  details::ModExp<NUM_LIMBS>(PTR(res), PTR(x.mValue), e, kPrime, kMontyN);
+  MontyModExp<NUM_LIMBS>(PTR(res), PTR(x.mValue), e, kPrime, kMontyN);
   out.mValue = res;
   return out;
 }

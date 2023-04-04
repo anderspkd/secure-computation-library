@@ -1,8 +1,5 @@
-/**
- * @file mersenne127.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,8 +20,7 @@
 
 #include <cstdint>
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 /**
  * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{127}-1\f$.
@@ -51,7 +47,6 @@ struct Mersenne127 {
   constexpr static const std::size_t kBitSize = 127;
 };
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_FIELDS_MERSENNE127_H

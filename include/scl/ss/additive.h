@@ -1,8 +1,5 @@
-/**
- * @file additive.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,41 +21,37 @@
 #include <stdexcept>
 
 #include "scl/math/vec.h"
-#include "scl/primitives/prg.h"
+#include "scl/util/prg.h"
 
-namespace scl {
+namespace scl::ss {
 
 /**
  * @brief Creates an additive secret-sharing.
- * @param secret the secret to secret-share
- * @param n the number of shares
- * @param prg a PRG used to generate random shares
+ * @param secret the secret to secret-share.
+ * @param n the number of shares.
+ * @param prg a PRG used to generate random shares.
  * @return An additive secret-sharing.
- * @throws std::invalid_argument if \p n is 0.
+ *
+ * <p>An additive secret-sharing of a value \f$x\f$ is a list
+ * \f$(x_1,x_2,\dots,x_n)\f$ of values such that \f$x=\sum_i x_i\f$.
+ *
+ * <p>An additive secret-sharing output by this function is a math::Vec object,
+ * and so reconstructing the secret is simply <code>shares.Sum()</code>.
  */
 template <typename T>
-Vec<T> CreateAdditiveShares(const T& secret, std::size_t n, PRG& prg) {
-  if (!n) {
-    throw std::invalid_argument("cannot create shares for 0 people");
+math::Vec<T> AdditiveShare(const T& secret, std::size_t n, util::PRG& prg) {
+  std::vector<T> shares;
+  shares.reserve(n);
+  auto sum = T::Zero();
+  for (std::size_t i = 0; i < n - 1; ++i) {
+    const auto s = T::Random(prg);
+    shares.emplace_back(s);
+    sum += s;
   }
-
-  Vec<T> shares = Vec<T>::PartialRandom(
-      n, [](std::size_t i) { return i > 0; }, prg);
-  shares[0] = secret - shares.Sum();
+  shares.emplace_back(secret - sum);
   return shares;
 }  // LCOV_EXCL_LINE
 
-/**
- * @brief Reconstruct an additive secret-sharing.
- * @param shares the shares to reconstruct from
- * @return The reconstructed result.
- * @note this function is equivalent to <code>shares.Sum()</code>.
- */
-template <typename T>
-T ReconstructAdditive(const Vec<T>& shares) {
-  return shares.Sum();
-}
-
-}  // namespace scl
+}  // namespace scl::ss
 
 #endif  // SCL_SS_ADDITIVE_H

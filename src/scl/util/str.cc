@@ -1,8 +1,5 @@
-/**
- * @file str.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +20,7 @@
 #include <cstdint>
 
 template <>
-std::string scl::details::ToHexString(const __uint128_t& v) {
+std::string scl::util::ToHexString(const __uint128_t& v) {
   std::string str;
   if (v == 0) {
     str = "0";
@@ -39,4 +36,4 @@ std::string scl::details::ToHexString(const __uint128_t& v) {
     str = ss.str();
   }
   return str;
-}
+}  // LCOV_EXCL_LINE

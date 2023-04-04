@@ -1,8 +1,5 @@
-/**
- * @file fields.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,22 +19,23 @@
 #include "scl/math/curves/secp256k1.h"
 #include "scl/math/fp.h"
 
-namespace scl_tests {
+namespace scl::test {
 
-using Mersenne61 = scl::Fp<61>;
-using Mersenne127 = scl::Fp<127>;
-using GF7 = scl::FF<scl_tests::GaloisField7>;
+using Mersenne61 = math::Fp<61>;
+using Mersenne127 = math::Fp<127>;
+using GF7 = math::FF<GaloisField7>;
 
 #ifdef SCL_ENABLE_EC_TESTS
-using Secp256k1_Field = scl::FF<scl::details::Secp256k1::Field>;
-using Secp256k1_Order = scl::FF<scl::details::Secp256k1::Order>;
+using Secp256k1_Field = math::FF<math::Secp256k1::Field>;
+using Secp256k1_Order = math::FF<math::Secp256k1::Order>;
 #endif
 
+}  // namespace scl::test
+
 #ifdef SCL_ENABLE_EC_TESTS
-#define FIELD_DEFS \
-  Mersenne61, Mersenne127, GF7, Secp256k1_Field, Secp256k1_Order
+#define FIELD_DEFS                                               \
+  scl::test::Mersenne61, scl::test::Mersenne127, scl::test::GF7, \
+      scl::test::Secp256k1_Field, scl::test::Secp256k1_Order
 #else
-#define FIELD_DEFS Mersenne61, Mersenne127, GF7
+#define FIELD_DEFS scl::test::Mersenne61, scl::test::Mersenne127, scl::test::GF7
 #endif
-
-}  // namespace scl_tests

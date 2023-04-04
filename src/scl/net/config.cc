@@ -1,8 +1,5 @@
-/**
- * @file config.cc
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,7 +25,7 @@
 
 namespace {
 
-void ValidateIdAndSize(unsigned id, std::size_t n) {
+void ValidateIdAndSize(std::size_t id, std::size_t n) {
   if (n == 0) {
     throw std::invalid_argument("n cannot be zero");
   }
@@ -40,8 +37,9 @@ void ValidateIdAndSize(unsigned id, std::size_t n) {
 
 }  // namespace
 
-scl::NetworkConfig scl::NetworkConfig::Load(int id,
-                                            const std::string& filename) {
+scl::net::NetworkConfig scl::net::NetworkConfig::Load(
+    std::size_t id,
+    const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
@@ -49,7 +47,7 @@ scl::NetworkConfig scl::NetworkConfig::Load(int id,
   }
 
   std::string line;
-  std::vector<scl::Party> info;
+  std::vector<Party> info;
 
   while (std::getline(file, line)) {
     auto a_ = line.find(',');
@@ -62,9 +60,9 @@ scl::NetworkConfig scl::NetworkConfig::Load(int id,
     auto a = static_cast<std::string::difference_type>(a_);
     auto b = static_cast<std::string::difference_type>(b_);
 
-    auto id = std::stoi(std::string(line.begin(), line.begin() + a));
+    auto id = std::stoul(std::string(line.begin(), line.begin() + a));
     auto hostname = std::string(line.begin() + a + 1, line.begin() + b);
-    auto port = std::stoi(std::string(line.begin() + b + 1, line.end()));
+    auto port = std::stoul(std::string(line.begin() + b + 1, line.end()));
     info.emplace_back(Party{id, hostname, port});
   }
 
@@ -73,21 +71,22 @@ scl::NetworkConfig scl::NetworkConfig::Load(int id,
   return NetworkConfig(id, info);
 }
 
-scl::NetworkConfig scl::NetworkConfig::Localhost(int id,
-                                                 int size,
-                                                 int port_base) {
+scl::net::NetworkConfig scl::net::NetworkConfig::Localhost(
+    std::size_t id,
+    std::size_t size,
+    std::size_t port_base) {
   ValidateIdAndSize(id, size);
 
-  std::vector<scl::Party> info;
-  for (int i = 0; i < size; ++i) {
-    int port = port_base + i;
+  std::vector<Party> info;
+  for (std::size_t i = 0; i < size; ++i) {
+    std::size_t port = port_base + i;
     info.emplace_back(Party{i, "127.0.0.1", port});
   }
 
   return NetworkConfig(id, info);
 }
 
-std::string scl::NetworkConfig::ToString() const {
+std::string scl::net::NetworkConfig::ToString() const {
   std::stringstream ss;
   ss << "[id=" << mId << ", ";
   std::size_t i = 0;
@@ -101,7 +100,7 @@ std::string scl::NetworkConfig::ToString() const {
   return ss.str();
 }
 
-void scl::NetworkConfig::Validate() {
+void scl::net::NetworkConfig::Validate() {
   auto n = NetworkSize();
 
   if (static_cast<std::size_t>(Id()) >= n) {

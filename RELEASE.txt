@@ -1,3 +1,10 @@
+5.0: Simulation
+- Added a new module for simulating protocol executions under different network
+  conditions.
+- Refactored layout with respect to namespaces. details no longer exists, and
+  the different modules have gotten their own namespace.
+- Up test coverage to 100%. Minor refactoring to the actions.
+
 4.0: Shamir, Feldman, SHA-256
 - Refactor Shamir to allow caching of Lagrange coefficients
 - Add support for Feldman Secret Sharing

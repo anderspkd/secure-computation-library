@@ -1,0 +1,87 @@
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include <catch2/catch.hpp>
+#include <thread>
+
+#include "scl/simulation/config.h"
+#include "scl/simulation/context.h"
+#include "scl/simulation/env.h"
+#include "scl/simulation/mem_channel_buffer.h"
+
+using namespace scl;
+
+namespace {
+
+auto SomeEvent() {
+  return std::make_shared<sim::Event>(sim::Event::Type::START,
+                                      util::Time::Duration::zero());
+}
+
+auto SomeEvent(util::Time::Duration t) {
+  return std::make_shared<sim::Event>(sim::Event::Type::START, t);
+}
+
+}  // namespace
+
+TEST_CASE("Simulation env clock", "[sim]") {
+  using namespace std::chrono_literals;
+
+  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+      5,
+      sim::DefaultConfigCreator());
+  sim::SimulatedClock clock(ctx.get(), 0);
+
+  ctx->AddEvent(0, SomeEvent());
+  ctx->UpdateCheckpoint();
+
+  std::this_thread::sleep_for(50ms);
+
+  auto t0 = clock.Read();
+  REQUIRE(t0 > 50ms);
+  REQUIRE(t0 < 75ms);
+
+  std::this_thread::sleep_for(50ms);
+  auto t1 = clock.Read();
+  REQUIRE(t1 > 100ms);
+  REQUIRE(t1 < 125ms);
+
+  ctx->AddEvent(0, SomeEvent(10 * t1));
+
+  auto t2 = clock.Read();
+  REQUIRE(t2 > 1050ms);
+  REQUIRE(t2 < 1200ms);
+}
+
+TEST_CASE("Simulation env thread", "[sim]") {
+  using namespace std::chrono_literals;
+  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+      5,
+      sim::DefaultConfigCreator());
+
+  ctx->UpdateCheckpoint();
+
+  sim::SimulatedThreadCtx thread(ctx, 0);
+  sim::SimulatedClock clock(ctx.get(), 0);
+
+  ctx->AddEvent(0, SomeEvent(util::Time::Duration(1000ms)));
+  thread.Sleep(1000000);
+
+  auto t0 = clock.Read();
+  REQUIRE(t0 > 1000ms + 1000000ms);
+  REQUIRE(t0 < 1050ms + 1000000ms);
+}

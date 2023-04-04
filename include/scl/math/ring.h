@@ -1,8 +1,5 @@
-/**
- * @file ring.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,14 +21,13 @@
 #include <ostream>
 #include <type_traits>
 
-namespace scl {
-namespace details {
+namespace scl::math {
 
 /**
  * @brief Derives some basic operations on Ring elements via. CRTP.
  */
 template <typename T>
-struct RingBase {
+struct Ring {
   /**
    * @brief Add two elements and return their sum.
    */
@@ -105,10 +101,9 @@ template <typename T, typename V>
 struct EnableIfRing {
   //! type when T is a ring.
   using Type =
-      typename std::enable_if<std::is_base_of<RingBase<T>, T>::value, V>::type;
+      typename std::enable_if<std::is_base_of<Ring<T>, T>::value, V>::type;
 };
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::math
 
 #endif  // SCL_MATH_RING_H

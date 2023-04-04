@@ -1,8 +1,5 @@
-/**
- * @file channel.h
- *
- * SCL --- Secure Computation Library
- * Copyright (C) 2022 Anders Dalskov
+/* SCL --- Secure Computation Library
+ * Copyright (C) 2023 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,23 +26,27 @@
 #include "scl/math/mat.h"
 #include "scl/math/vec.h"
 #include "scl/net/config.h"
+#include "scl/util/traits.h"
 
-namespace scl {
+namespace scl::net {
 
 /**
- * @brief The maximum size that scl::Channel will read when receiving Vecs.
+ * @brief The maximum size of a Vec that a Channel will receive.
  *
- * This is used in order to guard against malicious inputs and to avoid lockups
- * in case of programming mistakes. The default size <code>1 << 25</code>
- * corresponds to reading a vector of roughly 500mb in when field elements take
- * up 16 bytes.
+ * This is mostly meant as a guard against programming mistakes. The default
+ * value should allow receiving up to around 500mb assuming element sizes of 16
+ * bytes.
  */
 #ifndef MAX_VEC_READ_SIZE
 #define MAX_VEC_READ_SIZE 1 << 25
 #endif
 
 /**
- * @brief The maxium amount of elements that scl::Mat::Read will read.
+ * @brief The maxium size of a Mat that a channel will receive.
+ *
+ * This is mostly meant as a guard against programming mistakes. The default
+ * value should allow receiving up to around 500mb assuming element sizes of 16
+ * bytes.
  */
 #ifndef MAX_MAT_READ_SIZE
 #define MAX_MAT_READ_SIZE 1 << 25
@@ -55,18 +56,20 @@ namespace scl {
 #define SCL_C(x) reinterpret_cast<unsigned char(*)>((x))
 
 /**
- * @brief Abstract channel for communicating between two peers.
+ * @brief Channel interface.
  *
- * scl::Channel defines the interface for a channel between two peers, as well
+ * Channel defines the interface for a channel between two peers, as well
  * as a number of convenience methods for sending and receiving different kinds
- * of data. To implement an actual channel, subclass scl::Channel and implement
+ * of data. To implement an actual channel, subclass Channel and implement
  * the four virtual methods.
  *
- * @see scl::InMemoryChannel
- * @see scl::TcpChannel
+ * @see InMemoryChannel
+ * @see TcpChannel
  */
 class Channel {
  public:
+  virtual ~Channel(){};
+
   /**
    * @brief Close connection to remote.
    */
@@ -90,11 +93,8 @@ class Channel {
   /**
    * @brief Check if there is something to receive on this channel.
    * @return true if this channel has data and false otherwise.
-   * @note the default implementation always returns true.
    */
-  virtual bool HasData() {
-    return true;
-  };
+  virtual bool HasData() = 0;
 
   /**
    * @brief Send a trivially copyable item.
@@ -109,10 +109,6 @@ class Channel {
 
   /**
    * @brief Send a vector of trivially copyable things.
-   *
-   * <code>src.size()</code> is used to determine how many bytes to read, so \p
-   * src must have enough room for the data we expect to receive.
-   *
    * @param src an STL vector of things to send
    */
   template <
@@ -124,19 +120,11 @@ class Channel {
   }
 
   /**
-   * @brief Send a vector object.
-   *
-   * Note that \p T cannot be guaranteed to be trivially copyable so this method
-   * needs to make a temporary copy of \p vec in order to serialize it
-   * correctly. If \p T is known to be trivially copyable, then it might be
-   * faster to call <code>Send(vec.ToStlVector())</code> instead.
-   *
-   * This method sends the size of the vector first followed by its content.
-   *
-   * @param vec the Vector
+   * @brief Send a Vec object.
+   * @param vec the Vec
    */
   template <typename T>
-  void Send(const Vec<T>& vec) {
+  void Send(const math::Vec<T>& vec) {
     const std::uint32_t vec_size = vec.Size();
     Send(vec_size);
     // have to make a copy here since it's not guaranteed that we can directly
@@ -147,18 +135,11 @@ class Channel {
   }
 
   /**
-   * @brief Send a matrix.
-   *
-   * Like with Send(const Vec<T>&) this method makes a copy of \p mat internally
-   * in order to serialize the matrix correctly.
-   *
-   * Also similar to Send(const Vec<T>&) this method first sends the row count,
-   * then column count and finally the matrix content.
-   *
-   * @param mat the matrix to send
+   * @brief Send a Mat object.
+   * @param mat the Mat
    */
   template <typename T>
-  void Send(const Mat<T>& mat) {
+  void Send(const math::Mat<T>& mat) {
     const std::uint32_t rows = mat.Rows();
     const std::uint32_t cols = mat.Cols();
     Send(rows);
@@ -201,7 +182,7 @@ class Channel {
    * MAX_VEC_READ_SIZE
    */
   template <typename T>
-  void Recv(Vec<T>& vec) {
+  void Recv(math::Vec<T>& vec) {
     auto vec_size = RecvSize();
     if (vec_size > MAX_VEC_READ_SIZE) {
       throw std::logic_error("received vector exceeds size limit");
@@ -209,7 +190,7 @@ class Channel {
     auto n = vec_size * T::ByteSize();
     auto buf = std::make_unique<unsigned char[]>(n);
     Recv(SCL_C(buf.get()), n);
-    vec = Vec<T>::Read(vec_size, SCL_CC(buf.get()));
+    vec = math::Vec<T>::Read(vec_size, SCL_CC(buf.get()));
   }
 
   /**
@@ -219,7 +200,7 @@ class Channel {
    * MAX_MAT_READ_SIZE
    */
   template <typename T>
-  void Recv(Mat<T>& mat) {
+  void Recv(math::Mat<T>& mat) {
     auto rows = RecvSize();
     auto cols = RecvSize();
     if (rows * cols > MAX_MAT_READ_SIZE) {
@@ -228,7 +209,7 @@ class Channel {
     auto n = rows * cols * T::ByteSize();
     auto buf = std::make_unique<unsigned char[]>(n);
     Recv(SCL_C(buf.get()), n);
-    mat = Mat<T>::Read(rows, cols, SCL_CC(buf.get()));
+    mat = math::Mat<T>::Read(rows, cols, SCL_CC(buf.get()));
   }
 
  private:
@@ -242,6 +223,6 @@ class Channel {
 #undef SCL_C
 #undef SCL_CC
 
-}  // namespace scl
+}  // namespace scl::net
 
 #endif  // SCL_NET_CHANNEL_H

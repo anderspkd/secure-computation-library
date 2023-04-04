@@ -53,9 +53,8 @@ gmp installed) by passing `-DWITH_EC=OFF` to cmake.
 # Using SCL
 
 To use SCL, link `libscl.so` when building your program and include the
-`include/` directory to your builds includes. The "examples" directory has some
-simple examples that use scl, as well as a CMake file that can be used as
-inspiration.
+`include/` directory to your builds includes. The test folder is a good place to
+see examples of how the different functionality works.
 
 # Documentation
 
