@@ -1,9 +1,12 @@
-Language:                               Cpp
-BasedOnStyle:                           Google
-DerivePointerAlignment:                 false
-AllowShortFunctionsOnASingleLine:       Empty
-BinPackArguments:                       false
-BinPackParameters:                      false
+Language:                                       Cpp
+BasedOnStyle:                                   Google
+
+DerivePointerAlignment:                         false
+AllowShortFunctionsOnASingleLine:               Empty
+AllowAllParametersOfDeclarationOnNextLine:      false
+AllowAllArgumentsOnNextLine:                    false
+BinPackArguments:                               false
+BinPackParameters:                              false
 
 # The include rules below structures includes as
 #
