@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "scl/math/lagrange.h"
+#include "scl/math/vec.h"
 #include "scl/util/prg.h"
 #include "scl/util/traits.h"
 
@@ -312,6 +313,17 @@ class Mat {
   Mat Multiply(const Mat& other) const;
 
   /**
+   * @brief Performs a matrix vector product.
+   * @param vector the vector.
+   * @return the result vector.
+   *
+   * This computes \f$A\cdot x\f$ where \f$A\f$ is a \f$n\times m\f$ matrix and
+   * \f$x\f$ a length \f$m\f$ vector. The return value is a vector \f$y\f$ of
+   * length \f$n\f$.
+   */
+  Vec<Elem> Multiply(const Vec<Elem>& vector) const;
+
+  /**
    * @brief Multiply this matrix with a scalar
    * @param scalar the scalar
    * @return this scaled by \p scalar.
@@ -498,7 +510,7 @@ Mat<Elem> Mat<Elem>::HyperInvertible(std::size_t n, std::size_t m) {
 template <typename Elem>
 Mat<Elem> Mat<Elem>::Multiply(const Mat<Elem>& other) const {
   if (Cols() != other.Rows()) {
-    throw std::invalid_argument("invalid matrix dimensions for multiply");
+    throw std::invalid_argument("matmul: this->Cols() != that->Rows()");
   }
   const auto n = Rows();
   const auto p = Cols();
@@ -514,6 +526,24 @@ Mat<Elem> Mat<Elem>::Multiply(const Mat<Elem>& other) const {
   }
   return result;
 }  // LCOV_EXCL_LINE
+
+template <typename Elem>
+Vec<Elem> Mat<Elem>::Multiply(const Vec<Elem>& vector) const {
+  if (Cols() != vector.Size()) {
+    throw std::invalid_argument("matmul: this->Cols() != vec.Size()");
+  }
+
+  std::vector<Elem> result;
+  result.reserve(Rows());
+
+  for (std::size_t i = 0; i < Rows(); ++i) {
+    auto b = mValues.begin() + i * Cols();
+    auto e = mValues.begin() + (i + 1) * Cols();
+    result.emplace_back(UncheckedInnerProd<Elem>(b, e, vector.begin()));
+  }
+
+  return result;
+}
 
 template <typename Elem>
 Mat<Elem> Mat<Elem>::Transpose() const {
