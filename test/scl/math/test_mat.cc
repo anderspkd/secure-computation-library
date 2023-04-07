@@ -26,10 +26,11 @@ using namespace scl;
 
 using FF = math::Fp<61>;
 using Mat = math::Mat<FF>;
+using Vec = math::Vec<FF>;
 
 namespace {
 
-void Populate(Mat& m, const int* values) {
+void Populate(Mat& m, const std::vector<int>& values) {
   for (std::size_t i = 0; i < m.Rows(); i++) {
     for (std::size_t j = 0; j < m.Cols(); j++) {
       m(i, j) = FF(values[i * m.Cols() + j]);
@@ -41,11 +42,9 @@ void Populate(Mat& m, const int* values) {
 
 TEST_CASE("Matrix construction", "[math][matrix]") {
   Mat m0(2, 2);
-  int v0[] = {1, 2, 5, 6};
-  Populate(m0, v0);
+  Populate(m0, {1, 2, 5, 6});
   Mat m1(2, 2);
-  int v1[] = {4, 3, 2, 1};
-  Populate(m1, v1);
+  Populate(m1, {4, 3, 2, 1});
 
   REQUIRE(!m0.Equals(m1));
   REQUIRE(m0.Rows() == 2);
@@ -100,8 +99,7 @@ TEST_CASE("Matrix construction from Vec", "[math][matrix]") {
 
 TEST_CASE("Matrix mutation", "[math][matrix]") {
   Mat m0(2, 2);
-  int v0[] = {1, 2, 5, 6};
-  Populate(m0, v0);
+  Populate(m0, {1, 2, 5, 6});
 
   auto m = m0;
   m(0, 1) = FF(100);
@@ -111,8 +109,7 @@ TEST_CASE("Matrix mutation", "[math][matrix]") {
 
 TEST_CASE("Matrix ToString", "[math][matrix]") {
   Mat m(3, 2);
-  int v[] = {1, 2, 44444, 5, 6, 7};
-  Populate(m, v);
+  Populate(m, {1, 2, 44444, 5, 6, 7});
   std::string expected =
       "\n"
       "[    1  2 ]\n"
@@ -130,11 +127,9 @@ TEST_CASE("Matrix ToString", "[math][matrix]") {
 
 TEST_CASE("Matrix Addition", "[math][matrix]") {
   Mat m0(2, 2);
-  int v0[] = {1, 2, 5, 6};
-  Populate(m0, v0);
+  Populate(m0, {1, 2, 5, 6});
   Mat m1(2, 2);
-  int v1[] = {4, 3, 2, 1};
-  Populate(m1, v1);
+  Populate(m1, {4, 3, 2, 1});
 
   auto m2 = m0.Add(m1);
   REQUIRE(m2.Rows() == 2);
@@ -149,11 +144,9 @@ TEST_CASE("Matrix Addition", "[math][matrix]") {
 
 TEST_CASE("Matrix Subtraction", "[math][matrix]") {
   Mat m0(2, 2);
-  int v0[] = {1, 2, 5, 6};
-  Populate(m0, v0);
+  Populate(m0, {1, 2, 5, 6});
   Mat m1(2, 2);
-  int v1[] = {4, 3, 2, 1};
-  Populate(m1, v1);
+  Populate(m1, {4, 3, 2, 1});
 
   auto m2 = m0.Subtract(m1);
   REQUIRE(m2(0, 0) == FF(1) - FF(4));
@@ -166,11 +159,9 @@ TEST_CASE("Matrix Subtraction", "[math][matrix]") {
 
 TEST_CASE("Matrix MultiplyEntryWise", "[math][matrix]") {
   Mat m0(2, 2);
-  int v0[] = {1, 2, 5, 6};
-  Populate(m0, v0);
+  Populate(m0, {1, 2, 5, 6});
   Mat m1(2, 2);
-  int v1[] = {4, 3, 2, 1};
-  Populate(m1, v1);
+  Populate(m1, {4, 3, 2, 1});
 
   auto m2 = m0.MultiplyEntryWise(m1);
   REQUIRE(m2(0, 0) == FF(4));
@@ -183,11 +174,9 @@ TEST_CASE("Matrix MultiplyEntryWise", "[math][matrix]") {
 
 TEST_CASE("Matrix Multiply", "[math][matrix]") {
   Mat m0(2, 2);
-  int v0[] = {1, 2, 5, 6};
-  Populate(m0, v0);
+  Populate(m0, {1, 2, 5, 6});
   Mat m1(2, 2);
-  int v1[] = {4, 3, 2, 1};
-  Populate(m1, v1);
+  Populate(m1, {4, 3, 2, 1});
 
   auto m2 = m0.Multiply(m1);
   REQUIRE(m2.Rows() == 2);
@@ -198,32 +187,45 @@ TEST_CASE("Matrix Multiply", "[math][matrix]") {
   REQUIRE(m2(1, 1) == FF(21));
 
   Mat m3(2, 10);
-  int v3[] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  0,
-              11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
-  Populate(m3, v3);
+  Populate(m3, {1,  2,  3,  4,  5,  6,  7,  8,  9,  0,
+                11, 12, 13, 14, 15, 16, 17, 18, 19, 20});
 
   auto m5 = m0.Multiply(m3);
   REQUIRE(m5.Rows() == 2);
   REQUIRE(m5.Cols() == 10);
   Mat m4(2, 10);
-  int v4[] = {23, 26, 29, 32,  35,  38,  41,  44,  47,  40,
-              71, 82, 93, 104, 115, 126, 137, 148, 159, 120};
-  Populate(m4, v4);
+  Populate(m4, {23, 26, 29, 32,  35,  38,  41,  44,  47,  40,
+                71, 82, 93, 104, 115, 126, 137, 148, 159, 120});
   REQUIRE(m5.Equals(m4));
 
   REQUIRE_THROWS_MATCHES(
       m3.Multiply(m0),
       std::invalid_argument,
-      Catch::Matchers::Message("invalid matrix dimensions for multiply"));
+      Catch::Matchers::Message("matmul: this->Cols() != that->Rows()"));
+}
+
+TEST_CASE("Matrix vector multiply", "[math][matrix]") {
+  Mat m0(2, 3);
+  Populate(m0, {1, 2, 3, 4, 5, 6});
+  Vec v0 = {FF(1), FF(2), FF(3)};
+
+  Vec v1 = m0.Multiply(v0);
+  REQUIRE(v1.Size() == 2);
+  REQUIRE(v1[0] == FF(1 * 1 + 2 * 2 + 3 * 3));
+  REQUIRE(v1[1] == FF(4 * 1 + 5 * 2 + 6 * 3));
+
+  Vec v2 = {FF(6), FF(7)};
+  REQUIRE_THROWS_MATCHES(
+      m0.Multiply(v2),
+      std::invalid_argument,
+      Catch::Matchers::Message("matmul: this->Cols() != vec.Size()"));
 }
 
 TEST_CASE("Matrix ScalarMultiply", "[math][matrix]") {
   Mat m0(2, 2);
-  int v0[] = {1, 2, 5, 6};
-  Populate(m0, v0);
+  Populate(m0, {1, 2, 5, 6});
   Mat m1(2, 2);
-  int v1[] = {4, 3, 2, 1};
-  Populate(m1, v1);
+  Populate(m1, {4, 3, 2, 1});
 
   auto m2 = m0.ScalarMultiply(FF(2));
   REQUIRE(m2(0, 0) == FF(2));
@@ -240,8 +242,7 @@ TEST_CASE("Matrix ScalarMultiply", "[math][matrix]") {
 
 TEST_CASE("Matrix Transpose", "[math][matrix]") {
   Mat m3(2, 3);
-  int v3[] = {1, 2, 3, 11, 12, 13};
-  Populate(m3, v3);
+  Populate(m3, {1, 2, 3, 11, 12, 13});
   auto m4 = m3.Transpose();
   REQUIRE(m4.Rows() == m3.Cols());
   REQUIRE(m4.Cols() == m3.Rows());

@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 4.0.0 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 5.1.0 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -47,8 +47,6 @@ set(SCL_SOURCE_FILES
   src/scl/net/mem_channel.cc
   src/scl/net/threaded_sender.cc
   src/scl/net/network.cc
-  src/scl/net/discovery/server.cc
-  src/scl/net/discovery/client.cc
 
   src/scl/simulation/simulator.cc
   src/scl/simulation/simulate_recv_time.cc
@@ -123,7 +121,6 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/net/test_tcp_channel.cc
     test/scl/net/test_threaded_sender.cc
     test/scl/net/test_network.cc
-    test/scl/net/test_discover.cc
     test/scl/net/test_shared_deque.cc
     test/scl/net/test_channel.cc
 
