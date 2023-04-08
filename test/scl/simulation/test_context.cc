@@ -115,7 +115,6 @@ sim::SimulationContext::Create<DummyChannelBuffer>(
 
   ctx->mNumberOfParties = n;
   ctx->mTraces.resize(n);
-  ctx->mWritesIndices.resize(n);
 
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < n; ++j) {
@@ -249,31 +248,6 @@ TEST_CASE("Simulation context NextToRun simple", "[sim]") {
   REQUIRE_FALSE(next.has_value());
 }
 
-TEST_CASE("Simulation context NextToRun sends", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
-      3,
-      sim::DefaultConfigCreator());
-
-  auto next = ctx->NextToRun();
-
-  ctx->AddEvent(0, StartEvent());
-  ctx->AddEvent(1, StartEvent());
-  ctx->AddEvent(2, StartEvent());
-
-  ctx->AddCandidateToRun(2);
-
-  next = ctx->NextToRun(next);
-  REQUIRE(next.has_value());
-  REQUIRE(next.value() == 2);  // NOLINT
-
-  ctx->AddCandidateToRun(2);
-  ctx->AddCandidateToRun(1);
-
-  next = ctx->NextToRun(next);
-  REQUIRE(next.has_value());
-  REQUIRE(next.value() == 1);  // NOLINT
-}
-
 TEST_CASE("Simulation context NextToRun fails", "[sim]") {
   auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
       3,
@@ -287,6 +261,7 @@ TEST_CASE("Simulation context NextToRun fails", "[sim]") {
 
   ctx->Rollback(0);
 
+  next = ctx->NextToRun(next);
   next = ctx->NextToRun(next);
   REQUIRE(next.has_value());
   REQUIRE(next.value() == 2);
@@ -316,4 +291,26 @@ TEST_CASE("Simulation context NextToRun fails", "[sim]") {
       scl::sim::SimulationFailure,
       Catch::Matchers::Message(
           "party tried to receive data from terminated party"));
+}
+
+TEST_CASE("Simulation context rollback write ops", "[sim]") {
+  auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
+      3,
+      sim::DefaultConfigCreator());
+
+  const auto ts = util::Time::Duration::zero();
+
+  // party 0 sends to party 1
+  ctx->Prepare(0);
+  ctx->RecordWrite({0, 1}, 10, ts);
+  ctx->Commit(0);
+
+  // party 1 receives data from party 0, but then performs a rollback.
+  ctx->Prepare(1);
+  REQUIRE(ctx->Writes({0, 1})[0].amount == 10);
+  ctx->Writes({0, 1})[0].amount = 0;
+  ctx->Rollback(1);
+
+  // the change to the write op above should be undone by the rollback.
+  REQUIRE(ctx->Writes({0, 1})[0].amount == 10);
 }

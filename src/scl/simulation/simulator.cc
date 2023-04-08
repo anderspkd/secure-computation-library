@@ -144,7 +144,7 @@ std::vector<scl::sim::SimulationTrace> RunSimulation(
           n,
           config_creator);
 
-  auto networks_ = CreateNetworks(ctx);
+  auto networks = CreateNetworks(ctx);
 
   auto next_id = ctx->NextToRun();
   while (next_id.has_value()) {
@@ -154,7 +154,7 @@ std::vector<scl::sim::SimulationTrace> RunSimulation(
       ctx->Prepare(id);
 
       scl::proto::ProtocolEnvironment env{
-          networks_[id],
+          networks[id],
           std::make_unique<scl::sim::SimulatedClock>(ctx.get(), id),
           std::make_unique<scl::sim::SimulatedThreadCtx>(ctx, id)};
 
