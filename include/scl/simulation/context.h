@@ -215,7 +215,7 @@ class SimulationContext {
   State mState = State::COMMIT;
 
   std::map<ChannelId, std::vector<WriteOp>> mWrites;
-  std::vector<std::size_t> mWritesIndices;
+  std::map<ChannelId, std::vector<WriteOp>> mWritesBackup;
 
   util::Time::TimePoint mCheckpoint;
 

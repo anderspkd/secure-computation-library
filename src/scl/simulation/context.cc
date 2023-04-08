@@ -30,7 +30,6 @@ std::shared_ptr<SimCtx> SimCtx::Create<scl::sim::MemoryBackedChannelBuffer>(
 
   ctx->mNumberOfParties = number_of_parties;
   ctx->mTraces.resize(number_of_parties);
-  ctx->mWritesIndices.resize(number_of_parties);
 
   for (std::size_t i = 0; i < number_of_parties; ++i) {
     ctx->mBuffers[ChannelId(i, i)] =
@@ -86,16 +85,6 @@ std::optional<std::size_t> SimCtx::NextToRun(
     if (next == current) {
       throw SimulationFailure("infinite loop detected");
     }
-
-    return next;
-  }
-
-  // Last party ran succesfully, so we first attempt to pick the next party as
-  // one of the parties that mCurrentParty sent data to.
-  for (const auto next : mNextPartyCandidates) {
-    if (next != current && !HasTerminated(mTraces[next])) {
-      return next;
-    }
   }
 
   std::size_t next = Next(current.value(), mNumberOfParties);
@@ -120,14 +109,17 @@ scl::util::Time::Duration SimCtx::Checkpoint(std::size_t id) {
 
 void SimCtx::Prepare(std::size_t id) {
   if (mState == State::COMMIT || mState == State::ROLLBACK) {
-    // The strategy used here assumes people are good at writing protocols and
-    // so Rollbacks are relatively infrequent.
+    // Save the current head of mTraces so we can discard new events if this
+    // party has to rollback.
     mTraceIndex = mTraces[id].size();
     mNextPartyCandidates.clear();
 
+    // Save the current mWrites map. Recv operations will change writes made by
+    // other parties, so this is the easiest way to make sure Rollback does the
+    // right thing.
+    mWritesBackup = mWrites;
     for (std::size_t i = 0; i < mNumberOfParties; ++i) {
       auto cid = ChannelId(id, i);
-      mWritesIndices[i] = mWrites[cid].size();
       mBuffers[cid]->Prepare();
     }
   } else {
@@ -138,6 +130,7 @@ void SimCtx::Prepare(std::size_t id) {
 
 void SimCtx::Commit(std::size_t id) {
   if (mState == State::PREPARE) {
+    mWritesBackup.clear();
     for (std::size_t i = 0; i < mNumberOfParties; ++i) {
       ChannelId cid(id, i);
       mBuffers[cid]->Commit();
@@ -152,9 +145,9 @@ void SimCtx::Commit(std::size_t id) {
 void SimCtx::Rollback(std::size_t id) {
   if (mState == State::PREPARE) {
     mTraces[id].resize(mTraceIndex);
-    for (std::size_t i = 0; i < mWritesIndices.size(); ++i) {
+    mWrites = mWritesBackup;
+    for (std::size_t i = 0; i < mNumberOfParties; ++i) {
       ChannelId cid(id, i);
-      mWrites[cid].resize(mWritesIndices[i]);
       mBuffers[cid]->Rollback();
     }
   } else {
