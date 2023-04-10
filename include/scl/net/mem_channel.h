@@ -63,7 +63,7 @@ class MemoryBackedChannel final : public Channel {
    */
   MemoryBackedChannel(std::shared_ptr<Buffer> in_buffer,
                       std::shared_ptr<Buffer> out_buffer)
-      : mIn(std::move(in_buffer)), mOut(std::move(out_buffer)){};
+      : m_in(std::move(in_buffer)), m_out(std::move(out_buffer)){};
 
   ~MemoryBackedChannel(){};
 
@@ -71,15 +71,15 @@ class MemoryBackedChannel final : public Channel {
   std::size_t Recv(unsigned char* dst, std::size_t n) override;
 
   bool HasData() override {
-    return mIn->Size() > 0 || !mOverflow.empty();
+    return m_in->Size() > 0 || !m_overflow.empty();
   };
 
   void Close() override{};
 
  private:
-  std::shared_ptr<Buffer> mIn;
-  std::shared_ptr<Buffer> mOut;
-  std::vector<unsigned char> mOverflow;
+  std::shared_ptr<Buffer> m_in;
+  std::shared_ptr<Buffer> m_out;
+  std::vector<unsigned char> m_overflow;
 };
 
 }  // namespace scl::net

@@ -28,17 +28,17 @@ std::shared_ptr<SimCtx> SimCtx::Create<scl::sim::MemoryBackedChannelBuffer>(
     const SimulatedNetworkConfigCreator& config) {
   auto ctx = std::make_shared<SimulationContext>(config);
 
-  ctx->mNumberOfParties = number_of_parties;
-  ctx->mTraces.resize(number_of_parties);
+  ctx->m_nparties = number_of_parties;
+  ctx->m_traces.resize(number_of_parties);
 
   for (std::size_t i = 0; i < number_of_parties; ++i) {
-    ctx->mBuffers[ChannelId(i, i)] =
+    ctx->m_buffers[ChannelId(i, i)] =
         MemoryBackedChannelBuffer::CreateLoopback();
     for (std::size_t j = i + 1; j < number_of_parties; ++j) {
       ChannelId cid(i, j);
       auto cp = MemoryBackedChannelBuffer::CreatePaired();
-      ctx->mBuffers[cid] = cp[0];
-      ctx->mBuffers[cid.Flip()] = cp[1];
+      ctx->m_buffers[cid] = cp[0];
+      ctx->m_buffers[cid.Flip()] = cp[1];
     }
   }
 
@@ -67,14 +67,14 @@ std::optional<std::size_t> SimCtx::NextToRun(
 
   // we end here current throw a SimulationFailure. This only happens when it
   // fails to either call Recv or HasData.
-  if (mState == State::ROLLBACK) {
-    // the last party in mNextPartyCandidates is assumed to be the party for
+  if (m_state == State::ROLLBACK) {
+    // the last party in m_next_party_cand is assumed to be the party for
     // which current tried to Recv or HasData from.
-    auto next = mNextPartyCandidates.back();
+    auto next = m_next_party_cand.back();
 
     // if this party has already finished, then current will never be able to
     // finish, so we crash the simulation here.
-    if (HasTerminated(mTraces[next])) {
+    if (HasTerminated(m_traces[next])) {
       throw SimulationFailure(
           "party tried to receive data from terminated party");
     }
@@ -87,14 +87,14 @@ std::optional<std::size_t> SimCtx::NextToRun(
     }
   }
 
-  std::size_t next = Next(current.value(), mNumberOfParties);
+  std::size_t next = Next(current.value(), m_nparties);
   std::size_t terminated = 0;
-  while (terminated < mNumberOfParties) {
-    if (!HasTerminated(mTraces[next])) {
+  while (terminated < m_nparties) {
+    if (!HasTerminated(m_traces[next])) {
       return next;
     }
     terminated++;
-    next = Next(next, mNumberOfParties);
+    next = Next(next, m_nparties);
   }
 
   return {};
@@ -102,56 +102,56 @@ std::optional<std::size_t> SimCtx::NextToRun(
 
 scl::util::Time::Duration SimCtx::Checkpoint(std::size_t id) {
   const auto latest = LatestTimestamp(id);
-  const auto last_checkpoint = mCheckpoint;
+  const auto last_checkpoint = m_checkpoint;
   UpdateCheckpoint();
-  return latest + (mCheckpoint - last_checkpoint);
+  return latest + (m_checkpoint - last_checkpoint);
 }
 
 void SimCtx::Prepare(std::size_t id) {
-  if (mState == State::COMMIT || mState == State::ROLLBACK) {
-    // Save the current head of mTraces so we can discard new events if this
+  if (m_state == State::COMMIT || m_state == State::ROLLBACK) {
+    // Save the current head of m_traces so we can discard new events if this
     // party has to rollback.
-    mTraceIndex = mTraces[id].size();
-    mNextPartyCandidates.clear();
+    m_trace_index = m_traces[id].size();
+    m_next_party_cand.clear();
 
-    // Save the current mWrites map. Recv operations will change writes made by
+    // Save the current m_writes map. Recv operations will change writes made by
     // other parties, so this is the easiest way to make sure Rollback does the
     // right thing.
-    mWritesBackup = mWrites;
-    for (std::size_t i = 0; i < mNumberOfParties; ++i) {
+    m_writes_backup = m_writes;
+    for (std::size_t i = 0; i < m_nparties; ++i) {
       auto cid = ChannelId(id, i);
-      mBuffers[cid]->Prepare();
+      m_buffers[cid]->Prepare();
     }
   } else {
     throw std::logic_error("cannot prepare ctx");
   }
-  mState = State::PREPARE;
+  m_state = State::PREPARE;
 }
 
 void SimCtx::Commit(std::size_t id) {
-  if (mState == State::PREPARE) {
-    mWritesBackup.clear();
-    for (std::size_t i = 0; i < mNumberOfParties; ++i) {
+  if (m_state == State::PREPARE) {
+    m_writes_backup.clear();
+    for (std::size_t i = 0; i < m_nparties; ++i) {
       ChannelId cid(id, i);
-      mBuffers[cid]->Commit();
+      m_buffers[cid]->Commit();
     }
 
   } else {
     throw std::logic_error("cannot commit");
   }
-  mState = State::COMMIT;
+  m_state = State::COMMIT;
 }
 
 void SimCtx::Rollback(std::size_t id) {
-  if (mState == State::PREPARE) {
-    mTraces[id].resize(mTraceIndex);
-    mWrites = mWritesBackup;
-    for (std::size_t i = 0; i < mNumberOfParties; ++i) {
+  if (m_state == State::PREPARE) {
+    m_traces[id].resize(m_trace_index);
+    m_writes = m_writes_backup;
+    for (std::size_t i = 0; i < m_nparties; ++i) {
       ChannelId cid(id, i);
-      mBuffers[cid]->Rollback();
+      m_buffers[cid]->Rollback();
     }
   } else {
     throw std::logic_error("cannot rollback");
   }
-  mState = State::ROLLBACK;
+  m_state = State::ROLLBACK;
 }

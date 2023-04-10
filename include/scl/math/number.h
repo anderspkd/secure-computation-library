@@ -367,11 +367,11 @@ class Number {
    */
   friend void swap(Number& first, Number& second) {
     using std::swap;
-    swap(first.mValue, second.mValue);
+    swap(first.m_value, second.m_value);
   };
 
  private:
-  mpz_t mValue;
+  mpz_t m_value;
 };
 
 }  // namespace scl::math

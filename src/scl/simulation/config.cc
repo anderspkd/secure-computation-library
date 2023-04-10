@@ -21,29 +21,29 @@
 #include <stdexcept>
 
 void scl::sim::SimulatedNetworkConfig::Builder::Validate() const {
-  if (mBandwidth.has_value()) {
-    if (mBandwidth.value() == 0) {
+  if (m_bandwidth.has_value()) {
+    if (m_bandwidth.value() == 0) {
       throw std::invalid_argument("bandwidth cannot be 0");
     }
   }
 
-  if (mMSS.has_value()) {
-    if (mMSS.value() == 0) {
+  if (m_MSS.has_value()) {
+    if (m_MSS.value() == 0) {
       throw std::invalid_argument("MSS cannot be 0");
     }
   }
 
-  if (mPackageLoss.has_value()) {
-    if (mPackageLoss.value() < 0) {
+  if (m_package_loss.has_value()) {
+    if (m_package_loss.value() < 0) {
       throw std::invalid_argument("package loss percentage cannot be negative");
     }
-    if (mPackageLoss.value() >= 1) {
+    if (m_package_loss.value() >= 1) {
       throw std::invalid_argument("package loss percentage cannot exceed 100%");
     }
   }
 
-  if (mWindowSize.has_value()) {
-    if (mWindowSize.value() == 0) {
+  if (m_window_size.has_value()) {
+    if (m_window_size.value() == 0) {
       throw std::invalid_argument("TCP window size cannot be 0");
     }
   }

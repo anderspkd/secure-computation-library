@@ -48,10 +48,10 @@ class Measurement {
    * @param sample the sample.
    */
   void AddSample(const T& sample) {
-    mSamples.emplace_back(sample);
+    m_samples.emplace_back(sample);
     // Maybe it makes more sense to use a datastructure here where insertion
     // anywhere is constant time?
-    std::sort(mSamples.begin(), mSamples.end());
+    std::sort(m_samples.begin(), m_samples.end());
   }
 
   /**
@@ -59,7 +59,7 @@ class Measurement {
    * @return the samples.
    */
   const std::vector<T>& Samples() const {
-    return mSamples;
+    return m_samples;
   }
 
   /**
@@ -67,7 +67,7 @@ class Measurement {
    * @return number of samples.
    */
   std::size_t Size() const {
-    return mSamples.size();
+    return m_samples.size();
   }
 
   /**
@@ -75,7 +75,7 @@ class Measurement {
    * @return true if this measurement has zero samples, and false otherwise.
    */
   bool Empty() const {
-    return mSamples.empty();
+    return m_samples.empty();
   }
 
   /**
@@ -95,7 +95,7 @@ class Measurement {
    * @return smallest observed sample.
    */
   T Min() const {
-    return Empty() ? Zero() : mSamples[0];
+    return Empty() ? Zero() : m_samples[0];
   }
 
   /**
@@ -103,7 +103,7 @@ class Measurement {
    * @return largest observed sample.
    */
   T Max() const {
-    return Empty() ? Zero() : mSamples[Size() - 1];
+    return Empty() ? Zero() : m_samples[Size() - 1];
   }
 
   /**
@@ -113,7 +113,7 @@ class Measurement {
   T StdDev() const;
 
  private:
-  std::vector<T> mSamples;
+  std::vector<T> m_samples;
 
   static T Zero() {
     return 0;
@@ -131,7 +131,7 @@ class Measurement {
 template <typename T>
 T Measurement<T>::Mean() const {
   T sum = Zero();
-  for (const auto& v : mSamples) {
+  for (const auto& v : m_samples) {
     sum += v;
   }
   return sum / Size();
@@ -144,22 +144,22 @@ T Measurement<T>::Median() const {
   }
 
   if (Size() == 1) {
-    return mSamples[0];
+    return m_samples[0];
   }
 
   const auto i = Size() / 2;
   if (Size() % 2 == 0) {
-    return mSamples[i];
+    return m_samples[i];
   }
 
-  return mSamples[i] + mSamples[i + 1];
+  return m_samples[i] + m_samples[i + 1];
 }
 
 template <typename T>
 T Measurement<T>::StdDev() const {
   const auto mu = Mean();
   auto sum = Zero();
-  for (const auto& v : mSamples) {
+  for (const auto& v : m_samples) {
     sum += Sqr(v - mu);
   }
   return Sqrt(sum / Size());

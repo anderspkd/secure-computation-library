@@ -63,57 +63,57 @@ class MemoryBackedChannelBuffer final : public ChannelBuffer {
   MemoryBackedChannelBuffer(
       std::shared_ptr<std::vector<unsigned char>> write_buffer,
       std::shared_ptr<std::vector<unsigned char>> read_buffer)
-      : mWriteBuffer(write_buffer),
-        mReadBuffer(read_buffer),
-        mWritePtr(0),
-        mReadPtr(0){};
+      : m_write_buf(write_buffer),
+        m_read_buf(read_buffer),
+        m_write_ptr(0),
+        m_read_ptr(0){};
 
   ~MemoryBackedChannelBuffer() {}
 
   std::size_t Size() override {
-    return mReadBuffer->size() - mReadPtr;
+    return m_read_buf->size() - m_read_ptr;
   }
 
   std::vector<unsigned char> Read(std::size_t n) override {
     // silence clang-tidy
-    auto m = (std::vector<unsigned char>::difference_type)mReadPtr;
+    auto m = (std::vector<unsigned char>::difference_type)m_read_ptr;
     auto n_ = (std::vector<unsigned char>::difference_type)n;
-    std::vector<unsigned char> data{mReadBuffer->begin() + m,
-                                    mReadBuffer->begin() + m + n_};
-    mReadPtr += n;
+    std::vector<unsigned char> data{m_read_buf->begin() + m,
+                                    m_read_buf->begin() + m + n_};
+    m_read_ptr += n;
     return data;
   }
 
   void Write(const std::vector<unsigned char>& data) override {
-    mWriteBuffer->insert(mWriteBuffer->end(), data.begin(), data.end());
+    m_write_buf->insert(m_write_buf->end(), data.begin(), data.end());
   }
 
   void Prepare() override {
-    mWritePtr = mWriteBuffer->size();
-    mReadPtr = 0;
+    m_write_ptr = m_write_buf->size();
+    m_read_ptr = 0;
   }
 
   void Commit() override {
     // erase the data that was read since Prepare and reset write/read ptr.
-    auto m = (std::vector<unsigned char>::difference_type)mReadPtr;
-    mReadBuffer->erase(mReadBuffer->begin(), mReadBuffer->begin() + m);
+    auto m = (std::vector<unsigned char>::difference_type)m_read_ptr;
+    m_read_buf->erase(m_read_buf->begin(), m_read_buf->begin() + m);
 
-    mReadPtr = 0;
-    mWritePtr = mWriteBuffer->size();
+    m_read_ptr = 0;
+    m_write_ptr = m_write_buf->size();
   }
 
   void Rollback() override {
     // erase data written since Prepare and reset the read ptr.
-    mWriteBuffer->resize(mWritePtr);
-    mReadPtr = 0;
+    m_write_buf->resize(m_write_ptr);
+    m_read_ptr = 0;
   }
 
  private:
-  std::shared_ptr<std::vector<unsigned char>> mWriteBuffer;
-  std::shared_ptr<std::vector<unsigned char>> mReadBuffer;
+  std::shared_ptr<std::vector<unsigned char>> m_write_buf;
+  std::shared_ptr<std::vector<unsigned char>> m_read_buf;
 
-  std::size_t mWritePtr;
-  std::size_t mReadPtr;
+  std::size_t m_write_ptr;
+  std::size_t m_read_ptr;
 };
 
 }  // namespace scl::sim

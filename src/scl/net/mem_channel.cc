@@ -24,7 +24,7 @@
 
 void scl::net::MemoryBackedChannel::Send(const unsigned char* src,
                                          std::size_t n) {
-  mOut->PushBack(std::vector<unsigned char>(src, src + n));
+  m_out->PushBack(std::vector<unsigned char>(src, src + n));
 }
 
 std::size_t scl::net::MemoryBackedChannel::Recv(unsigned char* dst,
@@ -33,18 +33,19 @@ std::size_t scl::net::MemoryBackedChannel::Recv(unsigned char* dst,
 
   // if there's any leftovers from previous calls to recv, then we retrieve
   // those first.
-  const auto leftovers = mOverflow.size();
+  const auto leftovers = m_overflow.size();
   if (leftovers > 0) {
     const auto to_copy = leftovers > rem ? rem : leftovers;
-    auto* data = mOverflow.data();
+    auto* data = m_overflow.data();
     std::memcpy(dst, data, to_copy);
     rem -= to_copy;
-    mOverflow = std::vector<unsigned char>(mOverflow.begin() + DIFF_T(to_copy),
-                                           mOverflow.end());
+    m_overflow =
+        std::vector<unsigned char>(m_overflow.begin() + DIFF_T(to_copy),
+                                   m_overflow.end());
   }
 
   while (rem > 0) {
-    auto data = mIn->Pop();
+    auto data = m_in->Pop();
     const auto to_copy = data.size() > rem ? rem : data.size();
     std::memcpy(dst + (n - rem), data.data(), to_copy);
     rem -= to_copy;
@@ -53,11 +54,11 @@ std::size_t scl::net::MemoryBackedChannel::Recv(unsigned char* dst,
     // remains to overflow
     if (to_copy < data.size()) {
       const auto leftovers = data.size() - to_copy;
-      const auto old_size = mOverflow.size();
-      mOverflow.reserve(old_size + leftovers);
-      mOverflow.insert(mOverflow.begin() + DIFF_T(old_size),
-                       data.begin() + DIFF_T(to_copy),
-                       data.end());
+      const auto old_size = m_overflow.size();
+      m_overflow.reserve(old_size + leftovers);
+      m_overflow.insert(m_overflow.begin() + DIFF_T(old_size),
+                        data.begin() + DIFF_T(to_copy),
+                        data.end());
     }
   }
 

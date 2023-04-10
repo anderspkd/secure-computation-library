@@ -67,7 +67,7 @@ class EC {
    * @brief A string indicating which curve this is.
    */
   constexpr static const char* Name() {
-    return Curve::kName;
+    return Curve::NAME;
   };
 
   /**
@@ -75,7 +75,7 @@ class EC {
    */
   constexpr static EC Generator() {
     EC g;
-    CurveSetGenerator<Curve>(g.mValue);
+    CurveSetGenerator<Curve>(g.m_value);
     return g;
   };
 
@@ -86,7 +86,7 @@ class EC {
    */
   static EC Read(const unsigned char* src) {
     EC e;
-    CurveFromBytes<Curve>(e.mValue, src);
+    CurveFromBytes<Curve>(e.m_value, src);
     return e;
   };
 
@@ -95,7 +95,7 @@ class EC {
    */
   static EC FromAffine(const Field& x, const Field& y) {
     EC e;
-    CurveSetAffine<Curve>(e.mValue, x, y);
+    CurveSetAffine<Curve>(e.m_value, x, y);
     return e;
   };
 
@@ -103,7 +103,7 @@ class EC {
    * @brief Create a new point equal to the point at infinity.
    */
   explicit constexpr EC() {
-    CurveSetPointAtInfinity<Curve>(mValue);
+    CurveSetPointAtInfinity<Curve>(m_value);
   };
 
   /**
@@ -112,7 +112,7 @@ class EC {
    * @return this
    */
   EC& operator+=(const EC& other) {
-    CurveAdd<Curve>(mValue, other.mValue);
+    CurveAdd<Curve>(m_value, other.m_value);
     return *this;
   };
 
@@ -132,7 +132,7 @@ class EC {
    * @return this after doubling.
    */
   EC& DoubleInPlace() {
-    CurveDouble<Curve>(mValue);
+    CurveDouble<Curve>(m_value);
     return *this;
   };
 
@@ -151,7 +151,7 @@ class EC {
    * @return this.
    */
   EC& operator-=(const EC& other) {
-    CurveSubtract<Curve>(mValue, other.mValue);
+    CurveSubtract<Curve>(m_value, other.m_value);
     return *this;
   };
 
@@ -172,7 +172,7 @@ class EC {
    * @return this.
    */
   EC& operator*=(const Number& scalar) {
-    CurveScalarMultiply<Curve>(mValue, scalar);
+    CurveScalarMultiply<Curve>(m_value, scalar);
     return *this;
   };
 
@@ -182,7 +182,7 @@ class EC {
    * @return this.
    */
   EC& operator*=(const Order& scalar) {
-    CurveScalarMultiply<Curve>(mValue, scalar);
+    CurveScalarMultiply<Curve>(m_value, scalar);
     return *this;
   };
 
@@ -234,7 +234,7 @@ class EC {
    * @return this.
    */
   EC& Negate() {
-    CurveNegate<Curve>(mValue);
+    CurveNegate<Curve>(m_value);
     return *this;
   }
 
@@ -253,7 +253,7 @@ class EC {
    * @return true if the two points are equal and false otherwise.
    */
   bool Equal(const EC& other) const {
-    return CurveEqual<Curve>(mValue, other.mValue);
+    return CurveEqual<Curve>(m_value, other.m_value);
   };
 
   /**
@@ -275,7 +275,7 @@ class EC {
    * @return true if this point is equal to the point at inifity.
    */
   bool PointAtInfinity() const {
-    return CurveIsPointAtInfinity<Curve>(mValue);
+    return CurveIsPointAtInfinity<Curve>(m_value);
   };
 
   /**
@@ -283,14 +283,14 @@ class EC {
    * @return this point as a pair of affine coordinates.
    */
   std::array<Field, 2> ToAffine() const {
-    return CurveToAffine<Curve>(mValue);
+    return CurveToAffine<Curve>(m_value);
   };
 
   /**
    * @brief Output this point as a string.
    */
   std::string ToString() const {
-    return CurveToString<Curve>(mValue);
+    return CurveToString<Curve>(m_value);
   };
 
   /**
@@ -307,11 +307,11 @@ class EC {
    * @param compress whether to compress the point
    */
   void Write(unsigned char* dest, bool compress = true) const {
-    CurveToBytes<Curve>(dest, mValue, compress);
+    CurveToBytes<Curve>(dest, m_value, compress);
   };
 
  private:
-  typename Curve::ValueType mValue;
+  typename Curve::ValueType m_value;
 };
 
 /**

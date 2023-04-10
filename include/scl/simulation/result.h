@@ -97,7 +97,7 @@ class Result {
    * @return a sim::TimeMeasurement.
    */
   TimeMeasurement ExecutionTime(const SegmentName& name = {}) const {
-    return mMeasurements.at(name).duration_m;
+    return m_measurements.at(name).duration_m;
   }
 
   /**
@@ -106,7 +106,7 @@ class Result {
    * @return a SendRecvMeasurement.
    */
   SendRecvMeasurement TransferAmounts(const SegmentName& name = {}) const {
-    return mMeasurements.at(name).send_recv_m;
+    return m_measurements.at(name).send_recv_m;
   }
 
   /**
@@ -117,7 +117,7 @@ class Result {
    */
   SendRecvMeasurement TransferAmounts(std::size_t id,
                                       const SegmentName& name = {}) const {
-    return mMeasurements.at(name).channels_m.at(id);
+    return m_measurements.at(name).channels_m.at(id);
   }
 
   /**
@@ -139,7 +139,7 @@ class Result {
    * proto::Protocol::kDefaultName.
    */
   std::vector<std::string> SegmentNames() const {
-    return mSegmentNames;
+    return m_segment_names;
   }
 
   /**
@@ -165,18 +165,18 @@ class Result {
       const std::vector<SimulationTrace>& traces,
       const std::unordered_map<SegmentName, SegmentMeasurement>& measurements,
       const std::vector<std::string>& segment_names)
-      : mTraces(traces),
-        mMeasurements(measurements),
-        mSegmentNames(segment_names){};
+      : m_traces(traces),
+        m_measurements(measurements),
+        m_segment_names(segment_names){};
 
   // The raw simulation trace
-  std::vector<SimulationTrace> mTraces;
+  std::vector<SimulationTrace> m_traces;
 
   // per-segment measurements
-  std::unordered_map<SegmentName, SegmentMeasurement> mMeasurements;
+  std::unordered_map<SegmentName, SegmentMeasurement> m_measurements;
 
   // segment names
-  std::vector<std::string> mSegmentNames;
+  std::vector<std::string> m_segment_names;
 };
 
 }  // namespace scl::sim

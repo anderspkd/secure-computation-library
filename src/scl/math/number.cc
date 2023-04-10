@@ -23,19 +23,19 @@
 #include <type_traits>
 
 scl::math::Number::Number() {
-  mpz_init(mValue);
+  mpz_init(m_value);
 }
 
 scl::math::Number::Number(const Number& number) : Number() {
-  mpz_set(mValue, number.mValue);
+  mpz_set(m_value, number.m_value);
 }
 
 scl::math::Number::Number(Number&& number) noexcept : Number() {
-  mpz_set(mValue, number.mValue);
+  mpz_set(m_value, number.m_value);
 }
 
 scl::math::Number::~Number() {
-  mpz_clear(mValue);
+  mpz_clear(m_value);
 }
 
 scl::math::Number scl::math::Number::Random(std::size_t bits, util::PRG& prg) {
@@ -47,53 +47,53 @@ scl::math::Number scl::math::Number::Random(std::size_t bits, util::PRG& prg) {
   data[1] &= (1 << (bits % 8)) - 1;
 
   scl::math::Number r;
-  mpz_import(r.mValue, len - 1, 1, 1, 0, 0, data.get() + 1);
+  mpz_import(r.m_value, len - 1, 1, 1, 0, 0, data.get() + 1);
   if ((data[0] & 1) != 0) {
-    mpz_neg(r.mValue, r.mValue);
+    mpz_neg(r.m_value, r.m_value);
   }
   return r;
 }
 
 scl::math::Number scl::math::Number::FromString(const std::string& str) {
   scl::math::Number num;
-  mpz_set_str(num.mValue, str.c_str(), 16);
+  mpz_set_str(num.m_value, str.c_str(), 16);
   return num;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number::Number(int value) : Number() {
-  mpz_set_si(mValue, value);
+  mpz_set_si(m_value, value);
 }
 
 scl::math::Number scl::math::Number::operator+(const Number& number) const {
   scl::math::Number sum;
-  mpz_add(sum.mValue, mValue, number.mValue);
+  mpz_add(sum.m_value, m_value, number.m_value);
   return sum;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator-(const Number& number) const {
   scl::math::Number diff;
-  mpz_sub(diff.mValue, mValue, number.mValue);
+  mpz_sub(diff.m_value, m_value, number.m_value);
   return diff;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator-() const {
   scl::math::Number neg;
-  mpz_neg(neg.mValue, mValue);
+  mpz_neg(neg.m_value, m_value);
   return neg;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator*(const Number& number) const {
   scl::math::Number prod;
-  mpz_mul(prod.mValue, mValue, number.mValue);
+  mpz_mul(prod.m_value, m_value, number.m_value);
   return prod;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator/(const Number& number) const {
-  if (mpz_sgn(number.mValue) == 0) {
+  if (mpz_sgn(number.m_value) == 0) {
     throw std::logic_error("division by 0");
   }
   scl::math::Number frac;
-  mpz_div(frac.mValue, mValue, number.mValue);
+  mpz_div(frac.m_value, m_value, number.m_value);
   return frac;
 }  // LCOV_EXCL_LINE
 
@@ -102,7 +102,7 @@ scl::math::Number scl::math::Number::operator<<(int shift) const {
   if (shift < 0) {
     shifted = operator>>(-shift);
   } else {
-    mpz_mul_2exp(shifted.mValue, mValue, shift);
+    mpz_mul_2exp(shifted.m_value, m_value, shift);
   }
   return shifted;
 }  // LCOV_EXCL_LINE
@@ -112,50 +112,50 @@ scl::math::Number scl::math::Number::operator>>(int shift) const {
   if (shift < 0) {
     shifted = operator<<(-shift);
   } else {
-    mpz_tdiv_q_2exp(shifted.mValue, mValue, shift);
+    mpz_tdiv_q_2exp(shifted.m_value, m_value, shift);
   }
   return shifted;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator^(const Number& number) const {
   scl::math::Number xord;
-  mpz_xor(xord.mValue, mValue, number.mValue);
+  mpz_xor(xord.m_value, m_value, number.m_value);
   return xord;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator|(const Number& number) const {
   scl::math::Number ord;
-  mpz_ior(ord.mValue, mValue, number.mValue);
+  mpz_ior(ord.m_value, m_value, number.m_value);
   return ord;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator&(const Number& number) const {
   scl::math::Number andd;
-  mpz_and(andd.mValue, mValue, number.mValue);
+  mpz_and(andd.m_value, m_value, number.m_value);
   return andd;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator~() const {
   scl::math::Number com;
-  mpz_com(com.mValue, mValue);
+  mpz_com(com.m_value, m_value);
   return com;
 }  // LCOV_EXCL_LINE
 
 int scl::math::Number::Compare(const Number& number) const {
-  return mpz_cmp(mValue, number.mValue);
+  return mpz_cmp(m_value, number.m_value);
 }
 
 std::size_t scl::math::Number::BitSize() const {
-  return mpz_sizeinbase(mValue, 2);
+  return mpz_sizeinbase(m_value, 2);
 }
 
 bool scl::math::Number::TestBit(std::size_t index) const {
-  return mpz_tstbit(mValue, index);
+  return mpz_tstbit(m_value, index);
 }
 
 std::string scl::math::Number::ToString() const {
   char* cstr;
-  cstr = mpz_get_str(nullptr, 16, mValue);
+  cstr = mpz_get_str(nullptr, 16, m_value);
   std::stringstream ss;
   ss << "Number{" << std::string(cstr) << "}";
   free(cstr);

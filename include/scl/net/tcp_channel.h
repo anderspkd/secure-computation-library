@@ -40,13 +40,13 @@ class TcpChannel final : public Channel {
    * @brief Wrap a socket in a TCP channel.
    * @param socket the socket.
    */
-  TcpChannel(int socket) : mAlive(true), mSocket(socket){};
+  TcpChannel(int socket) : m_alive(true), m_socket(socket){};
 
   /**
    * @brief Tells whether this channel is alive or not.
    */
   bool Alive() const {
-    return mAlive;
+    return m_alive;
   };
 
   void Send(const unsigned char* src, std::size_t n) override;
@@ -55,8 +55,8 @@ class TcpChannel final : public Channel {
   void Close() override;
 
  private:
-  bool mAlive;
-  int mSocket;
+  bool m_alive;
+  int m_socket;
 };
 
 template <typename Sys>
@@ -65,7 +65,7 @@ void TcpChannel<Sys>::Send(const unsigned char* src, std::size_t n) {
   std::size_t offset = 0;
 
   while (rem > 0) {
-    auto sent = Sys::Write(mSocket, src + offset, rem);
+    auto sent = Sys::Write(m_socket, src + offset, rem);
 
     if (sent < 0) {
       throw std::system_error(Sys::GetError(),
@@ -84,7 +84,7 @@ std::size_t TcpChannel<Sys>::Recv(unsigned char* dst, std::size_t n) {
   std::size_t offset = 0;
 
   while (rem > 0) {
-    auto recv = Sys::Read(mSocket, dst + offset, rem);
+    auto recv = Sys::Read(m_socket, dst + offset, rem);
 
     if (recv == 0) {
       break;
@@ -106,7 +106,7 @@ std::size_t TcpChannel<Sys>::Recv(unsigned char* dst, std::size_t n) {
 template <typename Sys>
 bool TcpChannel<Sys>::HasData() {
   struct pollfd fds {
-    mSocket, POLLIN, 0
+    m_socket, POLLIN, 0
   };
 
   auto r = Sys::Poll(&fds, 1, 0);
@@ -122,13 +122,13 @@ bool TcpChannel<Sys>::HasData() {
 
 template <typename Sys>
 void TcpChannel<Sys>::Close() {
-  if (!mAlive) {
+  if (!m_alive) {
     return;
   }
 
-  mAlive = false;
+  m_alive = false;
 
-  if (Sys::Close(mSocket) < 0) {
+  if (Sys::Close(m_socket) < 0) {
     throw std::system_error(Sys::GetError(),
                             std::generic_category(),
                             "close failed");

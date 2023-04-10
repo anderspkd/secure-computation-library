@@ -40,13 +40,13 @@ class Polynomial {
   /**
    * @brief Construct a constant polynomial with constant term 0.
    */
-  Polynomial() : mCoefficients(1){};
+  Polynomial() : m_coefficients(1){};
 
   /**
    * @brief Construct a constant polynomial.
    * @param constant the constant term of the polynomial
    */
-  Polynomial(const T& constant) : mCoefficients({constant}){};
+  Polynomial(const T& constant) : m_coefficients({constant}){};
 
   /**
    * @brief Evaluate this polynomial on a supplied point.
@@ -54,8 +54,8 @@ class Polynomial {
    * @return f(x) where \p x is the supplied point and f this polynomial.
    */
   T Evaluate(const T& x) const {
-    auto it = mCoefficients.rbegin();
-    auto end = mCoefficients.rend();
+    auto it = m_coefficients.rbegin();
+    auto end = m_coefficients.rend();
     auto y = *it++;
     while (it != end) {
       y = *it++ + y * x;
@@ -67,14 +67,14 @@ class Polynomial {
    * @brief Access coefficients, with the constant term at position 0.
    */
   T& operator[](std::size_t idx) {
-    return mCoefficients[idx];
+    return m_coefficients[idx];
   };
 
   /**
    * @brief Access coefficients, with the constant term at position 0.
    */
   T operator[](std::size_t idx) const {
-    return mCoefficients[idx];
+    return m_coefficients[idx];
   };
 
   /**
@@ -123,14 +123,14 @@ class Polynomial {
    * @brief Degree of this polynomial.
    */
   std::size_t Degree() const {
-    return mCoefficients.Size() - 1;
+    return m_coefficients.Size() - 1;
   };
 
   /**
    * @brief Check if two polynomials are equal.
    */
   friend bool operator==(const Polynomial& p, const Polynomial& q) {
-    return p.mCoefficients == q.mCoefficients;
+    return p.m_coefficients == q.m_coefficients;
   }
 
   /**
@@ -162,9 +162,9 @@ class Polynomial {
   }
 
  private:
-  Polynomial(const Vec<T>& coefficients) : mCoefficients(coefficients){};
+  Polynomial(const Vec<T>& coefficients) : m_coefficients(coefficients){};
 
-  Vec<T> mCoefficients;
+  Vec<T> m_coefficients;
 };
 
 template <typename T>
@@ -272,9 +272,9 @@ template <typename T>
 std::string Polynomial<T>::ToString(const char* polynomial_name,
                                     const char* variable_name) const {
   std::stringstream ss;
-  ss << polynomial_name << "(" << variable_name << ") = " << mCoefficients[0];
-  for (std::size_t i = 1; i < mCoefficients.Size(); i++) {
-    ss << " + " << mCoefficients[i] << variable_name;
+  ss << polynomial_name << "(" << variable_name << ") = " << m_coefficients[0];
+  for (std::size_t i = 1; i < m_coefficients.Size(); i++) {
+    ss << " + " << m_coefficients[i] << variable_name;
     if (i > 1) {
       ss << "^" << i;
     }

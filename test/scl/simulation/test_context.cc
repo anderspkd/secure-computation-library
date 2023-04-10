@@ -113,13 +113,13 @@ sim::SimulationContext::Create<DummyChannelBuffer>(
     const sim::SimulatedNetworkConfigCreator& config_creator) {
   auto ctx = std::make_shared<sim::SimulationContext>(config_creator);
 
-  ctx->mNumberOfParties = n;
-  ctx->mTraces.resize(n);
+  ctx->m_nparties = n;
+  ctx->m_traces.resize(n);
 
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < n; ++j) {
       sim::ChannelId cid(i, j);
-      ctx->mBuffers[cid] = std::make_shared<DummyChannelBuffer>();
+      ctx->m_buffers[cid] = std::make_shared<DummyChannelBuffer>();
     }
   }
   return ctx;

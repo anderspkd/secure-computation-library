@@ -107,16 +107,16 @@ scl::util::PRG scl::util::PRG::Create(const std::string& seed) {
 }
 
 void scl::util::PRG::Update() {
-  mCounter += 1;
+  m_counter += 1;
 }
 
 void scl::util::PRG::Init() {
-  Aes128LoadKey(mSeed.data(), mState);
+  Aes128LoadKey(m_seed.data(), m_state);
 }
 
 void scl::util::PRG::Reset() {
   Init();
-  mCounter = PRG_INITIAL_COUNTER;
+  m_counter = PRG_INITIAL_COUNTER;
 }
 
 void scl::util::PRG::Next(unsigned char* buffer, size_t n) {
@@ -130,13 +130,13 @@ void scl::util::PRG::Next(unsigned char* buffer, size_t n) {
     nblocks++;
   }
 
-  auto mask = create_mask(mCounter);
+  auto mask = create_mask(m_counter);
   auto out = std::make_unique<unsigned char[]>(nblocks * BLOCK_SIZE);
   auto* p = out.get();
   for (size_t i = 0; i < nblocks; i++) {
-    Aes128Enc(mState, mask, p);
+    Aes128Enc(m_state, mask, p);
     Update();
-    mask = create_mask(mCounter);
+    mask = create_mask(m_counter);
     p += BLOCK_SIZE;
   }
 

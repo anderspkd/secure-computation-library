@@ -127,25 +127,25 @@ class Vec {
    * @brief Construct a new Vec of explicit size.
    * @param n the size
    */
-  explicit Vec(std::size_t n) : mValues(n){};
+  explicit Vec(std::size_t n) : m_values(n){};
 
   /**
    * @brief Construct a vector from an initializer_list.
    * @param values an initializer_list
    */
-  Vec(std::initializer_list<Elem> values) : mValues(values){};
+  Vec(std::initializer_list<Elem> values) : m_values(values){};
 
   /**
    * @brief Construct a vector from an STL vector.
    * @param values an STL vector
    */
-  Vec(const std::vector<Elem>& values) : mValues(values){};
+  Vec(const std::vector<Elem>& values) : m_values(values){};
 
   /**
    * @brief Move construct a vector from an STL vector.
    * @param values an STL vector
    */
-  Vec(std::vector<Elem>&& values) : mValues(std::move(values)){};
+  Vec(std::vector<Elem>&& values) : m_values(std::move(values)){};
 
   /**
    * @brief Construct a Vec from a pair of iterators.
@@ -154,13 +154,13 @@ class Vec {
    * @tparam It iterator type
    */
   template <typename It>
-  explicit Vec(It first, It last) : mValues(first, last) {}
+  explicit Vec(It first, It last) : m_values(first, last) {}
 
   /**
    * @brief The size of the Vec.
    */
   std::size_t Size() const {
-    return mValues.size();
+    return m_values.size();
   };
 
   /**
@@ -174,14 +174,14 @@ class Vec {
    * @brief Mutable access to vector elements.
    */
   Elem& operator[](std::size_t idx) {
-    return mValues[idx];
+    return m_values[idx];
   };
 
   /**
    * @brief Read only access to vector elements.
    */
   Elem operator[](std::size_t idx) const {
-    return mValues[idx];
+    return m_values[idx];
   };
 
   /**
@@ -199,7 +199,7 @@ class Vec {
   Vec& AddInPlace(const Vec& other) {
     EnsureCompatible(other);
     for (std::size_t i = 0; i < Size(); i++) {
-      mValues[i] += other.mValues[i];
+      m_values[i] += other.m_values[i];
     }
     return *this;
   };
@@ -219,7 +219,7 @@ class Vec {
   Vec& SubtractInPlace(const Vec& other) {
     EnsureCompatible(other);
     for (std::size_t i = 0; i < Size(); i++) {
-      mValues[i] -= other.mValues[i];
+      m_values[i] -= other.m_values[i];
     }
     return *this;
   };
@@ -239,7 +239,7 @@ class Vec {
   Vec& MultiplyEntryWiseInPlace(const Vec& other) {
     EnsureCompatible(other);
     for (std::size_t i = 0; i < Size(); i++) {
-      mValues[i] *= other.mValues[i];
+      m_values[i] *= other.m_values[i];
     }
     return *this;
   };
@@ -260,7 +260,7 @@ class Vec {
    */
   Elem Sum() const {
     Elem sum;
-    for (const auto& v : mValues) {
+    for (const auto& v : m_values) {
       sum += v;
     }
     return sum;
@@ -274,7 +274,7 @@ class Vec {
   Vec ScalarMultiply(const Elem& scalar) const {
     std::vector<Elem> r;
     r.reserve(Size());
-    for (const auto& v : mValues) {
+    for (const auto& v : m_values) {
       r.emplace_back(scalar * v);
     }
     return Vec(r);
@@ -286,7 +286,7 @@ class Vec {
    * @return a scaled version of this vector.
    */
   Vec& ScalarMultiplyInPlace(const Elem& scalar) {
-    for (auto& v : mValues) {
+    for (auto& v : m_values) {
       v *= scalar;
     }
     return *this;
@@ -317,28 +317,28 @@ class Vec {
    * @brief Convert this vector into a 1-by-N row matrix.
    */
   Mat<Elem> ToRowMatrix() const {
-    return Mat<Elem>{1, Size(), mValues};
+    return Mat<Elem>{1, Size(), m_values};
   }
 
   /**
    * @brief Convert this vector into a N-by-1 column matrix.
    */
   Mat<Elem> ToColumnMatrix() const {
-    return Mat<Elem>{Size(), 1, mValues};
+    return Mat<Elem>{Size(), 1, m_values};
   }
 
   /**
    * @brief Convert this Vec object to an std::vector.
    */
   std::vector<Elem>& ToStlVector() {
-    return mValues;
+    return m_values;
   }
 
   /**
    * @brief Convert this Vec object to a const std::vector.
    */
   const std::vector<Elem>& ToStlVector() const {
-    return mValues;
+    return m_values;
   }
 
   /**
@@ -395,84 +395,84 @@ class Vec {
    * @brief Return an iterator pointing to the start of this Vec.
    */
   iterator begin() {
-    return mValues.begin();
+    return m_values.begin();
   }
 
   /**
    * @brief Provides a const iterator to the start of this Vec.
    */
   const_iterator begin() const {
-    return mValues.begin();
+    return m_values.begin();
   }
 
   /**
    * @brief Provides a const iterator to the start of this Vec.
    */
   const_iterator cbegin() const {
-    return mValues.cbegin();
+    return m_values.cbegin();
   }
 
   /**
    * @brief Provides an iterator pointing to the end of this Vec.
    */
   iterator end() {
-    return mValues.end();
+    return m_values.end();
   }
 
   /**
    * @brief Provides a const iterator pointing to the end of this Vec.
    */
   const_iterator end() const {
-    return mValues.end();
+    return m_values.end();
   }
 
   /**
    * @brief Provides a const iterator pointing to the end of this Vec.
    */
   const_iterator cend() const {
-    return mValues.cend();
+    return m_values.cend();
   }
 
   /**
    * @brief Provides a reverse iterator pointing to the end of this Vec.
    */
   reverse_iterator rbegin() {
-    return mValues.rbegin();
+    return m_values.rbegin();
   }
 
   /**
    * @brief Provides a reverse const iterator pointing to the end of this Vec.
    */
   const_reverse_iterator rbegin() const {
-    return mValues.rbegin();
+    return m_values.rbegin();
   }
 
   /**
    * @brief Provides a reverse const iterator pointing to the end of this Vec.
    */
   const_reverse_iterator crbegin() const {
-    return mValues.crbegin();
+    return m_values.crbegin();
   }
 
   /**
    * @brief Provides a reverse iterator pointing to the start of this Vec.
    */
   reverse_iterator rend() {
-    return mValues.rend();
+    return m_values.rend();
   }
 
   /**
    * @brief Provides a reverse const iterator pointing to the start of this Vec.
    */
   const_reverse_iterator rend() const {
-    return mValues.rend();
+    return m_values.rend();
   }
 
   /**
    * @brief Provides a reverse const iterator pointing to the start of this Vec.
    */
   const_reverse_iterator crend() const {
-    return mValues.crend();
+    return m_values.crend();
   }
 
  private:
@@ -482,7 +482,7 @@ class Vec {
     }
   }
 
-  std::vector<Elem> mValues;
+  std::vector<Elem> m_values;
 };
 
 template <typename Elem>
@@ -535,7 +535,7 @@ Vec<Elem> Vec<Elem>::Add(const Vec<Elem>& other) const {
   auto n = Size();
   r.reserve(n);
   for (std::size_t i = 0; i < n; i++) {
-    r.emplace_back(mValues[i] + other.mValues[i]);
+    r.emplace_back(m_values[i] + other.m_values[i]);
   }
   return Vec(r);
 }
@@ -547,7 +547,7 @@ Vec<Elem> Vec<Elem>::Subtract(const Vec<Elem>& other) const {
   auto n = Size();
   r.reserve(n);
   for (std::size_t i = 0; i < n; i++) {
-    r.emplace_back(mValues[i] - other.mValues[i]);
+    r.emplace_back(m_values[i] - other.m_values[i]);
   }
   return Vec(r);
 }
@@ -559,7 +559,7 @@ Vec<Elem> Vec<Elem>::MultiplyEntryWise(const Vec<Elem>& other) const {
   auto n = Size();
   r.reserve(n);
   for (std::size_t i = 0; i < n; i++) {
-    r.emplace_back(mValues[i] * other.mValues[i]);
+    r.emplace_back(m_values[i] * other.m_values[i]);
   }
   return Vec(r);
 }
@@ -572,7 +572,7 @@ bool Vec<Elem>::Equals(const Vec<Elem>& other) const {
 
   bool equal = true;
   for (std::size_t i = 0; i < Size(); i++) {
-    equal &= mValues[i] == other.mValues[i];
+    equal &= m_values[i] == other.m_values[i];
   }
 
   return equal;
@@ -588,15 +588,15 @@ std::string Vec<Elem>::ToString() const {
   ss << "[";
   std::size_t i = 0;
   for (; i < Size() - 1; i++) {
-    ss << mValues[i] << ", ";
+    ss << m_values[i] << ", ";
   }
-  ss << mValues[i] << "]";
+  ss << m_values[i] << "]";
   return ss.str();
 }
 
 template <typename Elem>
 void Vec<Elem>::Write(unsigned char* dest) const {
-  for (const auto& v : mValues) {
+  for (const auto& v : m_values) {
     v.Write(dest);
     dest += Elem::ByteSize();
   }

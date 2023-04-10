@@ -86,15 +86,15 @@ struct ProtocolEnvironment {
  */
 class RealTimeClock final : public ProtocolEnvironment::Clock {
  public:
-  RealTimeClock() : mInitTime(util::Time::Now()){};
+  RealTimeClock() : m_init_time(util::Time::Now()){};
   ~RealTimeClock(){};
 
   util::Time::Duration Read() const {
-    return util::Time::Now() - mInitTime;
+    return util::Time::Now() - m_init_time;
   };
 
  private:
-  util::Time::TimePoint mInitTime;
+  util::Time::TimePoint m_init_time;
 };
 
 /**

@@ -263,7 +263,7 @@ std::vector<std::size_t> KeySet(const std::unordered_map<std::size_t, V>& map) {
 
 std::vector<std::size_t> scl::sim::Result::Interactions(
     const SegmentName& name) const {
-  return KeySet(mMeasurements.at(name).channels_m);
+  return KeySet(m_measurements.at(name).channels_m);
 }
 
 namespace {
@@ -281,17 +281,17 @@ void scl::sim::Result::WriteTrace(
     std::ostream& stream,
     std::size_t iteration,
     const scl::sim::Result::SegmentName& name) const {
-  if (iteration >= mTraces.size()) {
+  if (iteration >= m_traces.size()) {
     throw std::invalid_argument("invalid iteration");
   }
 
   if (!name.has_value()) {
     WriteSegmentTrace(stream,
-                      mTraces[iteration].begin(),
-                      mTraces[iteration].end());
+                      m_traces[iteration].begin(),
+                      m_traces[iteration].end());
   } else {
-    auto start = mTraces[iteration].begin();
-    auto end = mTraces[iteration].end();
+    auto start = m_traces[iteration].begin();
+    auto end = m_traces[iteration].end();
 
     const auto& segment_name = name.value();
     while (start != end) {
@@ -453,11 +453,11 @@ void scl::sim::Result::Write(std::ostream& stream) const {
   stream << "{";
 
   WriteKey(stream, "names");
-  WriteList(stream, mSegmentNames);
+  WriteList(stream, m_segment_names);
   stream << ",";
 
   WriteKey(stream, "measurements");
-  WriteMap(stream, mMeasurements);
+  WriteMap(stream, m_measurements);
 
   stream << "}" << std::endl;
 }

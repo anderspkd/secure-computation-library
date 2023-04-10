@@ -1,3 +1,6 @@
+5.1.2: Style changes
+- Change naming style of private field members.
+
 5.1.1: Bug fixes and simplifications
 - Simplifed the NextToRun logic because a greedy strategy too often results in
   rollbacks.

@@ -79,7 +79,7 @@ class SimulationContext {
    * otherwise performs no initialization whatsoever. Use Create instead.
    */
   SimulationContext(const SimulatedNetworkConfigCreator& config)
-      : mNetworkConfigCreator(config), mNumberOfParties(0) {}
+      : m_network_conf_creator(config), m_nparties(0) {}
 
   /**
    * @brief Get the network config for a particular channel.
@@ -87,14 +87,14 @@ class SimulationContext {
    * @return a SimulatedNetworkConfig for the channel.
    */
   SimulatedNetworkConfig NetworkConfig(ChannelId channel_id) const {
-    return mNetworkConfigCreator(channel_id);
+    return m_network_conf_creator(channel_id);
   }
 
   /**
    * @brief Get the number of parties in the simulation.
    */
   std::size_t NumberOfParties() const {
-    return mNumberOfParties;
+    return m_nparties;
   }
 
   /**
@@ -103,7 +103,7 @@ class SimulationContext {
    * @return the channel buffer.
    */
   std::shared_ptr<ChannelBuffer> Buffer(ChannelId id) {
-    return mBuffers[id];
+    return m_buffers[id];
   }
 
   /**
@@ -113,7 +113,7 @@ class SimulationContext {
    * @param ts a timestamp indicating when the write took place
    */
   void RecordWrite(ChannelId id, std::size_t n, util::Time::Duration ts) {
-    mWrites[id].emplace_back(WriteOp{n, ts});
+    m_writes[id].emplace_back(WriteOp{n, ts});
   }
 
   /**
@@ -121,7 +121,7 @@ class SimulationContext {
    * @param id the ID of the channel
    */
   std::vector<WriteOp>& Writes(ChannelId id) {
-    return mWrites[id];
+    return m_writes[id];
   }
 
   /**
@@ -130,21 +130,21 @@ class SimulationContext {
    * @param event the event
    */
   void AddEvent(std::size_t id, std::shared_ptr<Event> event) {
-    mTraces[id].emplace_back(event);
+    m_traces[id].emplace_back(event);
   }
 
   /**
    * @brief Get all simulation traces.
    */
   std::vector<SimulationTrace> Trace() const {
-    return mTraces;
+    return m_traces;
   }
 
   /**
    * @brief Get the simulation trace of a particular party.
    */
   SimulationTrace Trace(std::size_t id) const {
-    return mTraces[id];
+    return m_traces[id];
   }
 
   /**
@@ -165,14 +165,14 @@ class SimulationContext {
    * @brief Add a candidate party to run next.
    */
   void AddCandidateToRun(std::size_t id) {
-    mNextPartyCandidates.emplace_back(id);
+    m_next_party_cand.emplace_back(id);
   };
 
   /**
    * @brief Update the checkpoint value to the current time.
    */
   void UpdateCheckpoint() {
-    mCheckpoint = util::Time::Now();
+    m_checkpoint = util::Time::Now();
   }
 
   /**
@@ -184,7 +184,7 @@ class SimulationContext {
    * @brief Get the value of the current checkpoint.
    */
   util::Time::TimePoint ReadCurrentCheckpoint() const {
-    return mCheckpoint;
+    return m_checkpoint;
   }
 
   /**
@@ -203,23 +203,23 @@ class SimulationContext {
   void Rollback(std::size_t id);
 
  private:
-  SimulatedNetworkConfigCreator mNetworkConfigCreator;
+  SimulatedNetworkConfigCreator m_network_conf_creator;
 
-  std::size_t mNumberOfParties;
+  std::size_t m_nparties;
 
-  std::vector<SimulationTrace> mTraces;
-  std::size_t mTraceIndex;
+  std::vector<SimulationTrace> m_traces;
+  std::size_t m_trace_index;
 
-  std::map<ChannelId, std::shared_ptr<ChannelBuffer>> mBuffers;
+  std::map<ChannelId, std::shared_ptr<ChannelBuffer>> m_buffers;
 
-  State mState = State::COMMIT;
+  State m_state = State::COMMIT;
 
-  std::map<ChannelId, std::vector<WriteOp>> mWrites;
-  std::map<ChannelId, std::vector<WriteOp>> mWritesBackup;
+  std::map<ChannelId, std::vector<WriteOp>> m_writes;
+  std::map<ChannelId, std::vector<WriteOp>> m_writes_backup;
 
-  util::Time::TimePoint mCheckpoint;
+  util::Time::TimePoint m_checkpoint;
 
-  std::vector<std::size_t> mNextPartyCandidates;
+  std::vector<std::size_t> m_next_party_cand;
 };
 
 /**

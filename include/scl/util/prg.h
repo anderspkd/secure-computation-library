@@ -63,14 +63,14 @@ namespace scl::util {
 class PRG {
  private:
   using BlockType = __m128i;
-  static constexpr std::size_t kBlockSize = sizeof(BlockType);
+  static constexpr std::size_t BLOCK_SIZE = sizeof(BlockType);
 
  public:
   /**
    * @brief Size of the seed.
    */
   static constexpr std::size_t SeedSize() {
-    return kBlockSize;
+    return BLOCK_SIZE;
   };
 
   /**
@@ -147,16 +147,16 @@ class PRG {
   /**
    * @brief The seed.
    */
-  std::array<unsigned char, kBlockSize> Seed() const {
-    return mSeed;
+  std::array<unsigned char, BLOCK_SIZE> Seed() const {
+    return m_seed;
   };
 
  private:
-  PRG(std::array<unsigned char, kBlockSize> seed) : mSeed(seed){};
+  PRG(std::array<unsigned char, BLOCK_SIZE> seed) : m_seed(seed){};
 
-  std::array<unsigned char, kBlockSize> mSeed = {0};
-  long mCounter = PRG_INITIAL_COUNTER;
-  BlockType mState[11];
+  std::array<unsigned char, BLOCK_SIZE> m_seed = {0};
+  long m_counter = PRG_INITIAL_COUNTER;
+  BlockType m_state[11];
 
   void Update();
   void Init();

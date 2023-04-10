@@ -63,60 +63,60 @@ class SharedDeque {
   std::size_t Size();
 
  private:
-  std::deque<T, Allocator> mDeck;
-  std::mutex mMutex;
-  std::condition_variable mCond;
+  std::deque<T, Allocator> m_deck;
+  std::mutex m_mutex;
+  std::condition_variable m_cond;
 };
 
 template <typename T, typename Allocator>
 void SharedDeque<T, Allocator>::PopFront() {
-  std::unique_lock<std::mutex> lock(mMutex);
-  while (mDeck.empty()) {
-    mCond.wait(lock);
+  std::unique_lock<std::mutex> lock(m_mutex);
+  while (m_deck.empty()) {
+    m_cond.wait(lock);
   }
-  mDeck.pop_front();
+  m_deck.pop_front();
 }
 
 template <typename T, typename Allocator>
 T& SharedDeque<T, Allocator>::Peek() {
-  std::unique_lock<std::mutex> lock(mMutex);
-  while (mDeck.empty()) {
-    mCond.wait(lock);
+  std::unique_lock<std::mutex> lock(m_mutex);
+  while (m_deck.empty()) {
+    m_cond.wait(lock);
   }
-  return mDeck.front();
+  return m_deck.front();
 }
 
 template <typename T, typename Allocator>
 T SharedDeque<T, Allocator>::Pop() {
-  std::unique_lock<std::mutex> lock(mMutex);
-  while (mDeck.empty()) {
-    mCond.wait(lock);
+  std::unique_lock<std::mutex> lock(m_mutex);
+  while (m_deck.empty()) {
+    m_cond.wait(lock);
   }
-  auto x = mDeck.front();
-  mDeck.pop_front();
+  auto x = m_deck.front();
+  m_deck.pop_front();
   return x;
 }
 
 template <typename T, typename Allocator>
 void SharedDeque<T, Allocator>::PushBack(const T& item) {
-  std::unique_lock<std::mutex> lock(mMutex);
-  mDeck.push_back(item);
+  std::unique_lock<std::mutex> lock(m_mutex);
+  m_deck.push_back(item);
   lock.unlock();
-  mCond.notify_one();
+  m_cond.notify_one();
 }
 
 template <typename T, typename Allocator>
 void SharedDeque<T, Allocator>::PushBack(T&& item) {
-  std::unique_lock<std::mutex> lock(mMutex);
-  mDeck.push_back(std::move(item));
+  std::unique_lock<std::mutex> lock(m_mutex);
+  m_deck.push_back(std::move(item));
   lock.unlock();
-  mCond.notify_one();
+  m_cond.notify_one();
 }
 
 template <typename T, typename Allocator>
 std::size_t SharedDeque<T, Allocator>::Size() {
-  std::unique_lock<std::mutex> lock(mMutex);
-  auto size = mDeck.size();
+  std::unique_lock<std::mutex> lock(m_mutex);
+  auto size = m_deck.size();
   lock.unlock();
   return size;
 }

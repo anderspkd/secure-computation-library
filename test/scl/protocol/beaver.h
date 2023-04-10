@@ -41,15 +41,15 @@ struct BeaverMul {
 template <typename FF>
 class BeaverMul<FF>::Init final : public proto::Protocol {
  public:
-  Init(FF x, FF y, Triple<FF> triple) : x(x), y(y), mTriple(triple){};
+  Init(FF x, FF y, Triple<FF> triple) : m_x(x), m_y(y), m_triple(triple){};
 
   std::unique_ptr<proto::Protocol> Run(
       proto::ProtocolEnvironment& env) override {
     math::Vec<FF> elems(2 * 100);
 
     for (std::size_t i = 0; i < 200; i += 2) {
-      auto e = x + mTriple.a;
-      auto d = y + mTriple.b;
+      auto e = m_x + m_triple.a;
+      auto d = m_y + m_triple.b;
       elems[i] = e;
       elems[i + 1] = d;
     }
@@ -57,7 +57,7 @@ class BeaverMul<FF>::Init final : public proto::Protocol {
     env.network.Party(0)->Send(elems);
     env.network.Party(1)->Send(elems);
 
-    return std::make_unique<Finalize>(mTriple);
+    return std::make_unique<Finalize>(m_triple);
   }
 
   std::string Name() const override {
@@ -65,15 +65,15 @@ class BeaverMul<FF>::Init final : public proto::Protocol {
   };
 
  private:
-  FF x;
-  FF y;
-  Triple<FF> mTriple;
+  FF m_x;
+  FF m_y;
+  Triple<FF> m_triple;
 };
 
 template <typename FF>
 class BeaverMul<FF>::Finalize final : public proto::Protocol {
  public:
-  Finalize(Triple<FF> triple) : mTriple(triple){};
+  Finalize(Triple<FF> triple) : m_triple(triple){};
 
   std::unique_ptr<Protocol> Run(proto::ProtocolEnvironment& env) override {
     math::Vec<FF> ed0(2 * 100);
@@ -92,13 +92,13 @@ class BeaverMul<FF>::Finalize final : public proto::Protocol {
       // constant addition
       if (env.network.MyId() == 0) {
         output[output_idx++] =
-            e * d - e * mTriple.b - d * mTriple.a + mTriple.c;
+            e * d - e * m_triple.b - d * m_triple.a + m_triple.c;
       } else {
-        output[output_idx++] = -e * mTriple.b - d * mTriple.a + mTriple.c;
+        output[output_idx++] = -e * m_triple.b - d * m_triple.a + m_triple.c;
       }
     }
 
-    mOutput = output;
+    m_output = output;
 
     return nullptr;
   };
@@ -108,12 +108,12 @@ class BeaverMul<FF>::Finalize final : public proto::Protocol {
   };
 
   std::any Output() const override {
-    return mOutput;
+    return m_output;
   };
 
  private:
-  Triple<FF> mTriple;
-  std::any mOutput;
+  Triple<FF> m_triple;
+  std::any m_output;
 };
 
 }  // namespace scl::test

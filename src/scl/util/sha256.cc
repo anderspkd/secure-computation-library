@@ -80,8 +80,8 @@ void scl::util::Sha256::Transform() {
       0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
       0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
-  const auto m = Split(mChunk);
-  auto s = mState;
+  const auto m = Split(m_chunk);
+  auto s = m_state;
 
   for (std::size_t i = 0; i < 64; ++i) {
     const auto maj = Majority(s[0], s[1], s[2]);
@@ -106,34 +106,34 @@ void scl::util::Sha256::Transform() {
   }
 
   for (std::size_t i = 0; i < 8; ++i) {
-    mState[i] += s[i];
+    m_state[i] += s[i];
   }
 }
 
 void scl::util::Sha256::Pad() {
-  auto i = mChunkPos;
-  const auto end = mChunkPos < 56U ? 56U : 64U;
+  auto i = m_chunk_pos;
+  const auto end = m_chunk_pos < 56U ? 56U : 64U;
 
-  mChunk[i++] = 0x80;
+  m_chunk[i++] = 0x80;
   while (i < end) {
-    mChunk[i++] = 0;
+    m_chunk[i++] = 0;
   }
 
-  if (mChunkPos >= 56) {
+  if (m_chunk_pos >= 56) {
     Transform();
-    std::fill(mChunk.begin(), mChunk.begin() + 56, 0);
+    std::fill(m_chunk.begin(), m_chunk.begin() + 56, 0);
   }
 
-  mTotalLen += static_cast<std::size_t>(mChunkPos) * 8;
+  m_total_len += static_cast<std::size_t>(m_chunk_pos) * 8;
 
-  mChunk[63] = mTotalLen;
-  mChunk[62] = mTotalLen >> 8;
-  mChunk[61] = mTotalLen >> 16;
-  mChunk[60] = mTotalLen >> 24;
-  mChunk[59] = mTotalLen >> 32;
-  mChunk[58] = mTotalLen >> 40;
-  mChunk[57] = mTotalLen >> 48;
-  mChunk[56] = mTotalLen >> 56;
+  m_chunk[63] = m_total_len;
+  m_chunk[62] = m_total_len >> 8;
+  m_chunk[61] = m_total_len >> 16;
+  m_chunk[60] = m_total_len >> 24;
+  m_chunk[59] = m_total_len >> 32;
+  m_chunk[58] = m_total_len >> 40;
+  m_chunk[57] = m_total_len >> 48;
+  m_chunk[56] = m_total_len >> 56;
 
   Transform();
 }
@@ -143,7 +143,7 @@ scl::util::Sha256::DigestType scl::util::Sha256::WriteDigest() {
 
   for (std::size_t i = 0; i < 4; ++i) {
     for (std::size_t j = 0; j < 8; ++j) {
-      digest[i + (j * 4)] = (mState[j] >> (24 - i * 8)) & 0xFF;
+      digest[i + (j * 4)] = (m_state[j] >> (24 - i * 8)) & 0xFF;
     }
   }
 
@@ -152,11 +152,11 @@ scl::util::Sha256::DigestType scl::util::Sha256::WriteDigest() {
 
 void scl::util::Sha256::Hash(const unsigned char* bytes, std::size_t nbytes) {
   for (std::size_t i = 0; i < nbytes; ++i) {
-    mChunk[mChunkPos++] = bytes[i];
-    if (mChunkPos == 64) {
+    m_chunk[m_chunk_pos++] = bytes[i];
+    if (m_chunk_pos == 64) {
       Transform();
-      mTotalLen += 512;
-      mChunkPos = 0;
+      m_total_len += 512;
+      m_chunk_pos = 0;
     }
   }
 }

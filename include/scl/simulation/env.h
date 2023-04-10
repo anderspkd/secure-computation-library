@@ -36,7 +36,7 @@ class SimulatedClock final : public proto::ProtocolEnvironment::Clock {
    * @param id the ID of the party
    */
   SimulatedClock(const SimulationContext* ctx, std::size_t id)
-      : mCtx(ctx), mId(id){};
+      : m_ctx(ctx), m_id(id){};
 
   /**
    * @brief Get the total elapsed time of this party.
@@ -47,13 +47,13 @@ class SimulatedClock final : public proto::ProtocolEnvironment::Clock {
    */
   util::Time::Duration Read() const override {
     const auto now = util::Time::Now();
-    const auto ts = mCtx->LatestTimestamp(mId);
-    return now - mCtx->ReadCurrentCheckpoint() + ts;
+    const auto ts = m_ctx->LatestTimestamp(m_id);
+    return now - m_ctx->ReadCurrentCheckpoint() + ts;
   }
 
  private:
-  const SimulationContext* mCtx;
-  std::size_t mId;
+  const SimulationContext* m_ctx;
+  std::size_t m_id;
 };
 
 /**
@@ -67,7 +67,7 @@ class SimulatedThreadCtx final : public proto::ProtocolEnvironment::Thread {
    * @param id the ID of the party
    */
   SimulatedThreadCtx(std::shared_ptr<SimulationContext> ctx, std::size_t id)
-      : mCtx(ctx), mId(id){};
+      : m_ctx(ctx), m_id(id){};
 
   /**
    * @brief Simulate a sleep for this party.
@@ -78,16 +78,16 @@ class SimulatedThreadCtx final : public proto::ProtocolEnvironment::Thread {
    * <code>t0</code> is the current time of the party.
    */
   void Sleep(std::size_t ms) override {
-    const auto now = mCtx->Checkpoint(mId);
+    const auto now = m_ctx->Checkpoint(m_id);
     const auto event = std::make_shared<Event>(Event::Type::SLEEP,
                                                now,
                                                std::chrono::milliseconds(ms));
-    mCtx->AddEvent(mId, event);
+    m_ctx->AddEvent(m_id, event);
   }
 
  private:
-  std::shared_ptr<SimulationContext> mCtx;
-  std::size_t mId;
+  std::shared_ptr<SimulationContext> m_ctx;
+  std::size_t m_id;
 };
 
 }  // namespace scl::sim

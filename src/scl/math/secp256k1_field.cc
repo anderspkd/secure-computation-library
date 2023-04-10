@@ -127,7 +127,7 @@ std::string scl::math::FieldToString<Field>(const Elem& in) {
 bool scl::math::FFAccess<Field>::IsSmaller(
     const scl::math::FF<Secp256k1::Field>& lhs,
     const scl::math::FF<Secp256k1::Field>& rhs) {
-  auto c = CompareValues<NUM_LIMBS>(PTR(lhs.mValue), PTR(rhs.mValue));
+  auto c = CompareValues<NUM_LIMBS>(PTR(lhs.m_value), PTR(rhs.m_value));
   return c <= 0;
 }
 
@@ -144,8 +144,8 @@ scl::math::FF<Field> scl::math::FFAccess<Field>::ComputeSqrt(
 
   FF<Field> out;
   Elem res = ONE;
-  MontyModExp<NUM_LIMBS>(PTR(res), PTR(x.mValue), e, kPrime, kMontyN);
-  out.mValue = res;
+  MontyModExp<NUM_LIMBS>(PTR(res), PTR(x.m_value), e, kPrime, kMontyN);
+  out.m_value = res;
   return out;
 }
 

@@ -52,21 +52,21 @@ class ThreadedSenderChannel final : public Channel {
   void Close() override;
 
   void Send(const unsigned char* src, std::size_t n) override {
-    mSendBuffer.PushBack({src, src + n});
+    m_send_buffer.PushBack({src, src + n});
   };
 
   std::size_t Recv(unsigned char* dst, std::size_t n) override {
-    return mChannel.Recv(dst, n);
+    return m_channel.Recv(dst, n);
   };
 
   bool HasData() override {
-    return mChannel.HasData();
+    return m_channel.HasData();
   };
 
  private:
-  TcpChannel<> mChannel;
-  SharedDeque<std::vector<unsigned char>> mSendBuffer;
-  std::future<void> mSender;
+  TcpChannel<> m_channel;
+  SharedDeque<std::vector<unsigned char>> m_send_buffer;
+  std::future<void> m_sender;
 };
 
 }  // namespace scl::net

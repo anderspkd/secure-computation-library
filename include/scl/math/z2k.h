@@ -80,7 +80,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    */
   static Z2k Read(const unsigned char* src) {
     Z2k e;
-    Z2kFromBytes<ValueType, BitSize()>(e.mValue, src);
+    Z2kFromBytes<ValueType, BitSize()>(e.m_value, src);
     return e;
   };
 
@@ -102,7 +102,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    */
   static Z2k FromString(const std::string& str) {
     Z2k e;
-    Z2kFromString<ValueType, BitSize()>(e.mValue, str);
+    Z2kFromString<ValueType, BitSize()>(e.m_value, str);
     return e;
   };
 
@@ -126,12 +126,12 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @brief Create a new ring element from a value.
    * @param value the value
    */
-  explicit constexpr Z2k(const ValueType& value) : mValue(value){};
+  explicit constexpr Z2k(const ValueType& value) : m_value(value){};
 
   /**
    * @brief Create a new ring element equal to 0.
    */
-  explicit constexpr Z2k() : mValue(0){};
+  explicit constexpr Z2k() : m_value(0){};
 
   /**
    * @brief Add another element to this.
@@ -139,7 +139,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @return this incremented by \p other.
    */
   Z2k& operator+=(const Z2k& other) {
-    Z2kAdd(mValue, other.mValue);
+    Z2kAdd(m_value, other.m_value);
     return *this;
   };
 
@@ -149,7 +149,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @return this decremented by \p other.
    */
   Z2k& operator-=(const Z2k& other) {
-    Z2kSubtract(mValue, other.mValue);
+    Z2kSubtract(m_value, other.m_value);
     return *this;
   };
 
@@ -159,7 +159,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @return this scaled by \p other.
    */
   Z2k& operator*=(const Z2k& other) {
-    Z2kMultiply(mValue, other.mValue);
+    Z2kMultiply(m_value, other.m_value);
     return *this;
   };
 
@@ -170,7 +170,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @throws std::invalid_argument if \p other is not invertible.
    */
   Z2k& operator/=(const Z2k& other) {
-    Z2kMultiply(mValue, other.Inverse().mValue);
+    Z2kMultiply(m_value, other.Inverse().m_value);
     return *this;
   };
 
@@ -178,7 +178,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @brief Negates this element.
    */
   Z2k& Negate() {
-    Z2kNegate(mValue);
+    Z2kNegate(m_value);
     return *this;
   };
 
@@ -186,7 +186,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @brief Compute the negation of this element.
    */
   Z2k Negated() const {
-    Z2k copy(mValue);
+    Z2k copy(m_value);
     return copy.Negate();
   };
 
@@ -195,7 +195,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @throws std::invalid_argument if this element is not invertible.
    */
   Z2k& Invert() {
-    Z2kInvert<ValueType, BitSize()>(mValue);
+    Z2kInvert<ValueType, BitSize()>(m_value);
     return *this;
   };
 
@@ -203,7 +203,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * @brief Compute the inverse of this element.
    */
   Z2k Inverse() const {
-    Z2k copy(mValue);
+    Z2k copy(m_value);
     return copy.Invert();
   };
 
@@ -215,32 +215,32 @@ class Z2k final : public Ring<Z2k<Bits>> {
    * 1</code>. That is, if it is odd.
    */
   unsigned Lsb() const {
-    return Z2kLsb(mValue);
+    return Z2kLsb(m_value);
   };
 
   /**
    * @brief Check if this element is equal to another element.
    */
   bool Equal(const Z2k& other) const {
-    return Z2kEqual<ValueType, Bits>(mValue, other.mValue);
+    return Z2kEqual<ValueType, Bits>(m_value, other.m_value);
   };
 
   /**
    * @brief Return a string representation of this element.
    */
   std::string ToString() const {
-    return Z2kToString<ValueType, BitSize()>(mValue);
+    return Z2kToString<ValueType, BitSize()>(m_value);
   };
 
   /**
    * @brief Write this element to a buffer.
    */
   void Write(unsigned char* dest) const {
-    Z2kToBytes<ValueType, BitSize()>(mValue, dest);
+    Z2kToBytes<ValueType, BitSize()>(m_value, dest);
   };
 
  private:
-  ValueType mValue;
+  ValueType m_value;
 };
 
 }  // namespace scl::math
