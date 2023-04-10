@@ -126,7 +126,7 @@ void scl::math::FieldFromString<Field>(Elem& out, const std::string& src) {
 
 std::size_t scl::math::FFAccess<Field>::HigestSetBit(
     const scl::math::FF<Field>& element) {
-  return mpn_sizeinbase(PTR(element.mValue), NUM_LIMBS, 2);
+  return mpn_sizeinbase(PTR(element.m_value), NUM_LIMBS, 2);
 }
 
 bool scl::math::FFAccess<Field>::TestBit(const scl::math::FF<Field>& element,
@@ -134,17 +134,17 @@ bool scl::math::FFAccess<Field>::TestBit(const scl::math::FF<Field>& element,
   const auto bits_per_limb = static_cast<std::size_t>(mp_bits_per_limb);
   const auto limb = pos / bits_per_limb;
   const auto limb_pos = pos % bits_per_limb;
-  return ((element.mValue[limb] >> limb_pos) & 1) == 1;
+  return ((element.m_value[limb] >> limb_pos) & 1) == 1;
 }
 
 scl::math::FF<Field> scl::math::FFAccess<Field>::FromMonty(
     const scl::math::FF<Field>& element) {
   mp_limb_t padded[2 * NUM_LIMBS] = {0};
-  SCL_COPY(padded, PTR(element.mValue), NUM_LIMBS);
+  SCL_COPY(padded, PTR(element.m_value), NUM_LIMBS);
   MontyRedc<NUM_LIMBS>(padded, kPrime, kMontyN);
 
   FF<Field> r;
-  SCL_COPY(PTR(r.mValue), padded, NUM_LIMBS);
+  SCL_COPY(PTR(r.m_value), padded, NUM_LIMBS);
 
   return r;
 }

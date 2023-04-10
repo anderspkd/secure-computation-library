@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 5.1.1 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 5.1.2 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)

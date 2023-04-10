@@ -35,17 +35,17 @@ struct Mersenne61 {
   /**
    * @brief The name of this field.
    */
-  constexpr static const char* kName = "Mersenne61";
+  constexpr static const char* NAME = "Mersenne61";
 
   /**
    * @brief The size of field elements of this field in bytes.
    */
-  constexpr static const std::size_t kByteSize = sizeof(ValueType);
+  constexpr static const std::size_t BYTE_SIZE = sizeof(ValueType);
 
   /**
    * @brief The size of field elements of this field in bits.
    */
-  constexpr static const std::size_t kBitSize = 61;
+  constexpr static const std::size_t BIT_SIZE = 61;
 };
 
 }  // namespace scl::math

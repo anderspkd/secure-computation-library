@@ -41,17 +41,17 @@ struct Secp256k1 {
     /**
      * @brief Name of the secp256k1 field.
      */
-    constexpr static const char* kName = "secp256k1_field";
+    constexpr static const char* NAME = "secp256k1_field";
 
     /**
      * @brief Byte size of a secp256k1 field element.
      */
-    constexpr static const std::size_t kByteSize = 4 * sizeof(mp_limb_t);
+    constexpr static const std::size_t BYTE_SIZE = 4 * sizeof(mp_limb_t);
 
     /**
      * @brief Bit size of a secp256k1 field element.
      */
-    constexpr static const std::size_t kBitSize = 8 * kByteSize;
+    constexpr static const std::size_t BIT_SIZE = 8 * BYTE_SIZE;
   };
 
   /**
@@ -66,17 +66,17 @@ struct Secp256k1 {
     /**
      * @brief Name of the field.
      */
-    constexpr static const char* kName = "secp256k1_order";
+    constexpr static const char* NAME = "secp256k1_order";
 
     /**
      * @brief Size of an element in bytes.
      */
-    constexpr static const std::size_t kByteSize = 4 * sizeof(mp_limb_t);
+    constexpr static const std::size_t BYTE_SIZE = 4 * sizeof(mp_limb_t);
 
     /**
      * @brief Size of an element in bits.
      */
-    constexpr static const std::size_t kBitSize = 8 * kByteSize;
+    constexpr static const std::size_t BIT_SIZE = 8 * BYTE_SIZE;
   };
 
   /**
@@ -87,7 +87,7 @@ struct Secp256k1 {
   /**
    * @brief Name of the secp256k1 curve.
    */
-  constexpr static const char* kName = "secp256k1";
+  constexpr static const char* NAME = "secp256k1";
 };
 
 }  // namespace scl::math

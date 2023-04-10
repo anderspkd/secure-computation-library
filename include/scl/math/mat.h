@@ -161,7 +161,7 @@ class Mat {
   /**
    * @brief Construct an empty 0-by-0 matrix.
    */
-  Mat() : mRows(0), mCols(0) {}
+  Mat() : m_rows(0), m_cols(0) {}
 
   /**
    * @brief Create an N-by-M matrix with default initialized values.
@@ -173,9 +173,9 @@ class Mat {
       throw std::invalid_argument("n or m cannot be 0");
     }
     std::vector<Elem> v(n * m);
-    mRows = n;
-    mCols = m;
-    mValues = v;
+    m_rows = n;
+    m_cols = m;
+    m_values = v;
   }
 
   /**
@@ -188,14 +188,14 @@ class Mat {
    * @brief The number of rows of this matrix.
    */
   std::size_t Rows() const {
-    return mRows;
+    return m_rows;
   }
 
   /**
    * @brief The number of columns of this matrix.
    */
   std::size_t Cols() const {
-    return mCols;
+    return m_cols;
   }
 
   /**
@@ -205,7 +205,7 @@ class Mat {
    * @return an element of the matrix.
    */
   Elem& operator()(std::size_t row, std::size_t column) {
-    return mValues[mCols * row + column];
+    return m_values[m_cols * row + column];
   }
 
   /**
@@ -215,7 +215,7 @@ class Mat {
    * @return an element of the matrix.
    */
   Elem operator()(std::size_t row, std::size_t column) const {
-    return mValues[mCols * row + column];
+    return m_values[m_cols * row + column];
   }
 
   /**
@@ -226,7 +226,7 @@ class Mat {
    *         not equal.
    */
   Mat Add(const Mat& other) const {
-    Mat copy(mRows, mCols, mValues);
+    Mat copy(m_rows, m_cols, m_values);
     return copy.AddInPlace(other);
   }
 
@@ -239,9 +239,9 @@ class Mat {
    */
   Mat& AddInPlace(const Mat& other) {
     EnsureCompatible(other);
-    auto n = mValues.size();
+    auto n = m_values.size();
     for (std::size_t i = 0; i < n; ++i) {
-      mValues[i] += other.mValues[i];
+      m_values[i] += other.m_values[i];
     }
     return *this;
   }
@@ -254,7 +254,7 @@ class Mat {
    *         match.
    */
   Mat Subtract(const Mat& other) const {
-    Mat copy(mRows, mCols, mValues);
+    Mat copy(m_rows, m_cols, m_values);
     return copy.SubtractInPlace(other);
   }
 
@@ -268,9 +268,9 @@ class Mat {
    */
   Mat& SubtractInPlace(const Mat& other) {
     EnsureCompatible(other);
-    auto n = mValues.size();
+    auto n = m_values.size();
     for (std::size_t i = 0; i < n; i++) {
-      mValues[i] -= other.mValues[i];
+      m_values[i] -= other.m_values[i];
     }
     return *this;
   }
@@ -283,7 +283,7 @@ class Mat {
    *         match.
    */
   Mat MultiplyEntryWise(const Mat& other) const {
-    Mat copy(mRows, mCols, mValues);
+    Mat copy(m_rows, m_cols, m_values);
     return copy.MultiplyEntryWiseInPlace(other);
   }
 
@@ -296,9 +296,9 @@ class Mat {
    */
   Mat& MultiplyEntryWiseInPlace(const Mat& other) {
     EnsureCompatible(other);
-    auto n = mValues.size();
+    auto n = m_values.size();
     for (std::size_t i = 0; i < n; i++) {
-      mValues[i] *= other.mValues[i];
+      m_values[i] *= other.m_values[i];
     }
     return *this;
   }
@@ -329,7 +329,7 @@ class Mat {
    * @return this scaled by \p scalar.
    */
   Mat ScalarMultiply(const Elem& scalar) const {
-    Mat copy(mRows, mCols, mValues);
+    Mat copy(m_rows, m_cols, m_values);
     return copy.ScalarMultiplyInPlace(scalar);
   }
 
@@ -339,7 +339,7 @@ class Mat {
    * @return this scaled by \p scalar.
    */
   Mat& ScalarMultiplyInPlace(const Elem& scalar) {
-    for (auto& v : mValues) {
+    for (auto& v : m_values) {
       v *= scalar;
     }
     return *this;
@@ -367,8 +367,8 @@ class Mat {
     if (rows * cols != Rows() * Cols()) {
       throw std::invalid_argument("cannot resize matrix");
     }
-    mRows = rows;
-    mCols = cols;
+    m_rows = rows;
+    m_cols = cols;
     return *this;
   }
 
@@ -398,8 +398,8 @@ class Mat {
     }
 
     bool equal = true;
-    for (std::size_t i = 0; i < mValues.size(); i++) {
-      equal &= mValues[i] == other.mValues[i];
+    for (std::size_t i = 0; i < m_values.size(); i++) {
+      equal &= m_values[i] == other.m_values[i];
     }
     return equal;
   }
@@ -428,17 +428,17 @@ class Mat {
 
  private:
   Mat(std::size_t r, std::size_t c, std::vector<Elem> v)
-      : mRows(r), mCols(c), mValues(v){};
+      : m_rows(r), m_cols(c), m_values(v){};
 
   void EnsureCompatible(const Mat& other) {
-    if (mRows != other.mRows || mCols != other.mCols) {
+    if (m_rows != other.m_rows || m_cols != other.m_cols) {
       throw std::invalid_argument("incompatible matrices");
     }
   }
 
-  std::size_t mRows;
-  std::size_t mCols;
-  std::vector<Elem> mValues;
+  std::size_t m_rows;
+  std::size_t m_cols;
+  std::vector<Elem> m_values;
 
   friend class Vec<Elem>;
 };
@@ -462,7 +462,7 @@ Mat<Elem> Mat<Elem>::Read(std::size_t n,
 
 template <typename Elem>
 void Mat<Elem>::Write(unsigned char* dest) const {
-  for (const auto& v : mValues) {
+  for (const auto& v : m_values) {
     v.Write(dest);
     dest += Elem::ByteSize();
   }
@@ -537,8 +537,8 @@ Vec<Elem> Mat<Elem>::Multiply(const Vec<Elem>& vector) const {
   result.reserve(Rows());
 
   for (std::size_t i = 0; i < Rows(); ++i) {
-    auto b = mValues.begin() + i * Cols();
-    auto e = mValues.begin() + (i + 1) * Cols();
+    auto b = m_values.begin() + i * Cols();
+    auto e = m_values.begin() + (i + 1) * Cols();
     result.emplace_back(UncheckedInnerProd<Elem>(b, e, vector.begin()));
   }
 

@@ -59,7 +59,7 @@ class Network {
    */
   Network(const std::vector<std::shared_ptr<Channel>>& channels,
           std::size_t my_id)
-      : mChannels(channels), mMyId(my_id){};
+      : m_channels(channels), m_id(my_id){};
 
   Network() = default;
 
@@ -68,23 +68,23 @@ class Network {
    * @param id the id of the party
    */
   Channel* Party(unsigned id) {
-    return mChannels[id].get();
+    return m_channels[id].get();
   }
 
   /**
    * @brief Get the next party according to its ID.
    */
   Channel* Next() {
-    const auto next_id = mMyId == Size() - 1 ? 0 : mMyId + 1;
-    return mChannels[next_id].get();
+    const auto next_id = m_id == Size() - 1 ? 0 : m_id + 1;
+    return m_channels[next_id].get();
   }
 
   /**
    * @brief Get the previous party according to its ID.
    */
   Channel* Previous() {
-    const auto prev_id = mMyId == 0 ? Size() - 1 : mMyId - 1;
-    return mChannels[prev_id].get();
+    const auto prev_id = m_id == 0 ? Size() - 1 : m_id - 1;
+    return m_channels[prev_id].get();
   }
 
   /**
@@ -97,35 +97,35 @@ class Network {
     if (Size() != 2) {
       throw std::logic_error("other party ambiguous for more than 2 parties");
     }
-    return mChannels[1 - mMyId].get();
+    return m_channels[1 - m_id].get();
   }
 
   /**
    * @brief The size of the network.
    */
   std::size_t Size() const {
-    return mChannels.size();
+    return m_channels.size();
   };
 
   /**
    * @brief The ID of the local party.
    */
   std::size_t MyId() const {
-    return mMyId;
+    return m_id;
   };
 
   /**
    * @brief Closes all channels in the network.
    */
   void Close() {
-    for (auto& c : mChannels) {
+    for (auto& c : m_channels) {
       c->Close();
     }
   };
 
  private:
-  std::vector<std::shared_ptr<Channel>> mChannels;
-  std::size_t mMyId;
+  std::vector<std::shared_ptr<Channel>> m_channels;
+  std::size_t m_id;
 };
 
 /**

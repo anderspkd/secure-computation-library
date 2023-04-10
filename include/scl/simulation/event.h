@@ -98,7 +98,7 @@ class Event {
    * @param offset an offset for the timestamp
    */
   Event(Type type, util::Time::Duration timestamp, util::Time::Duration offset)
-      : mType(type), mTimestamp(timestamp), mOffset(offset){};
+      : m_type(type), m_timestamp(timestamp), m_offset(offset){};
 
   /**
    * @brief Construct a new measurement.
@@ -117,27 +117,27 @@ class Event {
    * un-adjusted timestamp is <code>Time() - Offset()</code>.
    */
   util::Time::Duration Timestamp() const {
-    return mTimestamp + mOffset;
+    return m_timestamp + m_offset;
   }
 
   /**
    * @brief Get the type of this event.
    */
   Type EventType() const {
-    return mType;
+    return m_type;
   }
 
   /**
    * @brief Get the offset of the timestamp of this event.
    */
   util::Time::Duration Offset() const {
-    return mOffset;
+    return m_offset;
   }
 
  private:
-  Type mType;
-  util::Time::Duration mTimestamp;
-  util::Time::Duration mOffset;
+  Type m_type;
+  util::Time::Duration m_timestamp;
+  util::Time::Duration m_offset;
 };
 
 /**
@@ -159,9 +159,9 @@ class NetworkEvent final : public Event {
                std::size_t remote_party,
                std::size_t amount)
       : Event(type, timestamp),
-        mLocalParty(local_party),
-        mRemoteParty(remote_party),
-        mAmount(amount) {}
+        m_local(local_party),
+        m_remote(remote_party),
+        m_amount(amount) {}
 
   /**
    * @brief Construct a new network measurement with an offset.
@@ -179,35 +179,35 @@ class NetworkEvent final : public Event {
                std::size_t remote_party,
                std::size_t amount)
       : Event(type, timestamp, offset),
-        mLocalParty(local_party),
-        mRemoteParty(remote_party),
-        mAmount(amount) {}
+        m_local(local_party),
+        m_remote(remote_party),
+        m_amount(amount) {}
 
   /**
    * @brief Get the ID of the local party in this network event.
    */
   std::size_t LocalParty() const {
-    return mLocalParty;
+    return m_local;
   }
 
   /**
    * @brief Get the ID of the remote party in this network event.
    */
   std::size_t RemoteParty() const {
-    return mRemoteParty;
+    return m_remote;
   }
 
   /**
    * @brief Get the amount of data being sent/received.
    */
   std::size_t DataAmount() const {
-    return mAmount;
+    return m_amount;
   }
 
  private:
-  std::size_t mLocalParty;
-  std::size_t mRemoteParty;
-  std::size_t mAmount;
+  std::size_t m_local;
+  std::size_t m_remote;
+  std::size_t m_amount;
 };
 
 /**
@@ -222,17 +222,17 @@ class SegmentEvent final : public Event {
    * @param name the name of the segment.
    */
   SegmentEvent(Type type, util::Time::Duration timestamp, std::string name)
-      : Event(type, timestamp), mName(std::move(name)){};
+      : Event(type, timestamp), m_name(std::move(name)){};
 
   /**
    * @brief Get the name of this segment.
    */
   std::string Name() const {
-    return mName;
+    return m_name;
   }
 
  private:
-  std::string mName;
+  std::string m_name;
 };
 
 /**

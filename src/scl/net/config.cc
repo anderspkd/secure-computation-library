@@ -88,14 +88,14 @@ scl::net::NetworkConfig scl::net::NetworkConfig::Localhost(
 
 std::string scl::net::NetworkConfig::ToString() const {
   std::stringstream ss;
-  ss << "[id=" << mId << ", ";
+  ss << "[id=" << m_id << ", ";
   std::size_t i = 0;
-  for (; i < mParties.size() - 1; i++) {
-    const auto party = mParties[i];
+  for (; i < m_parties.size() - 1; i++) {
+    const auto party = m_parties[i];
     ss << "{" << party.id << ", " << party.hostname << ", " << party.port
        << "}, ";
   }
-  const auto last = mParties[i];
+  const auto last = m_parties[i];
   ss << "{" << last.id << ", " << last.hostname << ", " << last.port << "}]";
   return ss.str();
 }
@@ -108,12 +108,12 @@ void scl::net::NetworkConfig::Validate() {
   }
 
   for (std::size_t i = 0; i < n; ++i) {
-    auto pi = mParties[i];
+    auto pi = m_parties[i];
     if (static_cast<std::size_t>(pi.id) >= n) {
       throw std::invalid_argument("invalid ID in config");
     }
     for (std::size_t j = i + 1; j < n; ++j) {
-      auto pj = mParties[j];
+      auto pj = m_parties[j];
       if (pi.id == pj.id) {
         throw std::invalid_argument("config has duplicate party ids");
       }

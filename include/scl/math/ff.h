@@ -41,21 +41,21 @@ class FF final : Ring<FF<Field>> {
    * @brief Size in bytes of a field element.
    */
   constexpr static std::size_t ByteSize() {
-    return Field::kByteSize;
+    return Field::BYTE_SIZE;
   };
 
   /**
    * @brief Actual bit size of an element.
    */
   constexpr static std::size_t BitSize() {
-    return Field::kBitSize;
+    return Field::BIT_SIZE;
   };
 
   /**
    * @brief A short string representation of this field.
    */
   constexpr static const char* Name() {
-    return Field::kName;
+    return Field::NAME;
   };
 
   /**
@@ -66,7 +66,7 @@ class FF final : Ring<FF<Field>> {
    */
   static FF Read(const unsigned char* src) {
     FF e;
-    FieldFromBytes<Field>(e.mValue, src);
+    FieldFromBytes<Field>(e.m_value, src);
     return e;
   }
 
@@ -89,7 +89,7 @@ class FF final : Ring<FF<Field>> {
    */
   static FF FromString(const std::string& str) {
     FF e;
-    FieldFromString<Field>(e.mValue, str);
+    FieldFromString<Field>(e.m_value, str);
     return e;
   };
 
@@ -115,7 +115,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldConvertIn
    */
   explicit constexpr FF(int value) {
-    FieldConvertIn<Field>(mValue, value);
+    FieldConvertIn<Field>(m_value, value);
   };
 
   /**
@@ -130,7 +130,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldAdd
    */
   FF& operator+=(const FF& other) {
-    FieldAdd<Field>(mValue, other.mValue);
+    FieldAdd<Field>(m_value, other.m_value);
     return *this;
   };
 
@@ -141,7 +141,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldSubtract
    */
   FF& operator-=(const FF& other) {
-    FieldSubtract<Field>(mValue, other.mValue);
+    FieldSubtract<Field>(m_value, other.m_value);
     return *this;
   };
 
@@ -152,7 +152,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldMultiply
    */
   FF& operator*=(const FF& other) {
-    FieldMultiply<Field>(mValue, other.mValue);
+    FieldMultiply<Field>(m_value, other.m_value);
     return *this;
   };
 
@@ -175,7 +175,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldNegate
    */
   FF& Negate() {
-    FieldNegate<Field>(mValue);
+    FieldNegate<Field>(m_value);
     return *this;
   };
 
@@ -185,10 +185,10 @@ class FF final : Ring<FF<Field>> {
    * @see FF::Negate
    */
   FF Negated() const {
-    auto copy = mValue;
+    auto copy = m_value;
     FF r;
     FieldNegate<Field>(copy);
-    r.mValue = copy;
+    r.m_value = copy;
     return r;
   };
 
@@ -198,7 +198,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldInvert
    */
   FF& Invert() {
-    FieldInvert<Field>(mValue);
+    FieldInvert<Field>(m_value);
     return *this;
   };
 
@@ -219,7 +219,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldEqual
    */
   bool Equal(const FF& other) const {
-    return FieldEqual<Field>(mValue, other.mValue);
+    return FieldEqual<Field>(m_value, other.m_value);
   };
 
   /**
@@ -228,7 +228,7 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldToString
    */
   std::string ToString() const {
-    return FieldToString<Field>(mValue);
+    return FieldToString<Field>(m_value);
   };
 
   /**
@@ -237,11 +237,11 @@ class FF final : Ring<FF<Field>> {
    * @see scl::FieldToBytes
    */
   void Write(unsigned char* dest) const {
-    FieldToBytes<Field>(dest, mValue);
+    FieldToBytes<Field>(dest, m_value);
   };
 
  private:
-  typename Field::ValueType mValue;
+  typename Field::ValueType m_value;
 
   template <typename T>
   friend class FFAccess;

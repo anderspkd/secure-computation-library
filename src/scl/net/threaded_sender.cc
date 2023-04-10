@@ -20,22 +20,22 @@
 #include <future>
 
 scl::net::ThreadedSenderChannel::ThreadedSenderChannel(int socket)
-    : mChannel(TcpChannel(socket)) {
-  mSender = std::async(std::launch::async, [&]() {
+    : m_channel(TcpChannel(socket)) {
+  m_sender = std::async(std::launch::async, [&]() {
     while (true) {
-      auto data = mSendBuffer.Peek();
-      if (!mChannel.Alive()) {
+      auto data = m_send_buffer.Peek();
+      if (!m_channel.Alive()) {
         break;
       }
-      mChannel.Send(data.data(), data.size());
-      mSendBuffer.PopFront();
+      m_channel.Send(data.data(), data.size());
+      m_send_buffer.PopFront();
     }
   });
 }
 
 void scl::net::ThreadedSenderChannel::Close() {
-  mChannel.Close();
+  m_channel.Close();
   unsigned char stop_signal = 1;
   Send(&stop_signal, 1);
-  mSender.wait();
+  m_sender.wait();
 }

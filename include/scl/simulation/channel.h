@@ -110,28 +110,28 @@ class SimulatedChannel final : public net::Channel {
    * @param ctx a simulation context object
    */
   SimulatedChannel(ChannelId id, std::shared_ptr<SimulationContext> ctx)
-      : mId(id), mCtx(ctx){};
+      : m_id(id), m_ctx(ctx){};
 
   void Close() override {
-    SimulateClose(mCtx, mId);
+    SimulateClose(m_ctx, m_id);
   }
 
   void Send(const unsigned char* src, std::size_t n) override {
-    SimulateSend(mCtx, mId, src, n);
+    SimulateSend(m_ctx, m_id, src, n);
   }
 
   std::size_t Recv(unsigned char* dst, std::size_t n) override {
-    SimulateRecv(mCtx, mId, dst, n);
+    SimulateRecv(m_ctx, m_id, dst, n);
     return n;
   }
 
   bool HasData() override {
-    return SimulateHasData(mCtx, mId);
+    return SimulateHasData(m_ctx, m_id);
   }
 
  private:
-  ChannelId mId;
-  std::shared_ptr<SimulationContext> mCtx;
+  ChannelId m_id;
+  std::shared_ptr<SimulationContext> m_ctx;
 };
 
 }  // namespace scl::sim

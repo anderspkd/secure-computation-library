@@ -25,9 +25,9 @@ namespace scl::test {
 
 struct GaloisField7 {
   using ValueType = unsigned char;
-  constexpr static const char* kName = "GF(7)";
-  constexpr static const std::size_t kByteSize = 1;
-  constexpr static const std::size_t kBitSize = 8;
+  constexpr static const char* NAME = "GF(7)";
+  constexpr static const std::size_t BYTE_SIZE = 1;
+  constexpr static const std::size_t BIT_SIZE = 8;
 };
 
 }  // namespace scl::test

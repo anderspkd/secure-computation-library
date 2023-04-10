@@ -99,7 +99,7 @@ class NetworkConfig {
    * @param parties a list of parties
    */
   NetworkConfig(std::size_t id, const std::vector<Party>& parties)
-      : mId(id), mParties(parties) {
+      : m_id(id), m_parties(parties) {
     Validate();
   };
 
@@ -107,34 +107,34 @@ class NetworkConfig {
    * @brief Create a network config for only one party.
    */
   NetworkConfig()
-      : mId(0), mParties(std::vector<Party>{Party{0, "0.0.0.0", 0}}){};
+      : m_id(0), m_parties(std::vector<Party>{Party{0, "0.0.0.0", 0}}){};
 
   /**
    * @brief Gets the identity of this party.
    */
   std::size_t Id() const {
-    return mId;
+    return m_id;
   };
 
   /**
    * @brief Gets the size of the network.
    */
   std::size_t NetworkSize() const {
-    return mParties.size();
+    return m_parties.size();
   };
 
   /**
    * @brief Get a list of connection information for parties in this network.
    */
   std::vector<Party> Parties() const {
-    return mParties;
+    return m_parties;
   };
 
   /**
    * @brief Get information about a party.
    */
   Party GetParty(unsigned id) const {
-    return mParties[id];
+    return m_parties[id];
   };
 
   /**
@@ -145,8 +145,8 @@ class NetworkConfig {
  private:
   void Validate();
 
-  std::size_t mId;
-  std::vector<Party> mParties;
+  std::size_t m_id;
+  std::vector<Party> m_parties;
 };
 
 }  // namespace scl::net

@@ -77,35 +77,35 @@ class SimulatedNetworkConfig {
    * @brief Bandwidth in Bits/s.
    */
   std::size_t Bandwidth() const {
-    return mBandwidth;
+    return m_bandwidth;
   }
 
   /**
    * @brief RTT in ms.
    */
   std::size_t RTT() const {
-    return mRTT;
+    return m_rtt;
   }
 
   /**
    * @brief MSS in bytes.
    */
   std::size_t MSS() const {
-    return mMSS;
+    return m_MSS;
   };
 
   /**
    * @brief Package loss in percentage.
    */
   double PackageLoss() const {
-    return mPackageLoss;
+    return m_package_loss;
   }
 
   /**
    * @brief TCP window size.
    */
   std::size_t WindowSize() const {
-    return mWindowSize;
+    return m_window_size;
   };
 
  private:
@@ -114,17 +114,17 @@ class SimulatedNetworkConfig {
                          std::size_t MSS,
                          double package_loss,
                          std::size_t window_size)
-      : mBandwidth(bandwidth),
-        mRTT(rtt),
-        mMSS(MSS),
-        mPackageLoss(package_loss),
-        mWindowSize(window_size){};
+      : m_bandwidth(bandwidth),
+        m_rtt(rtt),
+        m_MSS(MSS),
+        m_package_loss(package_loss),
+        m_window_size(window_size){};
 
-  std::size_t mBandwidth;
-  std::size_t mRTT;
-  std::size_t mMSS;
-  double mPackageLoss;
-  std::size_t mWindowSize;
+  std::size_t m_bandwidth;
+  std::size_t m_rtt;
+  std::size_t m_MSS;
+  double m_package_loss;
+  std::size_t m_window_size;
 };
 
 /**
@@ -149,11 +149,11 @@ class SimulatedNetworkConfig::Builder {
   SimulatedNetworkConfig Build() const {
     Validate();
     return SimulatedNetworkConfig{
-        mBandwidth.value_or(SimulatedNetworkConfig::kDefaultBandwidth),
-        mRTT.value_or(SimulatedNetworkConfig::kDefaultRTT),
-        mMSS.value_or(SimulatedNetworkConfig::kDefaultMSS),
-        mPackageLoss.value_or(SimulatedNetworkConfig::kDefaultPackageLoss),
-        mWindowSize.value_or(SimulatedNetworkConfig::kDefaultWindowSize)};
+        m_bandwidth.value_or(SimulatedNetworkConfig::kDefaultBandwidth),
+        m_rtt.value_or(SimulatedNetworkConfig::kDefaultRTT),
+        m_MSS.value_or(SimulatedNetworkConfig::kDefaultMSS),
+        m_package_loss.value_or(SimulatedNetworkConfig::kDefaultPackageLoss),
+        m_window_size.value_or(SimulatedNetworkConfig::kDefaultWindowSize)};
   };
 
   /**
@@ -162,7 +162,7 @@ class SimulatedNetworkConfig::Builder {
    * @return the builder.
    */
   Builder& Bandwidth(std::size_t bandwidth) {
-    mBandwidth = bandwidth;
+    m_bandwidth = bandwidth;
     return *this;
   }
 
@@ -172,7 +172,7 @@ class SimulatedNetworkConfig::Builder {
    * @return the builder.
    */
   Builder& RTT(std::size_t value) {
-    mRTT = value;
+    m_rtt = value;
     return *this;
   }
 
@@ -182,7 +182,7 @@ class SimulatedNetworkConfig::Builder {
    * @return the builder.
    */
   Builder& MSS(std::size_t MSS) {
-    mMSS = MSS;
+    m_MSS = MSS;
     return *this;
   }
 
@@ -192,7 +192,7 @@ class SimulatedNetworkConfig::Builder {
    * @return the builder.
    */
   Builder& PackageLoss(double percentage) {
-    mPackageLoss = percentage;
+    m_package_loss = percentage;
     return *this;
   }
 
@@ -202,16 +202,16 @@ class SimulatedNetworkConfig::Builder {
    * @return the builder.
    */
   Builder& WindowSize(std::size_t window_size) {
-    mWindowSize = window_size;
+    m_window_size = window_size;
     return *this;
   }
 
  private:
-  std::optional<std::size_t> mBandwidth;
-  std::optional<std::size_t> mRTT;
-  std::optional<std::size_t> mMSS;
-  std::optional<double> mPackageLoss;
-  std::optional<std::size_t> mWindowSize;
+  std::optional<std::size_t> m_bandwidth;
+  std::optional<std::size_t> m_rtt;
+  std::optional<std::size_t> m_MSS;
+  std::optional<double> m_package_loss;
+  std::optional<std::size_t> m_window_size;
 
   // Validate the config settings before creating the actual SimulationConfig.
   void Validate() const;
