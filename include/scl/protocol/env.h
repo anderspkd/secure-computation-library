@@ -35,7 +35,7 @@ namespace scl::proto {
  * number of useful resources, such as a network, but also the ability to know
  * its total running time, as well as the ability to work with threads.
  */
-struct ProtocolEnvironment {
+struct Env {
   /**
    * @brief Interface for the environment's threading context.
    *
@@ -55,6 +55,10 @@ struct ProtocolEnvironment {
 
   /**
    * @brief Interface for the environment's clock context.
+   *
+   * This interface essentially models a "stopwatch" of sorts. The idea is that
+   * it will start ticking when a protocol starts. The protocol can check the
+   * current elapsed time at any point, and mark checkpoints.
    */
   struct Clock {
     virtual ~Clock(){};
@@ -63,6 +67,11 @@ struct ProtocolEnvironment {
      * @brief Read the current value of the clock.
      */
     virtual util::Time::Duration Read() const = 0;
+
+    /**
+     * @brief Record a checkpoint with an associated message.
+     */
+    virtual void Checkpoint(const std::string& message) = 0;
   };
 
   /**
@@ -82,16 +91,32 @@ struct ProtocolEnvironment {
 };
 
 /**
- * @brief A protocol clock which returns the total running time.
+ * @deprecated
  */
-class RealTimeClock final : public ProtocolEnvironment::Clock {
- public:
-  RealTimeClock() : m_init_time(util::Time::Now()){};
-  ~RealTimeClock(){};
+using ProtocolEnvironment = Env;
 
+/**
+ * @brief A protocol clock which operates with real time.
+ */
+class RealTimeClock final : public Env::Clock {
+ public:
+  RealTimeClock() : m_init_time(util::Time::Now()) {}
+  ~RealTimeClock() {}
+
+  /**
+   * @brief Get the current time.
+   */
   util::Time::Duration Read() const {
     return util::Time::Now() - m_init_time;
-  };
+  }
+
+  /**
+   * @brief Print the current time to stdout.
+   */
+  void Checkpoint(const std::string& message) {
+    auto ms = std::chrono::duration<double, std::milli>(Read()).count();
+    std::cout << message << " @ " << ms << " ms\n";
+  }
 
  private:
   util::Time::TimePoint m_init_time;
@@ -100,16 +125,16 @@ class RealTimeClock final : public ProtocolEnvironment::Clock {
 /**
  * @brief A protocol thread context which uses STL thread.
  */
-class StlThreadContext final : public ProtocolEnvironment::Thread {
+class StlThreadContext final : public Env::Thread {
  public:
-  ~StlThreadContext(){};
+  ~StlThreadContext() {}
 
   /**
    * @brief Sleep the current thread using std::this_thread::sleep_for.
    */
   void Sleep(std::size_t ms) override {
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-  };
+  }
 };
 
 }  // namespace scl::proto

@@ -100,6 +100,11 @@ TEST_CASE("Event", "[sim]") {
     REQUIRE(ToString(&e) == "CLOSE at 0 ms");
   }
 
+  SECTION("CHECKPOINT") {
+    sim::CheckpointEvent e(util::Time::Duration::zero(), "asd");
+    REQUIRE(ToString(&e) == "CHECKPOINT at 0 ms [asd]");
+  }
+
   SECTION("With offset") {
     using namespace std::chrono_literals;
     sim::Event e(sim::Event::Type::CLOSE,
