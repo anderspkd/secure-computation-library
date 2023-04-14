@@ -121,6 +121,23 @@ TEST_CASE("Protocol env real-time clock", "[protocol]") {
   REQUIRE(d >= 100ms);
 }
 
+TEST_CASE("Protocol env real-time clock checkpoint", "[protocol]") {
+  // https://truong.io/posts/capturing_stdout_for_c++_unit_testing.html
+
+  proto::RealTimeClock clock;
+
+  std::stringstream buf;
+  std::streambuf* coutbuf = std::cout.rdbuf(buf.rdbuf());
+
+  clock.Checkpoint("asd");
+
+  auto output = buf.str();
+
+  std::cout.rdbuf(coutbuf);
+
+  REQUIRE_THAT(output, Catch::Matchers::StartsWith("asd @"));
+}
+
 TEST_CASE("Protocol env Stl thread context", "[protocol]") {
   proto::StlThreadContext ctx;
 

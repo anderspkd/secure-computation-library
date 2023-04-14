@@ -22,6 +22,7 @@
 
 #include "scl/protocol/env.h"
 #include "scl/simulation/context.h"
+#include "scl/simulation/event.h"
 
 namespace scl::sim {
 
@@ -35,7 +36,7 @@ class SimulatedClock final : public proto::ProtocolEnvironment::Clock {
    * @param ctx a simulation context. Used to read the current time of the party
    * @param id the ID of the party
    */
-  SimulatedClock(const SimulationContext* ctx, std::size_t id)
+  SimulatedClock(std::shared_ptr<SimulationContext> ctx, std::size_t id)
       : m_ctx(ctx), m_id(id){};
 
   /**
@@ -51,8 +52,15 @@ class SimulatedClock final : public proto::ProtocolEnvironment::Clock {
     return now - m_ctx->ReadCurrentCheckpoint() + ts;
   }
 
+  /**
+   * @brief Mark a checkpoint.
+   */
+  void Checkpoint(const std::string& message) override {
+    m_ctx->AddEvent(m_id, std::make_shared<CheckpointEvent>(Read(), message));
+  }
+
  private:
-  const SimulationContext* m_ctx;
+  std::shared_ptr<SimulationContext> m_ctx;
   std::size_t m_id;
 };
 

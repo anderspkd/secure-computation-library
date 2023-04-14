@@ -60,6 +60,10 @@ auto EventTypeToString(Evt::Type type) {
     return "SEGMENT_END";
   }
 
+  if (type == Evt::Type::CHECKPOINT) {
+    return "CHECKPOINT";
+  }
+
   // if (type == scl::Measurement::Type::CLOSE)
   return "CLOSE";
 }
@@ -83,6 +87,10 @@ void WriteSegment(std::ostream& os, const scl::sim::SegmentEvent* m) {
   } else {
     os << " [Name=" << name << "]";
   }
+}
+
+void WriteCheckpoint(std::ostream& os, const scl::sim::CheckpointEvent* m) {
+  os << " [" << m->Message() << "]";
 }
 
 }  // namespace
@@ -109,6 +117,10 @@ std::ostream& scl::sim::operator<<(std::ostream& os, const Evt* m) {
 
   if (t == Evt::Type::RECV) {
     WriteRecv(os, dynamic_cast<const NetworkEvent*>(m));
+  }
+
+  if (t == Evt::Type::CHECKPOINT) {
+    WriteCheckpoint(os, dynamic_cast<const CheckpointEvent*>(m));
   }
 
   return os;

@@ -155,7 +155,7 @@ std::vector<scl::sim::SimulationTrace> RunSimulation(
 
       scl::proto::ProtocolEnvironment env{
           networks[id],
-          std::make_unique<scl::sim::SimulatedClock>(ctx.get(), id),
+          std::make_unique<scl::sim::SimulatedClock>(ctx, id),
           std::make_unique<scl::sim::SimulatedThreadCtx>(ctx, id)};
 
       ps[id] = Run(ctx, id, ps[id].get(), env, output_callback);

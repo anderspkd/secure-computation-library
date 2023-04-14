@@ -21,6 +21,7 @@
 #include "scl/simulation/config.h"
 #include "scl/simulation/context.h"
 #include "scl/simulation/env.h"
+#include "scl/simulation/event.h"
 #include "scl/simulation/mem_channel_buffer.h"
 
 using namespace scl;
@@ -44,7 +45,7 @@ TEST_CASE("Simulation env clock", "[sim]") {
   auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
       5,
       sim::DefaultConfigCreator());
-  sim::SimulatedClock clock(ctx.get(), 0);
+  sim::SimulatedClock clock(ctx, 0);
 
   ctx->AddEvent(0, SomeEvent());
   ctx->UpdateCheckpoint();
@@ -67,6 +68,25 @@ TEST_CASE("Simulation env clock", "[sim]") {
   REQUIRE(t2 < 1200ms);
 }
 
+TEST_CASE("Simulation env clock checkpoint", "[sim]") {
+  using namespace std::chrono_literals;
+
+  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+      5,
+      sim::DefaultConfigCreator());
+  sim::SimulatedClock clock(ctx, 0);
+
+  ctx->AddEvent(0, SomeEvent(10ms));
+  ctx->UpdateCheckpoint();
+  clock.Checkpoint("asd");
+  REQUIRE(ctx->Trace(0).size() == 2);
+  REQUIRE(ctx->Trace(0).back()->EventType() == sim::Event::Type::CHECKPOINT);
+  REQUIRE(ctx->Trace(0).back()->Timestamp() >= 10ms);
+
+  sim::CheckpointEvent* e = (sim::CheckpointEvent*)ctx->Trace(0).back().get();
+  REQUIRE(e->Message() == "asd");
+}
+
 TEST_CASE("Simulation env thread", "[sim]") {
   using namespace std::chrono_literals;
   auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
@@ -76,7 +96,7 @@ TEST_CASE("Simulation env thread", "[sim]") {
   ctx->UpdateCheckpoint();
 
   sim::SimulatedThreadCtx thread(ctx, 0);
-  sim::SimulatedClock clock(ctx.get(), 0);
+  sim::SimulatedClock clock(ctx, 0);
 
   ctx->AddEvent(0, SomeEvent(util::Time::Duration(1000ms)));
   thread.Sleep(1000000);

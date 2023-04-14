@@ -88,7 +88,12 @@ class Event {
     /**
      * @brief Event made at the end of a protocol segment.
      */
-    SEGMENT_END
+    SEGMENT_END,
+
+    /**
+     * @brief A checkpoint recorded by the protocol.
+     */
+    CHECKPOINT
   };
 
   /**
@@ -233,6 +238,31 @@ class SegmentEvent final : public Event {
 
  private:
   std::string m_name;
+};
+
+/**
+ * @brief An event created when a protocol calls
+ * <code>env.clock.Checkpoint()</code>.
+ */
+class CheckpointEvent final : public Event {
+ public:
+  /**
+   * @brief Create a new checkpoint event.
+   * @param timestamp the time of the event.
+   * @param message the message of the checkpoint.
+   */
+  CheckpointEvent(util::Time::Duration timestamp, const std::string& message)
+      : Event(Event::Type::CHECKPOINT, timestamp), m_message(message) {}
+
+  /**
+   * @brief Get the checkpoint message.
+   */
+  std::string Message() const {
+    return m_message;
+  }
+
+ private:
+  std::string m_message;
 };
 
 /**

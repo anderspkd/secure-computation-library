@@ -81,23 +81,19 @@ struct Protocol {
 
 /**
  * @brief Evaluate a protocol.
- * @param protocol the protocol
- * @param network the network to evaluate the protocol with
- * @param output_cb a callback for consuming protocol output
+ * @param protocol the protocol.
+ * @param output_cb a callback for consuming protocol output.
+ * @param env the protocol environment.
  */
 template <typename Callback>
 void Evaluate(std::unique_ptr<Protocol> protocol,
-              net::Network& network,
-              Callback output_cb) {
+              Callback output_cb,
+              Env& env) {
   std::shared_ptr<Protocol> next = std::move(protocol);
   std::shared_ptr<Protocol> prev = next;
 
-  ProtocolEnvironment ctx{network,
-                          std::make_unique<RealTimeClock>(),
-                          std::make_unique<StlThreadContext>()};
-
   while (next != nullptr) {
-    next = next->Run(ctx);
+    next = next->Run(env);
     if (prev->Output().has_value()) {
       output_cb(prev->Output());
     }
@@ -106,9 +102,25 @@ void Evaluate(std::unique_ptr<Protocol> protocol,
 }
 
 /**
+ * @brief Evaluate a protocol.
+ * @param protocol the protocol.
+ * @param network the network to evaluate the protocol with.
+ * @param output_cb a callback for consuming protocol output.
+ */
+template <typename Callback>
+void Evaluate(std::unique_ptr<Protocol> protocol,
+              net::Network& network,
+              Callback output_cb) {
+  Env ctx{network,
+          std::make_unique<RealTimeClock>(),
+          std::make_unique<StlThreadContext>()};
+  Evaluate(std::move(protocol), output_cb, ctx);
+}
+
+/**
  * @brief Evalate a protocol, discarding all outputs generated.
- * @param protocol the protocol to evaluate
- * @param network the network to use
+ * @param protocol the protocol to evaluate.
+ * @param network the network to use.
  */
 inline void Evaluate(std::unique_ptr<Protocol> protocol,
                      net::Network& network) {
