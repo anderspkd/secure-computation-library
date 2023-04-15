@@ -65,6 +65,16 @@ struct IUFHash {
   }
 
   /**
+   * @brief Update the hash function with the content of a string.
+   * @param string the string.
+   * @return the updated Hash object.
+   */
+  IUFHash<HashImpl>& Update(std::string_view string) {
+    return Update(reinterpret_cast<const unsigned char*>(string.data()),
+                  string.size());
+  }
+
+  /**
    * @brief Finalize and return the digest.
    * @return a digest.
    */
