@@ -32,7 +32,7 @@ std::string ToString(sim::Event* e) {
 
 }  // namespace
 
-TEST_CASE("Event", "[sim]") {
+TEST_CASE("Simulation Event", "[sim]") {
   SECTION("START") {
     sim::Event e(sim::Event::Type::START, util::Time::Duration::zero());
     REQUIRE(ToString(&e) == "START at 0 ms");

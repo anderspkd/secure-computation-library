@@ -1,3 +1,13 @@
+5.3.0: ECDSA
+- Added functionality for creating ECDSA signatures.
+
+5.2.0: Protocol environment extensions
+- Make it possible to create "checkpoints" through the protocol environment
+  clock.
+- fix a bug that prevented the documentation from being buildt
+- Rename ProtocolEnvironment to Env, and introduce a typedef for backwards
+  compatability.
+
 5.1.2: Style changes
 - Change naming style of private field members.
 
