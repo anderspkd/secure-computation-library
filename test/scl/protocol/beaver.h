@@ -43,19 +43,17 @@ class BeaverMul<FF>::Init final : public proto::Protocol {
  public:
   Init(FF x, FF y, Triple<FF> triple) : m_x(x), m_y(y), m_triple(triple){};
 
-  std::unique_ptr<proto::Protocol> Run(
-      proto::ProtocolEnvironment& env) override {
-    math::Vec<FF> elems(2 * 100);
+  std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
+    net::Packet p;
 
     for (std::size_t i = 0; i < 200; i += 2) {
       auto e = m_x + m_triple.a;
       auto d = m_y + m_triple.b;
-      elems[i] = e;
-      elems[i + 1] = d;
+      p << e << d;
     }
 
-    env.network.Party(0)->Send(elems);
-    env.network.Party(1)->Send(elems);
+    env.network.Party(0)->Send(p);
+    env.network.Party(1)->Send(p);
 
     return std::make_unique<Finalize>(m_triple);
   }
@@ -75,21 +73,22 @@ class BeaverMul<FF>::Finalize final : public proto::Protocol {
  public:
   Finalize(Triple<FF> triple) : m_triple(triple){};
 
-  std::unique_ptr<Protocol> Run(proto::ProtocolEnvironment& env) override {
-    math::Vec<FF> ed0(2 * 100);
-    math::Vec<FF> ed1(2 * 100);
-
-    env.network.Party(0)->Recv(ed0);
-    env.network.Party(1)->Recv(ed1);
+  std::unique_ptr<Protocol> Run(proto::Env& env) override {
+    auto p0 = env.network.Party(0)->Recv().value();
+    auto p1 = env.network.Party(1)->Recv().value();
 
     math::Vec<FF> output(100);
 
     std::size_t output_idx = 0;
     for (std::size_t i = 0; i < 200; i += 2) {
-      auto e = ed0[i] + ed1[i];
-      auto d = ed0[i + 1] + ed1[i + 1];
+      const auto e0 = p0.Read<FF>();
+      const auto d0 = p0.Read<FF>();
+      const auto e1 = p1.Read<FF>();
+      const auto d1 = p1.Read<FF>();
+      auto e = e0 + e1;
+      auto d = d0 + d1;
 
-      // constant addition
+      // Constant addition
       if (env.network.MyId() == 0) {
         output[output_idx++] =
             e * d - e * m_triple.b - d * m_triple.a + m_triple.c;

@@ -19,6 +19,7 @@
 #define SCL_UTIL_STR_H
 
 #include <iomanip>
+#include <sstream>
 #include <stdexcept>
 
 namespace scl::util {

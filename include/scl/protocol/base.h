@@ -56,7 +56,7 @@ struct Protocol {
    * @param env the protocol environment.
    * @return next protocol to run, or <code>nullptr</code> if we're done.
    */
-  virtual std::unique_ptr<Protocol> Run(ProtocolEnvironment& env) = 0;
+  virtual std::unique_ptr<Protocol> Run(Env& env) = 0;
 
   /**
    * @brief A name for this protocol.

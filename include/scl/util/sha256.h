@@ -42,7 +42,6 @@ class Sha256 final : public IUFHash<Sha256> {
    * @brief Update the hash function with a set of bytes.
    * @param bytes a pointer to a number of bytes.
    * @param nbytes the number of bytes.
-   * @return the updated Hash object.
    */
   void Hash(const unsigned char* bytes, std::size_t nbytes);
 

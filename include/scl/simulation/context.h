@@ -71,9 +71,8 @@ class SimulationContext {
       const SimulatedNetworkConfigCreator& config);
 
   /**
-   * @brief Create a new simulation context.
+   * @brief Construct a new simulation context.
    * @param config a config describing the simulated network
-   * @return a simulation context.
    *
    * This constructor simply sets the network config for the context but
    * otherwise performs no initialization whatsoever. Use Create instead.
@@ -145,6 +144,15 @@ class SimulationContext {
    */
   SimulationTrace Trace(std::size_t id) const {
     return m_traces[id];
+  }
+
+  /**
+   * @brief Remove and return the last event added by a party.
+   */
+  std::shared_ptr<Event> PopLastEvent(std::size_t id) {
+    auto evt = m_traces[id].back();
+    m_traces[id].pop_back();
+    return evt;
   }
 
   /**

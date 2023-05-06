@@ -18,6 +18,7 @@
 #ifndef SCL_MATH_VEC_H
 #define SCL_MATH_VEC_H
 
+#include <cstdint>
 #include <cstring>
 #include <functional>
 #include <sstream>
@@ -46,7 +47,7 @@ T UncheckedInnerProd(I0 xb, I0 xe, I1 yb) {
     v += *xb++ * *yb++;
   }
   return v;
-}
+}  // LCOV_EXCL_LINE
 
 /**
  * @brief Vector.
@@ -56,14 +57,16 @@ T UncheckedInnerProd(I0 xb, I0 xe, I1 yb) {
  */
 template <typename Elem>
 class Vec {
-  static_assert(util::Serializable<Elem>::value,
-                "Vector elements must have Read/Write methods");
-
  public:
   /**
    * @brief The type of vector elements.
    */
   using ValueType = Elem;
+
+  /**
+   * @brief The type of a vector size.
+   */
+  using SizeType = std::uint32_t;
 
   /**
    * @brief Iterator type.
@@ -121,31 +124,31 @@ class Vec {
   /**
    * @brief Default constructor that creates an empty Vec.
    */
-  Vec(){};
+  Vec() {}
 
   /**
    * @brief Construct a new Vec of explicit size.
    * @param n the size
    */
-  explicit Vec(std::size_t n) : m_values(n){};
+  explicit Vec(std::size_t n) : m_values(n) {}
 
   /**
    * @brief Construct a vector from an initializer_list.
    * @param values an initializer_list
    */
-  Vec(std::initializer_list<Elem> values) : m_values(values){};
+  Vec(std::initializer_list<Elem> values) : m_values(values) {}
 
   /**
    * @brief Construct a vector from an STL vector.
    * @param values an STL vector
    */
-  Vec(const std::vector<Elem>& values) : m_values(values){};
+  Vec(const std::vector<Elem>& values) : m_values(values) {}
 
   /**
    * @brief Move construct a vector from an STL vector.
    * @param values an STL vector
    */
-  Vec(std::vector<Elem>&& values) : m_values(std::move(values)){};
+  Vec(std::vector<Elem>&& values) : m_values(std::move(values)) {}
 
   /**
    * @brief Construct a Vec from a pair of iterators.
@@ -159,30 +162,30 @@ class Vec {
   /**
    * @brief The size of the Vec.
    */
-  std::size_t Size() const {
+  SizeType Size() const {
     return m_values.size();
-  };
+  }
 
   /**
    * @brief Check if this Vec is empty.
    */
   bool Empty() const {
     return Size() == 0;
-  };
+  }
 
   /**
    * @brief Mutable access to vector elements.
    */
   Elem& operator[](std::size_t idx) {
     return m_values[idx];
-  };
+  }
 
   /**
    * @brief Read only access to vector elements.
    */
   Elem operator[](std::size_t idx) const {
     return m_values[idx];
-  };
+  }
 
   /**
    * @brief Add two Vec objects entry-wise.
@@ -202,7 +205,7 @@ class Vec {
       m_values[i] += other.m_values[i];
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Subtract two Vec objects entry-wise.
@@ -222,7 +225,7 @@ class Vec {
       m_values[i] -= other.m_values[i];
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Multiply two Vec objects entry-wise.
@@ -242,7 +245,7 @@ class Vec {
       m_values[i] *= other.m_values[i];
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Compute a dot product between this and another vector.
@@ -252,7 +255,7 @@ class Vec {
   Elem Dot(const Vec& other) const {
     EnsureCompatible(other);
     return UncheckedInnerProd<Elem>(begin(), end(), other.begin());
-  };
+  }
 
   /**
    * @brief Compute the sum over entries of this vector.
@@ -264,7 +267,7 @@ class Vec {
       sum += v;
     }
     return sum;
-  };
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Scale this vector by a constant.
@@ -278,7 +281,7 @@ class Vec {
       r.emplace_back(scalar * v);
     }
     return Vec(r);
-  };
+  }
 
   /**
    * @brief Scale this vector in-place by a constant.
@@ -290,7 +293,7 @@ class Vec {
       v *= scalar;
     }
     return *this;
-  };
+  }
 
   /**
    * @brief Test if this vector is equal to another vector in constant time.
@@ -304,7 +307,7 @@ class Vec {
    */
   friend bool operator==(const Vec& left, const Vec& right) {
     return left.Equals(right);
-  };
+  }
 
   /**
    * @brief Operator != overload for Vec.
@@ -388,7 +391,7 @@ class Vec {
    * @brief Returns the number of bytes that Write writes.
    */
   std::size_t ByteSize() const {
-    return Size() * Elem::ByteSize();
+    return Elem::ByteSize();
   }
 
   /**

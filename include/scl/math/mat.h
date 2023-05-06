@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 
+#include "scl/math/ff.h"
 #include "scl/math/lagrange.h"
 #include "scl/math/vec.h"
 #include "scl/util/prg.h"
@@ -42,14 +43,16 @@ class Vec;
  */
 template <typename Elem>
 class Mat {
-  static_assert(util::Serializable<Elem>::value,
-                "Matrix elements must have Read/Write methods");
-
  public:
   /**
    * @brief The type of the matrix elements.
    */
   using ValueType = Elem;
+
+  /**
+   * @brief The type of a dimension (row or column count).
+   */
+  using SizeType = std::uint32_t;
 
   /**
    * @brief Read a matrix from a stream of bytes.
@@ -187,14 +190,14 @@ class Mat {
   /**
    * @brief The number of rows of this matrix.
    */
-  std::size_t Rows() const {
+  SizeType Rows() const {
     return m_rows;
   }
 
   /**
    * @brief The number of columns of this matrix.
    */
-  std::size_t Cols() const {
+  SizeType Cols() const {
     return m_cols;
   }
 
@@ -406,16 +409,9 @@ class Mat {
 
   /**
    * @brief Write this matrix to a buffer.
+   * @param dest where to write the matrix.
    *
-   * The matrix is written as
-   *
-   *   <code>row_count || column_count || data</code>
-   *
-   * where each of <code>row_count</code> and <code>column_count</code> are 4
-   * bytes large. <code>data</code> is the content of the matrix, in row-major
-   * order.
-   *
-   * @param dest where to write the matrix
+   * This function just writes the content of the matrix.
    */
   void Write(unsigned char* dest) const;
 
@@ -423,7 +419,7 @@ class Mat {
    * @brief The size of a matrix when serialized in bytes.
    */
   std::size_t ByteSize() const {
-    return Rows() * Cols() * Elem::ByteSize();
+    return Cols() * Rows() * Elem::ByteSize();
   }
 
  private:
@@ -436,8 +432,8 @@ class Mat {
     }
   }
 
-  std::size_t m_rows;
-  std::size_t m_cols;
+  SizeType m_rows;
+  SizeType m_cols;
   std::vector<Elem> m_values;
 
   friend class Vec<Elem>;

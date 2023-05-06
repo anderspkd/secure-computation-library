@@ -39,10 +39,9 @@ auto ts = test::RandomTriple<FF>(prg);
 namespace {
 
 auto CreateEnv(net::Network& network) {
-  return proto::ProtocolEnvironment{
-      network,
-      std::make_unique<proto::RealTimeClock>(),
-      std::make_unique<proto::StlThreadContext>()};
+  return proto::Env{network,
+                    std::make_unique<proto::RealTimeClock>(),
+                    std::make_unique<proto::StlThreadContext>()};
 }
 
 }  // namespace

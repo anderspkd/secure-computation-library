@@ -16,6 +16,7 @@
  */
 
 #include <catch2/catch.hpp>
+#include <cstdint>
 #include <thread>
 
 #include "scl/net/config.h"
@@ -23,6 +24,26 @@
 #include "scl/net/tcp_channel.h"
 
 using namespace scl;
+
+namespace {
+
+net::Packet GetPacketWithData() {
+  net::Packet p;
+  p << (int)123;
+  p << (float)4.5;
+  return p;
+}
+
+void CheckPacket(std::optional<net::Packet>& p) {
+  if (p.has_value()) {
+    REQUIRE(p.value().Read<int>() == 123);
+    REQUIRE(p.value().Read<float>() == 4.5);
+  } else {
+    FAIL("packet did not have data");
+  }
+}
+
+}  // namespace
 
 TEST_CASE("Network fake", "[net]") {
   auto fake = net::FakeNetwork::Create(0, 3);
@@ -33,17 +54,17 @@ TEST_CASE("Network fake", "[net]") {
   REQUIRE(network.Size() == 3);
   REQUIRE(remotes[0] == nullptr);
 
-  remotes[1]->Send((int)123);
+  auto p = GetPacketWithData();
 
-  int x;
-  network.Party(1)->Recv(x);
+  remotes[1]->Send(p);
 
-  REQUIRE(x == 123);
+  auto rp1 = network.Party(1)->Recv();
+  CheckPacket(rp1);
 
-  network.Party(0)->Send((int)1111);
-  network.Party(0)->Recv(x);
-
-  REQUIRE(x == 1111);
+  p.ResetReadPtr();
+  network.Party(0)->Send(p);
+  auto rp0 = network.Party(0)->Recv();
+  CheckPacket(rp0);
 }
 
 TEST_CASE("Network fully connected", "[net]") {
@@ -53,19 +74,22 @@ TEST_CASE("Network fully connected", "[net]") {
   auto network0 = networks[0];
   auto network1 = networks[1];
 
-  network0.Party(1)->Send((int)444);
+  auto p = GetPacketWithData();
 
-  int x;
-  network1.Party(0)->Recv(x);
+  // p0 -> p1
+  network0.Party(1)->Send(p);
 
-  REQUIRE(x == 444);
+  // p1 <- p0
+  auto p10 = network1.Party(0)->Recv();
+  CheckPacket(p10);
 
   auto network2 = networks[2];
-  network2.Party(0)->Send((int)555);
+  // p2 -> p0
+  network2.Party(0)->Send(p);
 
-  network0.Party(2)->Recv(x);
-
-  REQUIRE(x == 555);
+  // p0 <- p2
+  auto p02 = network0.Party(2)->Recv();
+  CheckPacket(p02);
 }
 
 TEST_CASE("Network TCP", "[net]") {
@@ -103,12 +127,12 @@ TEST_CASE("Network TCP", "[net]") {
     }
   }
 
-  network0.Party(2)->Send((int)5555);
+  auto p = GetPacketWithData();
 
-  int x;
-  network2.Party(0)->Recv(x);
+  network0.Party(2)->Send(p);
 
-  REQUIRE(x == 5555);
+  auto p20 = network2.Party(0)->Recv();
+  CheckPacket(p20);
 }
 
 struct ChannelMock final : net::Channel {
@@ -143,13 +167,14 @@ TEST_CASE("Network party getters") {
 
   net::Network nw({chl0, chl1, chl2}, 1);
 
+  auto p = GetPacketWithData();
   REQUIRE(chl2->send_called == 0);
-  nw.Next()->Send(true);
-  REQUIRE(chl2->send_called == 1);
+  nw.Next()->Send(p);
+  REQUIRE(chl2->send_called == 2);
 
   REQUIRE(chl0->send_called == 0);
-  nw.Previous()->Send(true);
-  REQUIRE(chl0->send_called == 1);
+  nw.Previous()->Send(p);
+  REQUIRE(chl0->send_called == 2);
 
   REQUIRE_THROWS_MATCHES(nw.Other(),
                          std::logic_error,
@@ -158,8 +183,8 @@ TEST_CASE("Network party getters") {
 
   net::Network two_parties({chl0, chl1}, 1);
 
-  two_parties.Other()->Send(true);
-  REQUIRE(chl0->send_called == 2);
+  two_parties.Other()->Send(p);
+  REQUIRE(chl0->send_called == 4);
 }
 
 TEST_CASE("Network close") {

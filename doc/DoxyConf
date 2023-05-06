@@ -16,7 +16,8 @@ INPUT                  = doc/mainpage.md \
                          include/scl/ss \
                          include/scl/net \
                          include/scl/simulation \
-                         include/scl/protocol
+                         include/scl/protocol \
+                         include/scl/serialization
 FILE_PATTERNS          = *.h
 EXCLUDE_SYMBOLS        = SCL_*
 

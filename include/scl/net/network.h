@@ -181,28 +181,35 @@ Network Network::Create(const NetworkConfig& config) {
   // an ID strictly greater than ours.
   std::thread connector([&channels, &config]() {
     const auto id = config.Id();
+
+    // the number of connections we should listen for.
     const auto m = config.NetworkSize() - id - 1;
+
     if (m > 0) {
       auto port = config.GetParty(id).port;
       auto server_socket = CreateServerSocket<>((int)port, (int)m);
+
       for (std::size_t i = id + 1; i < config.NetworkSize(); ++i) {
         auto conn = AcceptConnection(server_socket);
         std::shared_ptr<Channel> channel =
             std::make_shared<ChannelT>(conn.socket);
-        unsigned id;
-        channel->Recv(id);
-        channels[id] = channel;
+
+        auto p = channel->Recv().value();
+        channels[p.Read<unsigned>()] = channel;
       }
       SysIFace::Close(server_socket);
     }
   });
 
+  Packet p;
   for (std::size_t i = 0; i < config.Id(); ++i) {
     const auto party = config.GetParty(i);
     auto socket = ConnectAsClient<>(party.hostname, (int)party.port);
     std::shared_ptr<Channel> channel = std::make_shared<ChannelT>(socket);
-    channel->Send((unsigned)config.Id());
+    p << (unsigned)config.Id();
+    channel->Send(p);
     channels[i] = channel;
+    p.ResetWritePtr();
   }
 
   connector.join();

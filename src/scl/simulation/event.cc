@@ -18,6 +18,7 @@
 #include "scl/simulation/event.h"
 
 #include <chrono>
+#include <ios>
 
 namespace {
 
@@ -64,20 +65,39 @@ auto EventTypeToString(Evt::Type type) {
     return "CHECKPOINT";
   }
 
+  if (type == Evt::Type::PACKET_SEND) {
+    return "PACKET_SEND";
+  }
+
+  if (type == Evt::Type::PACKET_RECV) {
+    return "PACKET_RECV";
+  }
+
   // if (type == scl::Measurement::Type::CLOSE)
   return "CLOSE";
 }
 
-void WriteSend(std::ostream& os, const scl::sim::NetworkEvent* m) {
+void WriteClose(std::ostream& os, const scl::sim::NetworkEvent* m) {
+  os << " [Local=" << m->LocalParty() << ", Remote=" << m->RemoteParty() << "]";
+}
+
+void WriteSend(std::ostream& os, const scl::sim::NetworkDataEvent* m) {
   os << " ["
      << "Sender=" << m->LocalParty() << ", Receiver=" << m->RemoteParty()
      << ", Amount=" << m->DataAmount() << "]";
 }
 
-void WriteRecv(std::ostream& os, const scl::sim::NetworkEvent* m) {
+void WriteRecv(std::ostream& os, const scl::sim::NetworkDataEvent* m) {
   os << " ["
      << "Receiver=" << m->LocalParty() << ", Sender=" << m->RemoteParty()
      << ", Amount=" << m->DataAmount() << "]";
+}
+
+void WritePacketRecv(std::ostream& os, const scl::sim::PacketRecvEvent* m) {
+  os << " ["
+     << "Receiver=" << m->LocalParty() << ", Sender=" << m->RemoteParty()
+     << ", Amount=" << m->DataAmount() << ", Blocking=" << std::boolalpha
+     << m->Blocking() << "]";
 }
 
 void WriteSegment(std::ostream& os, const scl::sim::SegmentEvent* m) {
@@ -87,6 +107,11 @@ void WriteSegment(std::ostream& os, const scl::sim::SegmentEvent* m) {
   } else {
     os << " [Name=" << name << "]";
   }
+}
+
+void WriteHasData(std::ostream& os, const scl::sim::HasDataEvent* m) {
+  os << " [Local=" << m->LocalParty() << ", Remote=" << m->RemoteParty()
+     << ", DataAvailable=" << std::boolalpha << m->HadData() << "]";
 }
 
 void WriteCheckpoint(std::ostream& os, const scl::sim::CheckpointEvent* m) {
@@ -111,12 +136,24 @@ std::ostream& scl::sim::operator<<(std::ostream& os, const Evt* m) {
     WriteSegment(os, dynamic_cast<const SegmentEvent*>(m));
   }
 
-  if (t == Evt::Type::SEND) {
-    WriteSend(os, dynamic_cast<const NetworkEvent*>(m));
+  if (t == Evt::Type::CLOSE) {
+    WriteClose(os, dynamic_cast<const NetworkEvent*>(m));
+  }
+
+  if (t == Evt::Type::SEND || t == Evt::Type::PACKET_SEND) {
+    WriteSend(os, dynamic_cast<const NetworkDataEvent*>(m));
   }
 
   if (t == Evt::Type::RECV) {
-    WriteRecv(os, dynamic_cast<const NetworkEvent*>(m));
+    WriteRecv(os, dynamic_cast<const NetworkDataEvent*>(m));
+  }
+
+  if (t == Evt::Type::PACKET_RECV) {
+    WritePacketRecv(os, dynamic_cast<const PacketRecvEvent*>(m));
+  }
+
+  if (t == Evt::Type::HAS_DATA) {
+    WriteHasData(os, dynamic_cast<const HasDataEvent*>(m));
   }
 
   if (t == Evt::Type::CHECKPOINT) {

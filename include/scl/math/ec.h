@@ -54,21 +54,21 @@ class EC {
    */
   constexpr static std::size_t ByteSize(bool compressed = true) {
     return 1 + (compressed ? 0 : Field::ByteSize()) + Field::ByteSize();
-  };
+  }
 
   /**
    * @brief The size of a curve point in bits.
    */
   constexpr static std::size_t BitSize(bool compressed = true) {
     return ByteSize(compressed) * 8;
-  };
+  }
 
   /**
    * @brief A string indicating which curve this is.
    */
   constexpr static const char* Name() {
     return Curve::NAME;
-  };
+  }
 
   /**
    * @brief Get the generator of this curve.
@@ -77,7 +77,7 @@ class EC {
     EC g;
     CurveSetGenerator<Curve>(g.m_value);
     return g;
-  };
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Read an elliptic curve point from bytes.
@@ -88,7 +88,7 @@ class EC {
     EC e;
     CurveFromBytes<Curve>(e.m_value, src);
     return e;
-  };
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Create a point from an pair of affine coordinates.
@@ -97,14 +97,19 @@ class EC {
     EC e;
     CurveSetAffine<Curve>(e.m_value, x, y);
     return e;
-  };
+  }
 
   /**
    * @brief Create a new point equal to the point at infinity.
    */
   explicit constexpr EC() {
     CurveSetPointAtInfinity<Curve>(m_value);
-  };
+  }
+
+  /**
+   * @brief Destructor. Does nothing.
+   */
+  ~EC() {}
 
   /**
    * @brief Add another EC point to this.
@@ -114,7 +119,7 @@ class EC {
   EC& operator+=(const EC& other) {
     CurveAdd<Curve>(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Add two points.
@@ -125,7 +130,7 @@ class EC {
   friend EC operator+(const EC& lhs, const EC& rhs) {
     EC copy(lhs);
     return copy += rhs;
-  };
+  }
 
   /**
    * @brief Double this point.
@@ -134,7 +139,7 @@ class EC {
   EC& DoubleInPlace() {
     CurveDouble<Curve>(m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Double this point.
@@ -143,7 +148,7 @@ class EC {
   EC Double() const {
     EC copy(*this);
     return copy.DoubleInPlace();
-  };
+  }
 
   /**
    * @brief Subtract another point from this.
@@ -153,7 +158,7 @@ class EC {
   EC& operator-=(const EC& other) {
     CurveSubtract<Curve>(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Subtract two EC points.
@@ -164,7 +169,7 @@ class EC {
   friend EC operator-(const EC& lhs, const EC& rhs) {
     EC copy(lhs);
     return copy -= rhs;
-  };
+  }
 
   /**
    * @brief Perform a scalar multiplication.
@@ -174,7 +179,7 @@ class EC {
   EC& operator*=(const Number& scalar) {
     CurveScalarMultiply<Curve>(m_value, scalar);
     return *this;
-  };
+  }
 
   /**
    * @brief Perform a scalar multiplication.
@@ -184,7 +189,7 @@ class EC {
   EC& operator*=(const Order& scalar) {
     CurveScalarMultiply<Curve>(m_value, scalar);
     return *this;
-  };
+  }
 
   /**
    * @brief Multiply a point with a scalar from the right.
@@ -195,7 +200,7 @@ class EC {
   friend EC operator*(const EC& point, const Number& scalar) {
     EC copy(point);
     return copy *= scalar;
-  };
+  }
 
   /**
    * @brief Multiply a point with a scalar from the right.
@@ -206,7 +211,7 @@ class EC {
   friend EC operator*(const EC& point, const Order& scalar) {
     EC copy(point);
     return copy *= scalar;
-  };
+  }
 
   /**
    * @brief Multiply a point with a scalar from the left.
@@ -216,7 +221,7 @@ class EC {
    */
   friend EC operator*(const Number& scalar, const EC& point) {
     return point * scalar;
-  };
+  }
 
   /**
    * @brief Multiply a point with a scalar from the left.
@@ -227,7 +232,7 @@ class EC {
   friend EC operator*(const FF<typename Curve::Order>& scalar,
                       const EC& point) {
     return point * scalar;
-  };
+  }
 
   /**
    * @brief Negate this point.
@@ -245,7 +250,7 @@ class EC {
   EC operator-() {
     EC copy(*this);
     return copy.Negate();
-  };
+  }
 
   /**
    * @brief Check if this EC point is equal to another EC point.
@@ -254,21 +259,21 @@ class EC {
    */
   bool Equal(const EC& other) const {
     return CurveEqual<Curve>(m_value, other.m_value);
-  };
+  }
 
   /**
    * @brief Equality operator for EC points.
    */
   friend bool operator==(const EC& lhs, const EC& rhs) {
     return lhs.Equal(rhs);
-  };
+  }
 
   /**
    * @brief In-equality operator for EC points.
    */
   friend bool operator!=(const EC& lhs, const EC& rhs) {
     return !(lhs == rhs);
-  };
+  }
 
   /**
    * @brief Check if this point is equal to the point at inifity.
@@ -276,7 +281,7 @@ class EC {
    */
   bool PointAtInfinity() const {
     return CurveIsPointAtInfinity<Curve>(m_value);
-  };
+  }
 
   /**
    * @brief Return this point as a pair of affine coordinates.
@@ -284,14 +289,14 @@ class EC {
    */
   std::array<Field, 2> ToAffine() const {
     return CurveToAffine<Curve>(m_value);
-  };
+  }
 
   /**
    * @brief Output this point as a string.
    */
   std::string ToString() const {
     return CurveToString<Curve>(m_value);
-  };
+  }
 
   /**
    * @brief Write the curve point to a STL output stream.
@@ -299,7 +304,7 @@ class EC {
    */
   friend std::ostream& operator<<(std::ostream& os, const EC& point) {
     return os << point.ToString();
-  };
+  }
 
   /**
    * @brief Write this point to a buffer.
@@ -308,7 +313,7 @@ class EC {
    */
   void Write(unsigned char* dest, bool compress = true) const {
     CurveToBytes<Curve>(dest, m_value, compress);
-  };
+  }
 
  private:
   typename Curve::ValueType m_value;

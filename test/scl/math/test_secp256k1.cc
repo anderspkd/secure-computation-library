@@ -188,6 +188,10 @@ TEST_CASE("Secp256k1 scalar multiplication", "[math][ec]") {
   auto Q = (G * v) * u;
 
   REQUIRE(P == Q);
+
+  auto n = math::Number::FromString("06");
+  REQUIRE(n * G == w * G);
+  REQUIRE(n * G == G * n);
 }
 
 TEST_CASE("Secp256k1 negation special case", "[math][ec]") {

@@ -147,6 +147,6 @@ scl::math::FF<Field> scl::math::FFAccess<Field>::ComputeSqrt(
   MontyModExp<NUM_LIMBS>(PTR(res), PTR(x.m_value), e, kPrime, kMontyN);
   out.m_value = res;
   return out;
-}
+}  // LCOV_EXCL_LINE
 
 #undef ONE

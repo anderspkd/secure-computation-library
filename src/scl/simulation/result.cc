@@ -54,6 +54,16 @@ std::string GetNameFromSegmentEvent(std::shared_ptr<scl::sim::Event> event) {
 
 using NamedSegment = std::pair<std::string, Segment>;
 
+bool IsRecvEvent(std::shared_ptr<scl::sim::NetworkDataEvent> ptr) {
+  return ptr->EventType() == scl::sim::Event::Type::RECV ||
+         ptr->EventType() == scl::sim::Event::Type::PACKET_RECV;
+}
+
+bool IsSendEvent(std::shared_ptr<scl::sim::NetworkDataEvent> ptr) {
+  return ptr->EventType() == scl::sim::Event::Type::SEND ||
+         ptr->EventType() == scl::sim::Event::Type::PACKET_SEND;
+}
+
 /**
  * @brief Parse a segment from a simulation trace.
  * @param start a beginning iterator, pointing to a SEGMENT_BEGIN event.
@@ -72,14 +82,14 @@ NamedSegment ParseSegment(It start, const It end) {
 
   while (start < end) {
     event = *start;
-    auto ne = std::dynamic_pointer_cast<scl::sim::NetworkEvent>(event);
+    auto ne = std::dynamic_pointer_cast<scl::sim::NetworkDataEvent>(event);
 
     if (ne != nullptr) {
       const auto id = ne->RemoteParty();
-      if (ne->EventType() == scl::sim::Event::Type::RECV) {
+      if (IsRecvEvent(ne)) {
         seg.sr[id].recv += ne->DataAmount();
       }
-      if (ne->EventType() == scl::sim::Event::Type::SEND) {
+      if (IsSendEvent(ne)) {
         seg.sr[id].sent += ne->DataAmount();
       }
     }

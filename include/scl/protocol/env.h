@@ -91,11 +91,6 @@ struct Env {
 };
 
 /**
- * @deprecated
- */
-using ProtocolEnvironment = Env;
-
-/**
  * @brief A protocol clock which operates with real time.
  */
 class RealTimeClock final : public Env::Clock {

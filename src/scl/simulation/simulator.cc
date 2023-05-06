@@ -96,7 +96,7 @@ std::unique_ptr<scl::proto::Protocol> Run(
     std::shared_ptr<scl::sim::SimulationContext> ctx,
     std::size_t party_id,
     scl::proto::Protocol* party,
-    scl::proto::ProtocolEnvironment& env,
+    scl::proto::Env& env,
     const scl::sim::OutputCallback& output_callback) {
   if (ctx->Trace(party_id).empty()) {
     ctx->AddEvent(party_id,
@@ -153,7 +153,7 @@ std::vector<scl::sim::SimulationTrace> RunSimulation(
     try {
       ctx->Prepare(id);
 
-      scl::proto::ProtocolEnvironment env{
+      scl::proto::Env env{
           networks[id],
           std::make_unique<scl::sim::SimulatedClock>(ctx, id),
           std::make_unique<scl::sim::SimulatedThreadCtx>(ctx, id)};

@@ -96,15 +96,19 @@ TEST_CASE("ComputeRecvTime lossy", "[sim]") {
  */
 struct LotsOfDataProtocol {
   struct Two final : proto::Protocol {
-    std::unique_ptr<proto::Protocol> Run(
-        proto::ProtocolEnvironment& env) override {
+    std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
       std::vector<int> data(100);
       auto& network = env.network;
       const auto id = network.MyId();
       const auto rid = id == 0 ? network.Size() - 1 : id - 1;
-      network.Previous()->Recv((unsigned char*)data.data(), sizeof(int) * 100);
       for (std::size_t i = 0; i < 100; ++i) {
-        output &= (std::size_t)data[i] == rid + i;
+        auto p = network.Previous()->Recv();
+        if (!p.has_value()) {
+          output = false;
+        } else {
+          std::size_t rid_c = p.value().Read<int>();
+          output &= rid_c == rid + i;
+        }
       }
       network.Previous()->Close();
       return nullptr;
@@ -119,11 +123,12 @@ struct LotsOfDataProtocol {
 
   struct One final : proto::Protocol {
     One(int counter = 0) : counter(counter){};
-    std::unique_ptr<proto::Protocol> Run(
-        proto::ProtocolEnvironment& env) override {
+    std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
       auto& network = env.network;
       const auto id = network.MyId();
-      network.Next()->Send((int)(id + counter));
+      net::Packet p;
+      p << (int)(id + counter);
+      network.Next()->Send(p);
       if (counter > 100) {
         return std::make_unique<Two>();
       }
@@ -162,9 +167,10 @@ TEST_CASE("Simulation many", "[sim]") {
  */
 struct SendRecvProtocol {
   struct Sender final : proto::Protocol {
-    std::unique_ptr<proto::Protocol> Run(
-        proto::ProtocolEnvironment& env) override {
-      env.network.Other()->Send(true);
+    std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
+      net::Packet p;
+      p << true;
+      env.network.Other()->Send(p);
       return nullptr;
     }
   };
@@ -172,10 +178,10 @@ struct SendRecvProtocol {
   struct Receiver final : proto::Protocol {
     Receiver(const std::function<void()>& cb) : cb(cb){};
 
-    std::unique_ptr<proto::Protocol> Run(
-        proto::ProtocolEnvironment& env) override {
+    std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
       cb();
-      env.network.Other()->Recv(output);
+      auto p = env.network.Other()->Recv();
+      output = p.has_value() && p.value().Read<bool>();
       return nullptr;
     }
 
@@ -207,7 +213,7 @@ TEST_CASE("Simulation result trace", "[sim]") {
   REQUIRE_THAT(line, Catch::Matchers::StartsWith("SEGMENT_BEGIN"));
 
   std::getline(ss, line);
-  REQUIRE_THAT(line, Catch::Matchers::StartsWith("RECV"));
+  REQUIRE_THAT(line, Catch::Matchers::StartsWith("PACKET_RECV"));
 
   std::getline(ss, line);
   REQUIRE_THAT(line, Catch::Matchers::StartsWith("OUTPUT"));
@@ -229,7 +235,7 @@ TEST_CASE("Simulation result trace", "[sim]") {
   REQUIRE_THAT(line, Catch::Matchers::StartsWith("SEGMENT_BEGIN"));
 
   std::getline(ss, line);
-  REQUIRE_THAT(line, Catch::Matchers::StartsWith("RECV"));
+  REQUIRE_THAT(line, Catch::Matchers::StartsWith("PACKET_RECV"));
 
   std::getline(ss, line);
   REQUIRE_THAT(line, Catch::Matchers::StartsWith("OUTPUT"));
@@ -289,7 +295,8 @@ TEST_CASE("Simulation receive out-of-order", "[sim]") {
     const auto r =
         sim::Simulate(std::move(parties), sim::DefaultConfigCreator());
 
-    REQUIRE(r[0].TransferAmounts().recv.Max() == 1.0);
+    // receive bool (1 byte) + packet size (4 bytes).
+    REQUIRE(r[0].TransferAmounts().recv.Max() == 5.0);
     ApproxDuration(r[0].ExecutionTime().Max(), 100ms, 1ms);
     ApproxDuration(r[1].ExecutionTime().Max(), 1ms, 1ms);
 
@@ -308,7 +315,8 @@ TEST_CASE("Simulation receive out-of-order", "[sim]") {
     const auto r_ =
         sim::Simulate(std::move(parties_), sim::DefaultConfigCreator());
 
-    REQUIRE(r_[0].TransferAmounts().sent.Max() == 1.0);
+    // sent bool (1 byte) + packet size (4 bytes).
+    REQUIRE(r_[0].TransferAmounts().sent.Max() == 5.0);
     ApproxDuration(r_[1].ExecutionTime().Max(), 100ms, 1ms);
     ApproxDuration(r_[0].ExecutionTime().Max(), 1ms, 1ms);
 
@@ -331,8 +339,7 @@ struct HasDataProtocol {
     Alice(bool sleep, bool exit_early, bool send)
         : sleep(sleep), exit_early(exit_early), send(send){};
 
-    std::unique_ptr<proto::Protocol> Run(
-        proto::ProtocolEnvironment& env) override {
+    std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
       if (sleep) {
         env.thread_ctx->Sleep(50);
       }
@@ -346,8 +353,7 @@ struct HasDataProtocol {
     }
 
     struct Dummy final : public proto::Protocol {
-      std::unique_ptr<proto::Protocol> Run(
-          proto::ProtocolEnvironment& env) override {
+      std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
         (void)env;
         return nullptr;
       }
@@ -361,8 +367,7 @@ struct HasDataProtocol {
   struct Bob final : public proto::Protocol {
     Bob(bool sleep) : sleep(sleep){};
 
-    std::unique_ptr<proto::Protocol> Run(
-        proto::ProtocolEnvironment& env) override {
+    std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
       if (sleep) {
         env.thread_ctx->Sleep(50);
       }
@@ -491,19 +496,19 @@ TEST_CASE("Simulation Beaver", "[sim]") {
 struct SinglePartyProtocol final : public proto::Protocol {
   SinglePartyProtocol(bool send = true) : send(send){};
 
-  std::unique_ptr<proto::Protocol> Run(
-      proto::ProtocolEnvironment& env) override {
+  std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
     if (send) {
       std::vector<int> data(100, 42);
-      env.network.Party(0)->Send(data);
+      net::Packet p;
+      p << data;
+      env.network.Party(0)->Send(p);
       return std::make_unique<SinglePartyProtocol>(false);
     }
-    env.network.Party(0)->Recv(output);
+    auto p = env.network.Party(0)->Recv();
+    if (p.has_value()) {
+      output = p.value().Read<std::vector<int>>();
+    }
     return nullptr;
-  }
-
-  std::any Output() const override {
-    return output;
   }
 
   bool send;
@@ -518,4 +523,88 @@ TEST_CASE("Simulation one party", "[sim]") {
   // The default configuration should ensure that communication locally
   // happens almost instantly
   ApproxDuration(r[0].ExecutionTime().Max(), 1ms, 1ms);
+}
+
+struct ChunkedRecvProtocol final : public proto::Protocol {
+  std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
+    if (env.network.MyId() == 0) {
+      unsigned char buf[5] = {4, 5, 6, 7, 8};
+      env.network.Other()->Send(buf, 3);
+      env.network.Other()->Send(buf + 3, 2);
+    } else {
+      unsigned char buf[5] = {0};
+      env.network.Other()->Recv(buf, 5);
+      bool good = true;
+      for (std::size_t i = 0; i < 5; ++i) {
+        good &= (4 + i) == buf[i];
+      }
+      m_output = good;
+    }
+    return nullptr;
+  }
+
+  std::any Output() const override {
+    return m_output;
+  }
+
+  bool m_output;
+};
+
+TEST_CASE("Simulation chunked receive", "[sim]") {
+  bool correct = false;
+  auto cb = [&correct](auto id, std::any output) {
+    if (id == 1) {
+      correct = std::any_cast<bool>(output);
+    }
+  };
+
+  std::vector<std::unique_ptr<proto::Protocol>> parties;
+  parties.emplace_back(std::make_unique<ChunkedRecvProtocol>());
+  parties.emplace_back(std::make_unique<ChunkedRecvProtocol>());
+  sim::Simulate(std::move(parties), sim::DefaultConfigCreator(), cb);
+
+  REQUIRE(correct);
+}
+
+struct NonBlockRecvProtocol final : public proto::Protocol {
+  NonBlockRecvProtocol(bool sleep = false) : sleep(sleep) {}
+
+  std::unique_ptr<proto::Protocol> Run(proto::Env& env) override {
+    if (env.network.MyId() == 0) {
+      net::Packet p;
+      p << 1 << 2 << 3;
+      env.thread_ctx->Sleep(10);
+      env.network.Party(1)->Send(p);
+    } else {
+      if (sleep) {
+        env.thread_ctx->Sleep(20);
+      }
+
+      auto p = env.network.Party(0)->Recv(false);
+    }
+    return nullptr;
+  }
+
+  bool sleep;
+};
+
+TEST_CASE("Simulation non-block recv", "[sim]") {
+  std::vector<std::unique_ptr<proto::Protocol>> p_no_data;
+  p_no_data.emplace_back(std::make_unique<NonBlockRecvProtocol>());
+  p_no_data.emplace_back(std::make_unique<NonBlockRecvProtocol>(false));
+
+  const auto r0 =
+      sim::Simulate(std::move(p_no_data), sim::DefaultConfigCreator());
+
+  // execution is instant because no data is available.
+  ApproxDuration(r0[1].ExecutionTime().Max(), 1ms, 1ms);
+
+  std::vector<std::unique_ptr<proto::Protocol>> p_data;
+  p_data.emplace_back(std::make_unique<NonBlockRecvProtocol>());
+  p_data.emplace_back(std::make_unique<NonBlockRecvProtocol>(true));
+
+  const auto r1 = sim::Simulate(std::move(p_data), sim::DefaultConfigCreator());
+
+  // execution has to wait for the packet, because data was available.
+  ApproxDuration(r1[1].ExecutionTime().Max(), 110ms, 10ms);
 }

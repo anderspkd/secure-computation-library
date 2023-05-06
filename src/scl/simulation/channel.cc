@@ -17,24 +17,30 @@
 
 #include "scl/simulation/channel.h"
 
+#include <memory>
+
+#include "scl/simulation/channel_id.h"
+#include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
 #include "scl/simulation/simulator.h"
+#include "scl/util/time.h"
 
-void scl::sim::SimulateClose(std::shared_ptr<SimulationContext> ctx,
-                             ChannelId id) {
+using EventPtr = std::shared_ptr<scl::sim::Event>;
+
+EventPtr scl::sim::SimulateClose(std::shared_ptr<SimulationContext> ctx,
+                                 ChannelId id) {
   const auto lid = id.local;
   const auto trt = ctx->Checkpoint(lid);
-  const auto event = std::make_shared<Event>(Event::Type::CLOSE, trt);
-  ctx->AddEvent(lid, event);
+  return std::make_shared<NetworkEvent>(Event::Type::CLOSE, trt, id);
 }
 
 #define SCL_LOCAL_COMP_BEGIN const auto scl__lcb = scl::util::Time::Now()
 #define SCL_LOCAL_COMP_END scl::util::Time::Now() - scl__lcb
 
-void scl::sim::SimulateSend(std::shared_ptr<SimulationContext> ctx,
-                            ChannelId id,
-                            const unsigned char* src,
-                            std::size_t n) {
+EventPtr scl::sim::SimulateSend(std::shared_ptr<SimulationContext> ctx,
+                                ChannelId id,
+                                const unsigned char* src,
+                                std::size_t n) {
   SCL_LOCAL_COMP_BEGIN;
 
   ctx->Buffer(id)->Write({src, src + n});
@@ -42,14 +48,11 @@ void scl::sim::SimulateSend(std::shared_ptr<SimulationContext> ctx,
   const auto local_comp_time = SCL_LOCAL_COMP_END;
   const auto exec_time = ctx->Checkpoint(id.local) - local_comp_time;
 
-  auto event = std::make_shared<NetworkEvent>(Event::Type::SEND,
-                                              exec_time,
-                                              id.local,
-                                              id.remote,
-                                              n);
+  auto event =
+      std::make_shared<NetworkDataEvent>(Event::Type::SEND, exec_time, id, n);
   ctx->AddCandidateToRun(id.remote);
-  ctx->AddEvent(id.local, event);
   ctx->RecordWrite(id, n, exec_time);
+  return event;
 }
 
 namespace {
@@ -95,10 +98,10 @@ scl::util::Time::Duration AdjustRecvTime(
 
 }  // namespace
 
-void scl::sim::SimulateRecv(std::shared_ptr<SimulationContext> ctx,
-                            ChannelId id,
-                            unsigned char* dst,
-                            std::size_t n) {
+EventPtr scl::sim::SimulateRecv(std::shared_ptr<SimulationContext> ctx,
+                                ChannelId id,
+                                unsigned char* dst,
+                                std::size_t n) {
   SCL_LOCAL_COMP_BEGIN;
 
   if (ctx->Buffer(id)->Size() < n) {
@@ -113,17 +116,16 @@ void scl::sim::SimulateRecv(std::shared_ptr<SimulationContext> ctx,
   const auto exec_time = ctx->Checkpoint(id.local) - local_comp_time;
   const auto adjusted_time = AdjustRecvTime(ctx, id.Flip(), exec_time, n);
 
-  const auto event = std::make_shared<NetworkEvent>(Event::Type::RECV,
-                                                    exec_time,
-                                                    adjusted_time - exec_time,
-                                                    id.local,
-                                                    id.remote,
-                                                    n);
-  ctx->AddEvent(id.local, event);
+  return std::make_shared<NetworkDataEvent>(Event::Type::RECV,
+                                            exec_time,
+                                            adjusted_time - exec_time,
+                                            id,
+                                            n);
 }
 
-bool scl::sim::SimulateHasData(std::shared_ptr<SimulationContext> ctx,
-                               ChannelId id) {
+std::pair<bool, EventPtr> scl::sim::SimulateHasData(
+    std::shared_ptr<SimulationContext> ctx,
+    ChannelId id) {
   // The other party hasn't had a chance to run yet, so it's not possible to
   // determine if there's data available for us.
   if (ctx->Trace(id.remote).empty()) {
@@ -154,5 +156,77 @@ bool scl::sim::SimulateHasData(std::shared_ptr<SimulationContext> ctx,
     }
   }
 
-  return has_data;
+  const auto event = std::make_shared<HasDataEvent>(me_latest, id, has_data);
+  ctx->AddEvent(id.local, event);
+  return {has_data, event};
 }
+
+void scl::sim::SimulatedChannel::Send(const scl::net::Packet& packet) {
+  const auto packet_size = packet.Size();
+  const auto size_size = sizeof(net::Packet::SizeType);
+
+  scl::net::Channel::Send(packet);
+
+  const auto data_event = m_ctx->PopLastEvent(m_id.local);
+  const auto size_event = m_ctx->PopLastEvent(m_id.local);
+  const auto event =
+      std::make_shared<NetworkDataEvent>(Event::Type::PACKET_SEND,
+                                         size_event->Timestamp(),
+                                         m_id,
+                                         size_size + packet_size);
+  m_ctx->AddEvent(m_id.local, event);
+}
+
+namespace {
+
+std::size_t GetDataAmount(scl::sim::Event* event) {
+  return reinterpret_cast<scl::sim::NetworkDataEvent*>(event)->DataAmount();
+}
+
+}  // namespace
+
+std::optional<scl::net::Packet> scl::sim::SimulatedChannel::Recv(bool block) {
+  auto p = net::Channel::Recv(block);
+
+  if (block) {
+    const auto data_event = m_ctx->PopLastEvent(m_id.local);
+    const auto size_event = m_ctx->PopLastEvent(m_id.local);
+
+    m_ctx->AddEvent(
+        m_id.local,
+        std::make_shared<sim::PacketRecvEvent>(
+            size_event->Timestamp() - size_event->Offset(),
+            size_event->Offset() + data_event->Offset(),
+            m_id,
+            GetDataAmount(data_event.get()) + GetDataAmount(size_event.get()),
+            true));
+  } else {
+    if (p.has_value()) {
+      const auto data_event = m_ctx->PopLastEvent(m_id.local);
+      const auto size_event = m_ctx->PopLastEvent(m_id.local);
+      const auto hd_event = m_ctx->PopLastEvent(m_id.local);
+
+      const auto event = std::make_shared<sim::PacketRecvEvent>(
+          hd_event->Timestamp(),
+          size_event->Offset() + data_event->Offset(),
+          m_id,
+          GetDataAmount(data_event.get()) + GetDataAmount(size_event.get()),
+          false);
+
+      m_ctx->AddEvent(m_id.local, event);
+
+    } else {
+      const auto hd_event = m_ctx->PopLastEvent(m_id.local);
+
+      m_ctx->AddEvent(
+          m_id.local,
+          std::make_shared<sim::PacketRecvEvent>(hd_event->Timestamp(),
+                                                 util::Time::Duration::zero(),
+                                                 m_id,
+                                                 0,
+                                                 false));
+    }
+  }
+
+  return p;
+}  // LCOV_EXCL_LINE
