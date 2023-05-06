@@ -1,3 +1,12 @@
+6.0.0: Improvements to serialization and Channels.
+- Added a Serializer type that can be specialized in order to specify how
+  various objects are converted to bytes.
+- Added a Packet type that allows reading and writing almost arbitrary objects,
+  but stores them internally in a serialized format.
+- Modified the net::Channel interface to allow sending and receving
+  Packets. Remove old Send/Recv overloads.
+- Remove proto::ProtocolEnvironment.
+
 5.3.0: ECDSA
 - Added functionality for creating ECDSA signatures.
 

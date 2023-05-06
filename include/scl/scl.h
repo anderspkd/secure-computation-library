@@ -15,20 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_TRAITS_H
-#define SCL_UTIL_TRAITS_H
+#ifndef SCL_SCL_H
+#define SCL_SCL_H
 
-#include <type_traits>
-#include <vector>
+/**
+ * @brief Main namespace.
+ */
+namespace scl {}  // namespace scl
 
-namespace scl::util {
-
-template <typename>
-struct IsStdVector : std::false_type {};
-
-template <typename T, typename A>
-struct IsStdVector<std::vector<T, A>> : std::true_type {};
-
-}  // namespace scl::util
-
-#endif  // SCL_UTIL_TRAITS_H
+#endif  // SCL_SCL_H

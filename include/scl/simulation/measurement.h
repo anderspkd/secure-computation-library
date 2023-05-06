@@ -58,7 +58,7 @@ class Measurement {
    * @brief Read-only access to the samples in this measurement.
    * @return the samples.
    */
-  const std::vector<T>& Samples() const {
+  std::vector<T> Samples() const {
     return m_samples;
   }
 

@@ -89,66 +89,6 @@ TEST_CASE("MemoryBackedChannel recv chunked", "[net]") {
   REQUIRE(test::BufferEquals(data_in, data_out, 200));
 }
 
-TEST_CASE("MemoryBackedChannel trivial data", "[net]") {
-  auto channels = net::MemoryBackedChannel::CreatePaired();
-  auto chl0 = channels[0];
-  auto chl1 = channels[1];
-
-  net::Channel* c0 = chl0.get();
-  net::Channel* c1 = chl1.get();
-  int x = 123;
-  c0->Send(x);
-  int y;
-  c1->Recv(y);
-  REQUIRE(x == y);
-}
-
-TEST_CASE("MemoryBackedChannel std::vector", "[net]") {
-  auto channels = net::MemoryBackedChannel::CreatePaired();
-  auto chl0 = channels[0];
-  auto chl1 = channels[1];
-
-  net::Channel* c0 = chl0.get();
-  net::Channel* c1 = chl1.get();
-  std::vector<long> data = {1, 2, 3, 4, 11111111};
-  c0->Send(data);
-  std::vector<long> recv;
-  c1->Recv(recv);
-  REQUIRE(data == recv);
-  REQUIRE(recv.size() == data.size());
-}
-
-TEST_CASE("MemoryBackedChannel Vec", "[net]") {
-  using FF = math::Fp<61>;
-  auto channels = net::MemoryBackedChannel::CreatePaired();
-  auto chl0 = channels[0];
-  auto chl1 = channels[1];
-
-  net::Channel* c0 = chl0.get();
-  net::Channel* c1 = chl1.get();
-  math::Vec<FF> v = {FF(1), FF(5), FF(2) - FF(10)};
-  c0->Send(v);
-  math::Vec<FF> w;
-  c1->Recv(w);
-  REQUIRE(v.Equals(w));
-}
-
-TEST_CASE("MemoryBackedChannel Mat", "[net]") {
-  using FF = math::Fp<61>;
-  auto channels = net::MemoryBackedChannel::CreatePaired();
-  auto chl0 = channels[0];
-  auto chl1 = channels[1];
-  auto prg = util::PRG::Create("MemoryBackedChannel Mat");
-
-  net::Channel* c0 = chl0.get();
-  net::Channel* c1 = chl1.get();
-  auto m = math::Mat<FF>::Random(5, 7, prg);
-  c0->Send(m);
-  math::Mat<FF> a;
-  c1->Recv(a);
-  REQUIRE(m.Equals(a));
-}
-
 TEST_CASE("MemoryBackedChannel send to self", "[net]") {
   auto c = net::MemoryBackedChannel::CreateLoopback();
   unsigned char data_in[200] = {0};

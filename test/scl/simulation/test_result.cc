@@ -83,21 +83,19 @@ std::shared_ptr<sim::Event> EndSegment(const std::string& name = "foo") {
 std::shared_ptr<sim::Event> Send(std::size_t to,
                                  std::size_t from,
                                  std::size_t amount) {
-  return std::make_shared<sim::NetworkEvent>(sim::Event::Type::SEND,
-                                             util::Time::Duration::zero(),
-                                             to,
-                                             from,
-                                             amount);
+  return std::make_shared<sim::NetworkDataEvent>(sim::Event::Type::SEND,
+                                                 util::Time::Duration::zero(),
+                                                 sim::ChannelId{to, from},
+                                                 amount);
 }
 
 std::shared_ptr<sim::Event> Recv(std::size_t to,
                                  std::size_t from,
                                  std::size_t amount) {
-  return std::make_shared<sim::NetworkEvent>(sim::Event::Type::RECV,
-                                             util::Time::Duration::zero(),
-                                             to,
-                                             from,
-                                             amount);
+  return std::make_shared<sim::NetworkDataEvent>(sim::Event::Type::RECV,
+                                                 util::Time::Duration::zero(),
+                                                 sim::ChannelId{to, from},
+                                                 amount);
 }
 
 }  // namespace

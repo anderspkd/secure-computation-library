@@ -1,10 +1,8 @@
 # files related to build
-build/
 .cache/
+.clangd
+build/
+compile_commands.json
 
 # do not track compiled documentation files
 doc/html
-
-# misc IDE stuff
-secure-computation-library.*
-compile_commands.json

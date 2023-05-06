@@ -27,17 +27,18 @@
 #include <utility>
 #include <vector>
 
+#include "scl/simulation/channel_id.h"
 #include "scl/util/time.h"
 
 namespace scl::sim {
 
 /**
- * @brief A measurement created by the simulator.
+ * @brief An event generated during simulation.
  */
 class Event {
  public:
   /**
-   * @brief Type describing the context in which the measurement was made.
+   * @brief Type of the event.
    */
   enum class Type {
     /**
@@ -93,7 +94,17 @@ class Event {
     /**
      * @brief A checkpoint recorded by the protocol.
      */
-    CHECKPOINT
+    CHECKPOINT,
+
+    /**
+     * @brief Event made when a party sends a net::Packet.
+     */
+    PACKET_SEND,
+
+    /**
+     * @brief Event made when a party receives a net::Packet.
+     */
+    PACKET_RECV
   };
 
   /**
@@ -146,73 +157,150 @@ class Event {
 };
 
 /**
- * @brief A measurement related to a channel operation.
+ * @brief Events related to a network channel.
  */
-class NetworkEvent final : public Event {
+class NetworkEvent : public Event {
  public:
   /**
    * @brief Construct a new network measurement.
    * @param type the type of the measurement
    * @param timestamp the time of the measurement
-   * @param local_party the ID of the local party
-   * @param remote_party the ID of the remote party
-   * @param amount the amount of bytes either sent or received
+   * @param id the ID of the channel
    */
-  NetworkEvent(Type type,
-               util::Time::Duration timestamp,
-               std::size_t local_party,
-               std::size_t remote_party,
-               std::size_t amount)
-      : Event(type, timestamp),
-        m_local(local_party),
-        m_remote(remote_party),
-        m_amount(amount) {}
+  NetworkEvent(Type type, util::Time::Duration timestamp, ChannelId id)
+      : Event(type, timestamp), m_id(id) {}
 
   /**
    * @brief Construct a new network measurement with an offset.
    * @param type the type of the measurement
    * @param timestamp the time of the measurement
    * @param offset an offset
-   * @param local_party the ID of the local party
-   * @param remote_party the ID of the remote party
-   * @param amount the amount of bytes either sent or received
+   * @param id the ID of the channel
    */
   NetworkEvent(Type type,
                util::Time::Duration timestamp,
                util::Time::Duration offset,
-               std::size_t local_party,
-               std::size_t remote_party,
-               std::size_t amount)
-      : Event(type, timestamp, offset),
-        m_local(local_party),
-        m_remote(remote_party),
-        m_amount(amount) {}
+               ChannelId id)
+      : Event(type, timestamp, offset), m_id(id) {}
 
   /**
    * @brief Get the ID of the local party in this network event.
    */
   std::size_t LocalParty() const {
-    return m_local;
+    return m_id.local;
   }
 
   /**
    * @brief Get the ID of the remote party in this network event.
    */
   std::size_t RemoteParty() const {
-    return m_remote;
+    return m_id.remote;
   }
 
+ private:
+  ChannelId m_id;
+};
+
+/**
+ * @brief Events related to data transfers on the network.
+ */
+class NetworkDataEvent : public NetworkEvent {
+ public:
   /**
-   * @brief Get the amount of data being sent/received.
+   * @brief Create a new network data event.
+   * @param type the type of the event.
+   * @param timestamp when the event took place.
+   * @param id the ID of the channel.
+   * @param amount the amount of data sent or received.
+   */
+  NetworkDataEvent(Type type,
+                   util::Time::Duration timestamp,
+                   ChannelId id,
+                   std::size_t amount)
+      : NetworkEvent(type, timestamp, id), m_amount(amount) {}
+
+  /**
+   * @brief Create a new network data event.
+   * @param type the type of the event.
+   * @param timestamp when the event took place.
+   * @param offset an offset to \p timestamp.
+   * @param id the ID of the channel.
+   * @param amount the amount of data sent or received.
+   */
+  NetworkDataEvent(Type type,
+                   util::Time::Duration timestamp,
+                   util::Time::Duration offset,
+                   ChannelId id,
+                   std::size_t amount)
+      : NetworkEvent(type, timestamp, offset, id), m_amount(amount) {}
+
+  /**
+   * @brief Get the amount of data sent or received.
    */
   std::size_t DataAmount() const {
     return m_amount;
   }
 
  private:
-  std::size_t m_local;
-  std::size_t m_remote;
   std::size_t m_amount;
+};
+
+/**
+ * @brief An event created when a party calls the packet recv function on a
+ * channel.
+ */
+class PacketRecvEvent final : public NetworkDataEvent {
+ public:
+  /**
+   * @brief Create a new network data event.
+   * @param timestamp when the event took place.
+   * @param offset an offset to \p timestamp.
+   * @param id the ID of the channel.
+   * @param amount the amount of data sent or received.
+   * @param blocking whether the Recv call was blocking.
+   */
+  PacketRecvEvent(util::Time::Duration timestamp,
+                  util::Time::Duration offset,
+                  ChannelId id,
+                  std::size_t amount,
+                  bool blocking)
+      : NetworkDataEvent(Type::PACKET_RECV, timestamp, offset, id, amount),
+        m_blocking(blocking) {}
+
+  /**
+   * @brief True if the call was blocking and false otherwise.
+   */
+  bool Blocking() const {
+    return m_blocking;
+  }
+
+ private:
+  bool m_blocking;
+};
+
+/**
+ * @brief Event created when a party calls HasData on a channel.
+ */
+class HasDataEvent final : public NetworkEvent {
+ public:
+  /**
+   * @brief Construct a new HasDataEvent.
+   * @param timestamp the time the event happened.
+   * @param id the ID of the channel.
+   * @param had_data whether data was available.
+   */
+  HasDataEvent(util::Time::Duration timestamp, ChannelId id, bool had_data)
+      : NetworkEvent(Type::HAS_DATA, timestamp, id), m_had_data(had_data) {}
+
+  /**
+   * @brief Whether the call that generated this event had data.
+   */
+  bool HadData() const {
+    return m_had_data;
+  }
+
+ private:
+  bool m_had_data;
 };
 
 /**

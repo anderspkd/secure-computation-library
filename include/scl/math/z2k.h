@@ -49,28 +49,28 @@ class Z2k final : public Ring<Z2k<Bits>> {
    */
   constexpr static std::size_t SpecifiedBitSize() {
     return Bits;
-  };
+  }
 
   /**
    * @brief The number of bytes needed to store a ring element.
    */
   constexpr static std::size_t ByteSize() {
     return (Bits - 1) / 8 + 1;
-  };
+  }
 
   /**
    * @brief The bit size of the ring. Identical to SpecifiedBitSize().
    */
   constexpr static std::size_t BitSize() {
     return SpecifiedBitSize();
-  };
+  }
 
   /**
    * @brief A short string representation of this ring.
    */
   constexpr static const char* Name() {
     return "Z2k";
-  };
+  }
 
   /**
    * @brief Read a ring from a buffer.
@@ -82,7 +82,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
     Z2k e;
     Z2kFromBytes<ValueType, BitSize()>(e.m_value, src);
     return e;
-  };
+  }
 
   /**
    * @brief Create a random element.
@@ -93,7 +93,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
     unsigned char buffer[ByteSize()];
     prg.Next(buffer, ByteSize());
     return Z2k::Read(buffer);
-  };
+  }
 
   /**
    * @brief Create a ring element from a string.
@@ -104,7 +104,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
     Z2k e;
     Z2kFromString<ValueType, BitSize()>(e.m_value, str);
     return e;
-  };
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Get the additive identity of this ring.
@@ -112,7 +112,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   static Z2k Zero() {
     static Z2k zero;
     return zero;
-  };
+  }
 
   /**
    * @brief Get the multiplicative identity of this ring.
@@ -120,18 +120,23 @@ class Z2k final : public Ring<Z2k<Bits>> {
   static Z2k One() {
     static Z2k one(1);
     return one;
-  };
+  }
 
   /**
    * @brief Create a new ring element from a value.
    * @param value the value
    */
-  explicit constexpr Z2k(const ValueType& value) : m_value(value){};
+  explicit constexpr Z2k(const ValueType& value) : m_value(value) {}
 
   /**
    * @brief Create a new ring element equal to 0.
    */
-  explicit constexpr Z2k() : m_value(0){};
+  explicit constexpr Z2k() : m_value(0) {}
+
+  /**
+   * @brief Destructor. Does nothing.
+   */
+  ~Z2k() {}
 
   /**
    * @brief Add another element to this.
@@ -141,7 +146,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k& operator+=(const Z2k& other) {
     Z2kAdd(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Subtract another element from this.
@@ -151,7 +156,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k& operator-=(const Z2k& other) {
     Z2kSubtract(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Multiply another element to this.
@@ -161,7 +166,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k& operator*=(const Z2k& other) {
     Z2kMultiply(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Divide this element by another.
@@ -172,7 +177,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k& operator/=(const Z2k& other) {
     Z2kMultiply(m_value, other.Inverse().m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Negates this element.
@@ -180,7 +185,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k& Negate() {
     Z2kNegate(m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Compute the negation of this element.
@@ -188,7 +193,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k Negated() const {
     Z2k copy(m_value);
     return copy.Negate();
-  };
+  }
 
   /**
    * @brief Inverts this element.
@@ -197,7 +202,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k& Invert() {
     Z2kInvert<ValueType, BitSize()>(m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Compute the inverse of this element.
@@ -205,7 +210,7 @@ class Z2k final : public Ring<Z2k<Bits>> {
   Z2k Inverse() const {
     Z2k copy(m_value);
     return copy.Invert();
-  };
+  }
 
   /**
    * @brief Return the least significant bit of this element.
@@ -216,28 +221,28 @@ class Z2k final : public Ring<Z2k<Bits>> {
    */
   unsigned Lsb() const {
     return Z2kLsb(m_value);
-  };
+  }
 
   /**
    * @brief Check if this element is equal to another element.
    */
   bool Equal(const Z2k& other) const {
     return Z2kEqual<ValueType, Bits>(m_value, other.m_value);
-  };
+  }
 
   /**
    * @brief Return a string representation of this element.
    */
   std::string ToString() const {
     return Z2kToString<ValueType, BitSize()>(m_value);
-  };
+  }
 
   /**
    * @brief Write this element to a buffer.
    */
   void Write(unsigned char* dest) const {
     Z2kToBytes<ValueType, BitSize()>(m_value, dest);
-  };
+  }
 
  private:
   ValueType m_value;

@@ -29,7 +29,7 @@ namespace scl::sim {
 /**
  * @brief A ProtocolEnvironment::Clock implementation for simulated protocols.
  */
-class SimulatedClock final : public proto::ProtocolEnvironment::Clock {
+class SimulatedClock final : public proto::Env::Clock {
  public:
   /**
    * @brief Create a new clock for simulations.
@@ -67,7 +67,7 @@ class SimulatedClock final : public proto::ProtocolEnvironment::Clock {
 /**
  * @brief A ProtocolEnvironment::Thread implementation for simulated protocols.
  */
-class SimulatedThreadCtx final : public proto::ProtocolEnvironment::Thread {
+class SimulatedThreadCtx final : public proto::Env::Thread {
  public:
   /**
    * @brief Create a new thread context for simulations.

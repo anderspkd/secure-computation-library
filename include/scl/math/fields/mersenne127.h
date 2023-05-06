@@ -18,6 +18,7 @@
 #ifndef SCL_MATH_FIELDS_MERSENNE127_H
 #define SCL_MATH_FIELDS_MERSENNE127_H
 
+#include <cstddef>
 #include <cstdint>
 
 namespace scl::math {

@@ -15,20 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#ifndef SCL_SERIALIZATION_SERIALIZERS_H
+#define SCL_SERIALIZATION_SERIALIZERS_H
 
-#include "scl/math/fp.h"
-#include "scl/math/vec.h"
-#include "scl/util/traits.h"
+#include "scl/serialization/math_serializers.h"
 
-using namespace scl;
-
-TEST_CASE("Traits", "[util]") {
-  using FF = math::Fp<61>;
-
-  REQUIRE(util::Serializable<FF>::value == true);
-  REQUIRE(util::Serializable<int>::value == false);
-  // not serializable because Vec's Read/Write methods do not have the right
-  // signature.
-  REQUIRE(util::Serializable<math::Vec<FF>>::value == false);
-}
+#endif  // SCL_SERIALIZATION_SERIALIZERS_H

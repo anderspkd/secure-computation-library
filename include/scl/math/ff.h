@@ -42,21 +42,21 @@ class FF final : Ring<FF<Field>> {
    */
   constexpr static std::size_t ByteSize() {
     return Field::BYTE_SIZE;
-  };
+  }
 
   /**
    * @brief Actual bit size of an element.
    */
   constexpr static std::size_t BitSize() {
     return Field::BIT_SIZE;
-  };
+  }
 
   /**
    * @brief A short string representation of this field.
    */
   constexpr static const char* Name() {
     return Field::NAME;
-  };
+  }
 
   /**
    * @brief Read a field element from a buffer.
@@ -68,7 +68,7 @@ class FF final : Ring<FF<Field>> {
     FF e;
     FieldFromBytes<Field>(e.m_value, src);
     return e;
-  }
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Create a random element, using a supplied PRG.
@@ -79,7 +79,7 @@ class FF final : Ring<FF<Field>> {
     unsigned char buffer[FF<Field>::ByteSize()];
     prg.Next(buffer, FF<Field>::ByteSize());
     return FF<Field>::Read(buffer);
-  };
+  }
 
   /**
    * @brief Create a field element from a string.
@@ -91,7 +91,7 @@ class FF final : Ring<FF<Field>> {
     FF e;
     FieldFromString<Field>(e.m_value, str);
     return e;
-  };
+  }
 
   /**
    * @brief Get the additive identity of this field.
@@ -99,7 +99,7 @@ class FF final : Ring<FF<Field>> {
   static FF Zero() {
     static FF zero;
     return zero;
-  };
+  }
 
   /**
    * @brief Get the multiplicative identity of this field.
@@ -107,7 +107,7 @@ class FF final : Ring<FF<Field>> {
   static FF One() {
     static FF one(1);
     return one;
-  };
+  }
 
   /**
    * @brief Create a new element from an int.
@@ -116,12 +116,17 @@ class FF final : Ring<FF<Field>> {
    */
   explicit constexpr FF(int value) {
     FieldConvertIn<Field>(m_value, value);
-  };
+  }
 
   /**
    * @brief Create a new element equal to 0 in the field.
    */
-  explicit constexpr FF() : FF(0){};
+  explicit constexpr FF() : FF(0) {}
+
+  /**
+   * @brief Destrutor. Does nothing.
+   */
+  ~FF() {}
 
   /**
    * @brief Add another field element to this.
@@ -132,7 +137,7 @@ class FF final : Ring<FF<Field>> {
   FF& operator+=(const FF& other) {
     FieldAdd<Field>(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Subtract another field element to this.
@@ -143,7 +148,7 @@ class FF final : Ring<FF<Field>> {
   FF& operator-=(const FF& other) {
     FieldSubtract<Field>(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Multiply another field element to this.
@@ -154,7 +159,7 @@ class FF final : Ring<FF<Field>> {
   FF& operator*=(const FF& other) {
     FieldMultiply<Field>(m_value, other.m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Multiplies this with the inverse of another elemenet.
@@ -167,7 +172,7 @@ class FF final : Ring<FF<Field>> {
    */
   FF& operator/=(const FF& other) {
     return operator*=(other.Inverse());
-  };
+  }
 
   /**
    * @brief Negates this element.
@@ -177,7 +182,7 @@ class FF final : Ring<FF<Field>> {
   FF& Negate() {
     FieldNegate<Field>(m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Computes the additive inverse of this element.
@@ -190,7 +195,7 @@ class FF final : Ring<FF<Field>> {
     FieldNegate<Field>(copy);
     r.m_value = copy;
     return r;
-  };
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Inverts this element.
@@ -200,7 +205,7 @@ class FF final : Ring<FF<Field>> {
   FF& Invert() {
     FieldInvert<Field>(m_value);
     return *this;
-  };
+  }
 
   /**
    * @brief Computes the inverse of this element.
@@ -210,7 +215,7 @@ class FF final : Ring<FF<Field>> {
   FF Inverse() const {
     FF copy = *this;
     return copy.Invert();
-  };
+  }
 
   /**
    * @brief Checks if this element is equal to another.
@@ -220,7 +225,7 @@ class FF final : Ring<FF<Field>> {
    */
   bool Equal(const FF& other) const {
     return FieldEqual<Field>(m_value, other.m_value);
-  };
+  }
 
   /**
    * @brief Returns a string representation of this element.
@@ -229,7 +234,7 @@ class FF final : Ring<FF<Field>> {
    */
   std::string ToString() const {
     return FieldToString<Field>(m_value);
-  };
+  }
 
   /**
    * @brief Write this element to a byte buffer.
@@ -238,7 +243,7 @@ class FF final : Ring<FF<Field>> {
    */
   void Write(unsigned char* dest) const {
     FieldToBytes<Field>(dest, m_value);
-  };
+  }
 
  private:
   typename Field::ValueType m_value;

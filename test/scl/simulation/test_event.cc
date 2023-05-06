@@ -43,27 +43,51 @@ TEST_CASE("Simulation Event", "[sim]") {
     REQUIRE(ToString(&e) == "STOP at 0 ms");
   }
 
+  const scl::sim::ChannelId cid{2, 5};
+
   SECTION("SEND") {
-    sim::NetworkEvent e(sim::Event::Type::SEND,
-                        util::Time::Duration::zero(),
-                        2,
-                        5,
-                        100);
+    sim::NetworkDataEvent e(sim::Event::Type::SEND,
+                            util::Time::Duration::zero(),
+                            cid,
+                            100);
     REQUIRE(ToString(&e) == "SEND at 0 ms [Sender=2, Receiver=5, Amount=100]");
   }
 
+  SECTION("PACKET_SEND") {
+    sim::NetworkDataEvent e(sim::Event::Type::PACKET_SEND,
+                            util::Time::Duration::zero(),
+                            cid,
+                            100);
+    REQUIRE(ToString(&e) ==
+            "PACKET_SEND at 0 ms [Sender=2, Receiver=5, Amount=100]");
+  }
+
+  SECTION("PACKET_RECV") {
+    sim::PacketRecvEvent e(util::Time::Duration::zero(),
+                           util::Time::Duration::zero(),
+                           cid,
+                           100,
+                           false);
+    REQUIRE(ToString(&e) ==
+            "PACKET_RECV at 0 ms [Receiver=2, Sender=5, Amount=100, "
+            "Blocking=false]");
+  }
+
   SECTION("RECV") {
-    sim::NetworkEvent e(sim::Event::Type::RECV,
-                        util::Time::Duration::zero(),
-                        2,
-                        5,
-                        100);
+    sim::NetworkDataEvent e(sim::Event::Type::RECV,
+                            util::Time::Duration::zero(),
+                            cid,
+                            100);
     REQUIRE(ToString(&e) == "RECV at 0 ms [Receiver=2, Sender=5, Amount=100]");
   }
 
   SECTION("HAS_DATA") {
-    sim::Event e(sim::Event::Type::HAS_DATA, util::Time::Duration::zero());
-    REQUIRE(ToString(&e) == "HAS_DATA at 0 ms");
+    sim::HasDataEvent et(util::Time::Duration::zero(), cid, true);
+    REQUIRE(ToString(&et) ==
+            "HAS_DATA at 0 ms [Local=2, Remote=5, DataAvailable=true]");
+    sim::HasDataEvent ef(util::Time::Duration::zero(), cid, false);
+    REQUIRE(ToString(&ef) ==
+            "HAS_DATA at 0 ms [Local=2, Remote=5, DataAvailable=false]");
   }
 
   SECTION("OUTPUT") {
@@ -96,8 +120,10 @@ TEST_CASE("Simulation Event", "[sim]") {
   }
 
   SECTION("CLOSE") {
-    sim::Event e(sim::Event::Type::CLOSE, util::Time::Duration::zero());
-    REQUIRE(ToString(&e) == "CLOSE at 0 ms");
+    sim::NetworkEvent e(sim::Event::Type::CLOSE,
+                        util::Time::Duration::zero(),
+                        cid);
+    REQUIRE(ToString(&e) == "CLOSE at 0 ms [Local=2, Remote=5]");
   }
 
   SECTION("CHECKPOINT") {
@@ -107,9 +133,9 @@ TEST_CASE("Simulation Event", "[sim]") {
 
   SECTION("With offset") {
     using namespace std::chrono_literals;
-    sim::Event e(sim::Event::Type::CLOSE,
+    sim::Event e(sim::Event::Type::START,
                  util::Time::Duration::zero(),
                  util::Time::Duration(123ms));
-    REQUIRE(ToString(&e) == "CLOSE at 123 ms [Offset=123 ms]");
+    REQUIRE(ToString(&e) == "START at 123 ms [Offset=123 ms]");
   }
 }

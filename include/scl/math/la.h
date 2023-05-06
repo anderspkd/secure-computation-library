@@ -169,14 +169,13 @@ std::size_t FindFirstNonZeroRow(const Mat<T>& A) {
 
 /**
  * @brief Extract a solution from a matrix in RREF.
+ * @param A the matrix
+ * @return the solution.
  *
  * Given a matrix \p A in RREF that represents a system of equations, this
  * function extracts a solution for said system. The system is assumed to be
  * consistent, but may contain free variables. In those cases, the free
  * variables are given the value 1 (in the field).
- *
- * @param A the matrix
- * @return the solution.
  */
 template <typename T>
 Vec<T> ExtractSolution(const Mat<T>& A) {
@@ -207,14 +206,13 @@ Vec<T> ExtractSolution(const Mat<T>& A) {
 
 /**
  * @brief Check if a linear system has a solution.
+ * @param A an augmented matrix in RREF
+ * @param unique_only indicates if only unique solutions should be considered
+ * @return true if \f$Ax = b\f$ has a solution and false otherwise.
  *
  * Determines if a linear system given by an augmented matrix in RREF has a
  * solution, aka. is consistent. if called with \p unique_only set to
  * <code>true</code>, then only systems with a unique solution are considered.
- *
- * @param A an augmented matrix in RREF
- * @param unique_only indicates if only unique solutions should be considered
- * @return true if \f$Ax = b\f$ has a solution and false otherwise.
  */
 template <typename T>
 bool HasSolution(const Mat<T>& A, bool unique_only) {

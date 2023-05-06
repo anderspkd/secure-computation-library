@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 5.3.0 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 6.0.0 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -44,6 +44,7 @@ set(SCL_SOURCE_FILES
   src/scl/math/mersenne127.cc
 
   src/scl/net/config.cc
+  src/scl/net/channel.cc
   src/scl/net/mem_channel.cc
   src/scl/net/threaded_sender.cc
   src/scl/net/network.cc
@@ -98,7 +99,6 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/util/test_prg.cc
     test/scl/util/test_sha3.cc
     test/scl/util/test_sha256.cc
-    test/scl/util/test_traits.cc
     test/scl/util/test_ecdsa.cc
 
     test/scl/gf7.cc
@@ -124,6 +124,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/net/test_network.cc
     test/scl/net/test_shared_deque.cc
     test/scl/net/test_channel.cc
+    test/scl/net/test_packet.cc
 
     test/scl/protocol/test_protocol.cc
 
@@ -134,7 +135,9 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/simulation/test_result.cc
     test/scl/simulation/test_measurement.cc
     test/scl/simulation/test_mem_channel_buffer.cc
-    test/scl/simulation/test_env.cc)
+    test/scl/simulation/test_env.cc
+
+    test/scl/serialization/test_serializer.cc)
 
   if(WITH_EC MATCHES ON)
     set(SCL_TEST_SOURCE_FILES ${SCL_TEST_SOURCE_FILES}

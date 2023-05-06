@@ -19,41 +19,16 @@
 #define SCL_NET_CHANNEL_H
 
 #include <cstring>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
 
-#include "scl/math/mat.h"
-#include "scl/math/vec.h"
 #include "scl/net/config.h"
+#include "scl/net/packet.h"
 #include "scl/util/traits.h"
 
 namespace scl::net {
-
-/**
- * @brief The maximum size of a Vec that a Channel will receive.
- *
- * This is mostly meant as a guard against programming mistakes. The default
- * value should allow receiving up to around 500mb assuming element sizes of 16
- * bytes.
- */
-#ifndef MAX_VEC_READ_SIZE
-#define MAX_VEC_READ_SIZE 1 << 25
-#endif
-
-/**
- * @brief The maxium size of a Mat that a channel will receive.
- *
- * This is mostly meant as a guard against programming mistakes. The default
- * value should allow receiving up to around 500mb assuming element sizes of 16
- * bytes.
- */
-#ifndef MAX_MAT_READ_SIZE
-#define MAX_MAT_READ_SIZE 1 << 25
-#endif
-
-#define SCL_CC(x) reinterpret_cast<const unsigned char(*)>((x))
-#define SCL_C(x) reinterpret_cast<unsigned char(*)>((x))
 
 /**
  * @brief Channel interface.
@@ -97,127 +72,25 @@ class Channel {
   virtual bool HasData() = 0;
 
   /**
-   * @brief Send a trivially copyable item.
-   * @param src the thing to send
+   * @brief Send a Packet on this channel.
+   * @param packet the packet.
+   *
+   * The default implementation of this function makes two calls to Send. One
+   * for sending the size of the packet, and one for sendin the content.
    */
-  template <
-      typename T,
-      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
-  void Send(const T& src) {
-    Send(SCL_CC(&src), sizeof(T));
-  }
+  virtual void Send(const Packet& packet);
 
   /**
-   * @brief Send a vector of trivially copyable things.
-   * @param src an STL vector of things to send
+   * @brief Receive a Packet from this channel.
+   * @param block whether to block until the packet has been received.
+   * @return a packet. May return nothing when \p block is true.
+   *
+   * The default implementation of this function will call Recv and HasData in
+   * case \p block is true. When receiving a packet in blocking mode, Recv is
+   * called immidiately. Otherwise, HasData will be called first to determine if
+   * there's any data available.
    */
-  template <
-      typename T,
-      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
-  void Send(const std::vector<T>& src) {
-    Send(src.size());
-    Send(SCL_CC(src.data()), sizeof(T) * src.size());
-  }
-
-  /**
-   * @brief Send a Vec object.
-   * @param vec the Vec
-   */
-  template <typename T>
-  void Send(const math::Vec<T>& vec) {
-    const std::uint32_t vec_size = vec.Size();
-    Send(vec_size);
-    // have to make a copy here since it's not guaranteed that we can directly
-    // write T to the channel.
-    auto buf = std::make_unique<unsigned char[]>(vec.ByteSize());
-    vec.Write(buf.get());
-    Send(SCL_CC(buf.get()), vec.ByteSize());
-  }
-
-  /**
-   * @brief Send a Mat object.
-   * @param mat the Mat
-   */
-  template <typename T>
-  void Send(const math::Mat<T>& mat) {
-    const std::uint32_t rows = mat.Rows();
-    const std::uint32_t cols = mat.Cols();
-    Send(rows);
-    Send(cols);
-    auto buf = std::make_unique<unsigned char[]>(mat.ByteSize());
-    mat.Write(buf.get());
-    Send(SCL_CC(buf.get()), mat.ByteSize());
-  }
-
-  /**
-   * @brief Receive a trivially copyable item.
-   * @param dst where to store the received item
-   */
-  template <
-      typename T,
-      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
-  void Recv(T& dst) {
-    Recv(SCL_C(&dst), sizeof(T));
-  }
-
-  /**
-   * @brief Receive a vector of trivially copyable items.
-   * @param dst where to store the received items
-   * @note any existing content in \p dst is overwritten.
-   */
-  template <
-      typename T,
-      typename std::enable_if_t<std::is_trivially_copyable_v<T>, bool> = true>
-  void Recv(std::vector<T>& dst) {
-    std::size_t size;
-    Recv(size);
-    dst.resize(size);
-    Recv(SCL_C(dst.data()), sizeof(T) * size);
-  }
-
-  /**
-   * @brief Receive a vector.
-   * @param vec where to store the received vector
-   * @throws std::logic_error in case the received vector size exceeds
-   * MAX_VEC_READ_SIZE
-   */
-  template <typename T>
-  void Recv(math::Vec<T>& vec) {
-    auto vec_size = RecvSize();
-    if (vec_size > MAX_VEC_READ_SIZE) {
-      throw std::logic_error("received vector exceeds size limit");
-    }
-    auto n = vec_size * T::ByteSize();
-    auto buf = std::make_unique<unsigned char[]>(n);
-    Recv(SCL_C(buf.get()), n);
-    vec = math::Vec<T>::Read(vec_size, SCL_CC(buf.get()));
-  }
-
-  /**
-   * @brief Receive a Matrix.
-   * @param mat where to store the received matrix
-   * @throws std::logic_error in case the row count times column count exceeds
-   * MAX_MAT_READ_SIZE
-   */
-  template <typename T>
-  void Recv(math::Mat<T>& mat) {
-    auto rows = RecvSize();
-    auto cols = RecvSize();
-    if (rows * cols > MAX_MAT_READ_SIZE) {
-      throw std::logic_error("received matrix exceeds size limit");
-    }
-    auto n = rows * cols * T::ByteSize();
-    auto buf = std::make_unique<unsigned char[]>(n);
-    Recv(SCL_C(buf.get()), n);
-    mat = math::Mat<T>::Read(rows, cols, SCL_CC(buf.get()));
-  }
-
- private:
-  std::uint32_t RecvSize() {
-    std::uint32_t size;
-    Recv(size);
-    return size;
-  }
+  virtual std::optional<Packet> Recv(bool block = true);
 };
 
 #undef SCL_C

@@ -24,29 +24,42 @@
 
 using namespace scl;
 
-TEST_CASE("Channel size limits", "[net]") {
-  auto chl = net::MemoryBackedChannel::CreatePaired();
-  net::Channel* c0 = chl[0].get();
-  net::Channel* c1 = chl[1].get();
+struct DummyChannel final : public net::Channel {
+  void Close() override {}
 
-  const auto v = math::Vec<math::Fp<61>>::Range(0, MAX_VEC_READ_SIZE + 1);
-  c0->Send(v);
+  void Send(const unsigned char* src, std::size_t n) override {
+    (void)src;
+    (void)n;
+  }
 
-  math::Vec<math::Fp<61>> vr;
-  REQUIRE_THROWS_MATCHES(
-      c1->Recv(vr),
-      std::logic_error,
-      Catch::Matchers::Message("received vector exceeds size limit"));
+  std::size_t Recv(unsigned char* dst, std::size_t n) override {
+    (void)dst;
+    recv++;
+    return n;
+  }
 
-  const auto m = math::Mat<math::Fp<61>>::FromVector(MAX_MAT_READ_SIZE + 1,
-                                                     1,
-                                                     v.ToStlVector());
+  bool HasData() override {
+    has_data++;
+    return there_is_data;
+  }
 
-  c1->Send(m);
+  std::size_t recv = 0;
+  std::size_t has_data = 0;
+  bool there_is_data = false;
+};
 
-  math::Mat<math::Fp<61>> mr;
-  REQUIRE_THROWS_MATCHES(
-      c0->Recv(mr),
-      std::logic_error,
-      Catch::Matchers::Message("received matrix exceeds size limit"));
+TEST_CASE("Channel non-block recv", "[net]") {
+  std::unique_ptr<net::Channel> chl = std::make_unique<DummyChannel>();
+  DummyChannel* dc = static_cast<DummyChannel*>(chl.get());
+
+  auto p1 = chl->Recv(false);
+  REQUIRE(!p1.has_value());
+  REQUIRE(dc->has_data == 1);
+  REQUIRE(dc->recv == 0);
+
+  dc->there_is_data = true;
+  auto p2 = chl->Recv(false);
+  REQUIRE(p2.has_value());
+  REQUIRE(dc->has_data == 2);
+  REQUIRE(dc->recv == 2);
 }

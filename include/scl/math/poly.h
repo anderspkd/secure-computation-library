@@ -40,13 +40,13 @@ class Polynomial {
   /**
    * @brief Construct a constant polynomial with constant term 0.
    */
-  Polynomial() : m_coefficients(1){};
+  Polynomial() : m_coefficients(1) {}
 
   /**
    * @brief Construct a constant polynomial.
    * @param constant the constant term of the polynomial
    */
-  Polynomial(const T& constant) : m_coefficients({constant}){};
+  Polynomial(const T& constant) : m_coefficients({constant}) {}
 
   /**
    * @brief Evaluate this polynomial on a supplied point.
@@ -61,21 +61,21 @@ class Polynomial {
       y = *it++ + y * x;
     }
     return y;
-  };
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Access coefficients, with the constant term at position 0.
    */
   T& operator[](std::size_t idx) {
     return m_coefficients[idx];
-  };
+  }
 
   /**
    * @brief Access coefficients, with the constant term at position 0.
    */
   T operator[](std::size_t idx) const {
     return m_coefficients[idx];
-  };
+  }
 
   /**
    * @brief Add two polynomials.
@@ -103,28 +103,28 @@ class Polynomial {
    */
   bool IsZero() const {
     return Degree() == 0 && ConstantTerm() == T(0);
-  };
+  }
 
   /**
    * @brief Get the constant term of this polynomial.
    */
   T ConstantTerm() const {
     return operator[](0);
-  };
+  }
 
   /**
    * @brief Get the leading term of this polynomial.
    */
   T LeadingTerm() const {
     return operator[](Degree());
-  };
+  }
 
   /**
    * @brief Degree of this polynomial.
    */
   std::size_t Degree() const {
     return m_coefficients.Size() - 1;
-  };
+  }
 
   /**
    * @brief Check if two polynomials are equal.
@@ -152,7 +152,7 @@ class Polynomial {
    */
   std::string ToString() const {
     return ToString("f", "x");
-  };
+  }
 
   /**
    * @brief Write a string representation of this polynomial to a stream.
