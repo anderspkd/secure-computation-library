@@ -17,7 +17,8 @@
 
 #include <catch2/catch.hpp>
 
-#include "scl/serialization/serializer.h"
+#include "scl/math/fp.h"
+#include "scl/serialization/serializers.h"
 
 using namespace scl;
 
@@ -81,4 +82,38 @@ TEST_CASE("Serialization vector", "[misc]") {
   Sv::Read(w, buf);
 
   REQUIRE(w == v);
+}
+
+TEST_CASE("Serialization vector vector", "[misc]") {
+  using Sv = seri::Serializer<std::vector<std::vector<int>>>;
+  std::vector<std::vector<int>> v = {{1, 2, 3}, {2, 3}, {5, 6, 7}};
+
+  const auto expected_size = 8 * sizeof(int) + 4 * sizeof(std::size_t);
+  REQUIRE(Sv::SizeOf(v) == expected_size);
+  unsigned char buf[expected_size];
+
+  Sv::Write(v, buf);
+
+  std::vector<std::vector<int>> w;
+  Sv::Read(w, buf);
+
+  REQUIRE(v == w);
+}
+
+TEST_CASE("Serialization Vec", "[misc]") {
+  using Fp = math::Fp<61>;
+  using Sv = seri::Serializer<std::vector<Fp>>;
+
+  std::vector<Fp> v = {Fp(1), Fp(2), Fp(3)};
+  const auto expected_size = sizeof(std::size_t) + Fp::ByteSize() * 3;
+  REQUIRE(Sv::SizeOf(v) == expected_size);
+
+  unsigned char buf[expected_size];
+
+  Sv::Write(v, buf);
+
+  std::vector<Fp> w;
+  Sv::Read(w, buf);
+
+  REQUIRE(v == w);
 }
