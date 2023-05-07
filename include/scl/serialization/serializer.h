@@ -30,9 +30,30 @@ namespace scl::seri {
 /**
  * @brief Serializer.
  *
- * The job of Serializer is to provide functionality that reads, writes and
- * determines the size of various objects, primarily for the purpose of writing
- * data to a net::Channel.
+ * <p>A Serializer is meant to provide functionality for writing to, and reading
+ * from, a binary format, and is used for example when sending data across a
+ * network. To make the type \p T serializable, a specialization of Serializer
+ * must be provided which defines the following three methods:
+ *
+ * <ul>
+ *
+ * <li><code>static std::size_t SizeOf(const T& obj)</code>. This function
+ * should return the <i>binary</i> size of <code>obj</code>. More precisely, it
+ * should return the size of the memory needed to store an object of type \p
+ * T.</li>
+ *
+ * <li><code>static std::size_t Write(const T& obj, unsigned char* buf)</code>
+ * this function should write <code>obj</code> in whatever binary format is
+ * appropriate to the buffer <code>buf</code>. The function can assume that
+ * <code>buf</code> points to at least <code>SizeOf(obj)</code> bytes of memory.
+ * The return value of this function should be the number of bytes written to
+ * <code>buf</code>.</li>
+ *
+ * <li><code>static std::size_t Read(T& obj, const unsigned char* buf)</code>
+ * this function should read an object of type \p T from <code>buf</code> and
+ * assign it to <code>obj</code>. The return value should be the number of bytes
+ * read from <code>buf</code>.</li>
+ * </ul>
  */
 template <typename T, typename = void>
 struct Serializer;
@@ -65,8 +86,9 @@ struct Serializer<T, std::enable_if_t<std::is_trivially_copyable<T>::value>> {
    * @param obj the object to write.
    * @param buf the buffer to write the object to.
    */
-  static void Write(const T& obj, unsigned char* buf) {
+  static constexpr std::size_t Write(const T& obj, unsigned char* buf) {
     std::memcpy(buf, &obj, sizeof(T));
+    return sizeof(T);
   }
 
   /**
@@ -75,7 +97,7 @@ struct Serializer<T, std::enable_if_t<std::is_trivially_copyable<T>::value>> {
    * @param buf the buffer to read from.
    * @return the number of bytes read. Equal to <code>SizeOf(T)</code>.
    */
-  static std::size_t Read(T& obj, const unsigned char* buf) {
+  static constexpr std::size_t Read(T& obj, const unsigned char* buf) {
     std::memcpy(&obj, buf, sizeof(T));
     return SizeOf(obj);
   }
@@ -84,49 +106,40 @@ struct Serializer<T, std::enable_if_t<std::is_trivially_copyable<T>::value>> {
 /**
  * @brief Serializer specialization for one dimensional <code>std::vector</code>
  * types.
- *
- * <p>This Serializer will write or read something of type
- * <code>std::vector<T></code> where <code>T</code> is not itself an
- * <code>std::vector</code>. The reason for the latter restriction is to get a
- * reasonable guarantee (that might not hold for all types), that all objects in
- * the vector have the same size.
- *
- * <p>A vector is written as <code>size | content ...</code>.
  */
 template <typename T>
-struct Serializer<std::vector<T>,
-                  std::enable_if_t<!util::IsStdVector<T>::value>> {
-  /**
-   * @brief Helper. Size of a <code>std::vector</code> size type.
-   */
-  constexpr static auto SIZE_SIZE = sizeof(typename std::vector<T>::size_type);
+struct Serializer<std::vector<T>> {
+ private:
+  using VectorSizeType = typename std::vector<T>::size_type;
+  constexpr static auto SIZE_SIZE = sizeof(VectorSizeType);
 
+ public:
   /**
    * @brief Determine the byte size of a vector.
    * @param vec the vector.
    * @return the size of \p vec when written using this Serializer.
-   *
-   * All elements in the vector are assumed to have the same size, so this
-   * function essentially returns <code>4 + sizeof(vec[0]) * vec.size()</code>.
    */
   static std::size_t SizeOf(const std::vector<T>& vec) {
-    auto tsz = Serializer<T>::SizeOf(vec[0]);
-    return SIZE_SIZE + tsz * vec.size();
+    auto size = SIZE_SIZE;
+    for (const auto& v : vec) {
+      size += Serializer<T>::SizeOf(v);
+    }
+    return size;
   }
 
   /**
    * @brief Write a vector to a buffer.
    * @param vec the vector.
    * @param buf the buffer where \p vec is written to.
+   * @return the number of bytes written to buf.
    */
-  static void Write(const std::vector<T>& vec, unsigned char* buf) {
-    auto tsz = Serializer<T>::SizeOf(vec[0]);
-    Serializer<typename std::vector<T>::size_type>::Write(vec.size(), buf);
+  static std::size_t Write(const std::vector<T>& vec, unsigned char* buf) {
+    Serializer<VectorSizeType>::Write(vec.size(), buf);
     auto offset = SIZE_SIZE;
     for (const auto& v : vec) {
-      Serializer<T>::Write(v, buf + offset);
-      offset += tsz;
+      offset += Serializer<T>::Write(v, buf + offset);
     }
+    return offset;
   }
 
   /**
@@ -140,13 +153,12 @@ struct Serializer<std::vector<T>,
    */
   static std::size_t Read(std::vector<T>& vec, const unsigned char* buf) {
     typename std::vector<T>::size_type size;
-    Serializer<typename std::vector<T>::size_type>::Read(size, buf);
+    Serializer<VectorSizeType>::Read(size, buf);
     vec.reserve(size);
     auto offset = SIZE_SIZE;
     for (std::size_t i = 0; i < size; ++i) {
       T v;
-      Serializer<T>::Read(v, buf + offset);
-      offset += Serializer<T>::SizeOf(v);
+      offset += Serializer<T>::Read(v, buf + offset);
       vec.emplace_back(v);
     }
     return offset;

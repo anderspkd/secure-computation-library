@@ -29,6 +29,7 @@
 
 #include "scl/math/ff.h"
 #include "scl/math/lagrange.h"
+#include "scl/math/ops.h"
 #include "scl/math/vec.h"
 #include "scl/util/prg.h"
 #include "scl/util/traits.h"
@@ -42,7 +43,7 @@ class Vec;
  * @brief Matrix.
  */
 template <typename Elem>
-class Mat {
+class Mat : Print<Mat<Elem>> {
  public:
   /**
    * @brief The type of the matrix elements.
@@ -384,13 +385,6 @@ class Mat {
    * @brief Return a string representation of this matrix.
    */
   std::string ToString() const;
-
-  /**
-   * @brief Write a string representation of this vector to a stream.
-   */
-  friend std::ostream& operator<<(std::ostream& os, const Mat<Elem>& v) {
-    return os << v.ToString();
-  }
 
   /**
    * @brief Test if this matrix is equal to another.

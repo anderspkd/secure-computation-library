@@ -20,7 +20,7 @@
 
 #include <stdexcept>
 
-#include "scl/math/ring.h"
+#include "scl/math/ops.h"
 #include "scl/math/z2k_ops.h"
 #include "scl/util/prg.h"
 
@@ -36,7 +36,10 @@ namespace scl::math {
  * byte (so Z2k<6> and Z2k<8> take up the same amount of space).
  */
 template <std::size_t Bits>
-class Z2k final : public Ring<Z2k<Bits>> {
+class Z2k final : Add<Z2k<Bits>>,
+                  Mul<Z2k<Bits>>,
+                  Eq<Z2k<Bits>>,
+                  Print<Z2k<Bits>> {
  public:
   /**
    * @brief The raw type of a Z2k element.

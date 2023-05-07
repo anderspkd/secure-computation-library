@@ -20,4 +20,9 @@
 
 #include "scl/serialization/math_serializers.h"
 
+/**
+ * @brief Serialization functionality.
+ */
+namespace scl::seri {}  // namespace scl::seri
+
 #endif  // SCL_SERIALIZATION_SERIALIZERS_H

@@ -15,27 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_RING_H
-#define SCL_MATH_RING_H
+#ifndef SCL_MATH_OPS_H
+#define SCL_MATH_OPS_H
 
 #include <ostream>
-#include <type_traits>
 
 namespace scl::math {
 
 /**
- * @brief Derives some basic operations on Ring elements via. CRTP.
- * @deprecated
+ * @brief Provides binary <code>+</code> and <code>-</code>, and unary
+ * <code>-</code> operators.
+ *
+ * Requires that the type \p T implements the <code>+=</code> and
+ * <code>-=</code> operators, and a <code>Negate</code> function.
  */
 template <typename T>
-struct Ring {
+struct Add {
   /**
    * @brief Add two elements and return their sum.
    */
   friend T operator+(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp += rhs;
-  };
+  }
 
   /**
    * @brief Subtract two elements and return their difference.
@@ -43,7 +45,7 @@ struct Ring {
   friend T operator-(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp -= rhs;
-  };
+  }
 
   /**
    * @brief Return the negation of an element.
@@ -51,15 +53,24 @@ struct Ring {
   friend T operator-(const T& elem) {
     T temp(elem);
     return temp.Negate();
-  };
+  }
+};
 
+/**
+ * @brief Provides <code>*</code> and <code>/</code> operators.
+ *
+ * Requires that \p T implements the <code>*=</code> and <code>/=</code>
+ * operators.
+ */
+template <typename T>
+struct Mul {
   /**
    * @brief Multiply two elements and return their product.
    */
   friend T operator*(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp *= rhs;
-  };
+  }
 
   /**
    * @brief Divide two elements and return their quotient.
@@ -67,44 +78,46 @@ struct Ring {
   friend T operator/(const T& lhs, const T& rhs) {
     T temp(lhs);
     return temp /= rhs;
-  };
+  }
+};
 
+/**
+ * @brief Provides <code>==</code> and <code>!=</code> operators.
+ *
+ * Requires that \p implements an <code>Equal(T)</code> function.
+ */
+template <typename T>
+struct Eq {
   /**
    * @brief Compare two elements for equality.
    */
   friend bool operator==(const T& lhs, const T& rhs) {
     return lhs.Equal(rhs);
-  };
+  }
 
   /**
    * @brief Compare two elements for inequality.
    */
   friend bool operator!=(const T& lhs, const T& rhs) {
     return !(lhs == rhs);
-  };
+  }
+};
 
+/**
+ * @brief Provides <code><<</code> syntax for printing to a string.
+ *
+ * Requires that \p implements a <code>ToString()</code> function.
+ */
+template <typename T>
+struct Print {
   /**
    * @brief Write a string representation of an element to a stream.
    */
   friend std::ostream& operator<<(std::ostream& os, const T& r) {
     return os << r.ToString();
-  };
-};
-
-/**
- * @brief Use to ensure a template parameter is a ring.
- *
- * enable_if_ring will check if its first parameter is a ring (i.e., it inherits
- * from RingElement) and if so, set <code>type</code> to be V. Otherwise it
- * fails to compile.
- */
-template <typename T, typename V>
-struct EnableIfRing {
-  //! type when T is a ring.
-  using Type =
-      typename std::enable_if<std::is_base_of<Ring<T>, T>::value, V>::type;
+  }
 };
 
 }  // namespace scl::math
 
-#endif  // SCL_MATH_RING_H
+#endif  // SCL_MATH_OPS_H

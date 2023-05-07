@@ -23,7 +23,7 @@
 #include <type_traits>
 
 #include "scl/math/ff_ops.h"
-#include "scl/math/ring.h"
+#include "scl/math/ops.h"
 #include "scl/util/prg.h"
 
 namespace scl::math {
@@ -35,7 +35,10 @@ namespace scl::math {
  * @see Mersenne127
  */
 template <typename Field>
-class FF final : Ring<FF<Field>> {
+class FF final : Add<FF<Field>>,
+                 Mul<FF<Field>>,
+                 Eq<FF<Field>>,
+                 Print<FF<Field>> {
  public:
   /**
    * @brief Size in bytes of a field element.

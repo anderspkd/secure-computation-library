@@ -49,8 +49,9 @@ struct Serializer<math::FF<T>> {
    *
    * Calls math::FF::Write.
    */
-  static void Write(const math::FF<T>& elem, unsigned char* buf) {
+  static std::size_t Write(const math::FF<T>& elem, unsigned char* buf) {
     elem.Write(buf);
+    return SizeOf(elem);
   }
 
   /**
@@ -72,12 +73,11 @@ struct Serializer<math::FF<T>> {
  */
 template <typename T>
 struct Serializer<math::Vec<T>> {
-  /**
-   * @brief Helper. Size of a math::Vec size type.
-   */
-  static constexpr auto SIZE_TYPE_SIZE =
-      sizeof(typename math::Vec<T>::SizeType);
+ private:
+  using SizeType = typename math::Vec<T>::SizeType;
+  static constexpr auto SIZE_TYPE_SIZE = sizeof(SizeType);
 
+ public:
   /**
    * @brief Size of a vector.
    * @param vec the vector.
@@ -91,10 +91,11 @@ struct Serializer<math::Vec<T>> {
    * @param vec the vector.
    * @param buf the buffer.
    */
-  static void Write(const math::Vec<T>& vec, unsigned char* buf) {
+  static std::size_t Write(const math::Vec<T>& vec, unsigned char* buf) {
     const auto sz = vec.Size();
     std::memcpy(buf, &sz, SIZE_TYPE_SIZE);
     vec.Write(buf + SIZE_TYPE_SIZE);
+    return SizeOf(vec);
   }
 
   /**
@@ -104,7 +105,7 @@ struct Serializer<math::Vec<T>> {
    * @return the number of bytes read.
    */
   static std::size_t Read(math::Vec<T>& vec, const unsigned char* buf) {
-    typename math::Vec<T>::SizeType sz;
+    SizeType sz;
     std::memcpy(&sz, buf, SIZE_TYPE_SIZE);
     vec = math::Vec<T>::Read(sz, buf + SIZE_TYPE_SIZE);
     return SizeOf(vec);
@@ -116,12 +117,11 @@ struct Serializer<math::Vec<T>> {
  */
 template <typename T>
 struct Serializer<math::Mat<T>> {
-  /**
-   * @brief Helper. Size of the type used to denote matrix dimensions.
-   */
-  static constexpr auto SIZE_TYPE_SIZE =
-      sizeof(typename math::Mat<T>::SizeType);
+ private:
+  using SizeType = typename math::Mat<T>::SizeType;
+  static constexpr auto SIZE_TYPE_SIZE = sizeof(SizeType);
 
+ public:
   /**
    * @brief Size of a matrix.
    * @param mat the matrix.
@@ -138,12 +138,13 @@ struct Serializer<math::Mat<T>> {
    * @param mat the matrix.
    * @param buf the buffer.
    */
-  static void Write(const math::Mat<T>& mat, unsigned char* buf) {
+  static std::size_t Write(const math::Mat<T>& mat, unsigned char* buf) {
     const auto c = mat.Cols();
     std::memcpy(buf, &c, SIZE_TYPE_SIZE);
     const auto r = mat.Rows();
     std::memcpy(buf + SIZE_TYPE_SIZE, &r, SIZE_TYPE_SIZE);
     mat.Write(buf + 2 * SIZE_TYPE_SIZE);
+    return SizeOf(mat);
   }
 
   /**
@@ -153,8 +154,8 @@ struct Serializer<math::Mat<T>> {
    * @return the number of bytes read.
    */
   static std::size_t Read(math::Mat<T>& mat, const unsigned char* buf) {
-    typename math::Mat<T>::SizeType r;
-    typename math::Mat<T>::SizeType c;
+    SizeType r;
+    SizeType c;
     std::memcpy(&c, buf, SIZE_TYPE_SIZE);
     std::memcpy(&r, buf + SIZE_TYPE_SIZE, SIZE_TYPE_SIZE);
     mat = math::Mat<T>::Read(r, c, buf + 2 * SIZE_TYPE_SIZE);

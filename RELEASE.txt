@@ -1,3 +1,7 @@
+6.1.0: Extend serialization functionality
+- Make Write methods return the number of bytes written.
+- Make it possible to serialize vectors with arbitrary content.
+
 6.0.0: Improvements to serialization and Channels.
 - Added a Serializer type that can be specialized in order to specify how
   various objects are converted to bytes.

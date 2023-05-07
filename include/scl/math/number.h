@@ -23,6 +23,7 @@
 
 #include <gmp.h>
 
+#include "scl/math/ops.h"
 #include "scl/util/prg.h"
 
 namespace scl::math {
@@ -30,7 +31,7 @@ namespace scl::math {
 /**
  * @brief Arbitrary precision integer.
  */
-class Number {
+class Number final : Print<Number> {
  public:
   /**
    * @brief Generate a random Number.
@@ -354,13 +355,6 @@ class Number {
    * @return a string.
    */
   std::string ToString() const;
-
-  /**
-   * @brief << overload for STL ostream objects.
-   */
-  friend std::ostream& operator<<(std::ostream& os, const Number& number) {
-    return os << number.ToString();
-  };
 
   /**
    * @brief STL swap implementation for Number.

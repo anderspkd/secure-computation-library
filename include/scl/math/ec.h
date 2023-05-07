@@ -23,6 +23,7 @@
 #include "scl/math/ec_ops.h"
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
+#include "scl/math/ops.h"
 
 namespace scl::math {
 
@@ -36,7 +37,7 @@ namespace scl::math {
  * @see Secp256k1
  */
 template <typename Curve>
-class EC {
+class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
  public:
   /**
    * @brief The field that this curve is defined over.
@@ -122,17 +123,6 @@ class EC {
   }
 
   /**
-   * @brief Add two points.
-   * @param lhs the left hand point
-   * @param rhs the right hand point
-   * @return the sum of two EC points.
-   */
-  friend EC operator+(const EC& lhs, const EC& rhs) {
-    EC copy(lhs);
-    return copy += rhs;
-  }
-
-  /**
    * @brief Double this point.
    * @return this after doubling.
    */
@@ -158,17 +148,6 @@ class EC {
   EC& operator-=(const EC& other) {
     CurveSubtract<Curve>(m_value, other.m_value);
     return *this;
-  }
-
-  /**
-   * @brief Subtract two EC points.
-   * @param lhs the left hand point
-   * @param rhs the right hand point
-   * @return the difference of two EC points.
-   */
-  friend EC operator-(const EC& lhs, const EC& rhs) {
-    EC copy(lhs);
-    return copy -= rhs;
   }
 
   /**
@@ -244,35 +223,12 @@ class EC {
   }
 
   /**
-   * @brief Compute the negation of this EC point.
-   * @return the negation of this EC point.
-   */
-  EC operator-() {
-    EC copy(*this);
-    return copy.Negate();
-  }
-
-  /**
    * @brief Check if this EC point is equal to another EC point.
    * @param other the other EC point
    * @return true if the two points are equal and false otherwise.
    */
   bool Equal(const EC& other) const {
     return CurveEqual<Curve>(m_value, other.m_value);
-  }
-
-  /**
-   * @brief Equality operator for EC points.
-   */
-  friend bool operator==(const EC& lhs, const EC& rhs) {
-    return lhs.Equal(rhs);
-  }
-
-  /**
-   * @brief In-equality operator for EC points.
-   */
-  friend bool operator!=(const EC& lhs, const EC& rhs) {
-    return !(lhs == rhs);
   }
 
   /**
@@ -296,14 +252,6 @@ class EC {
    */
   std::string ToString() const {
     return CurveToString<Curve>(m_value);
-  }
-
-  /**
-   * @brief Write the curve point to a STL output stream.
-   * @see EC::ToString.
-   */
-  friend std::ostream& operator<<(std::ostream& os, const EC& point) {
-    return os << point.ToString();
   }
 
   /**
