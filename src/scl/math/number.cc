@@ -17,10 +17,13 @@
 
 #include "scl/math/number.h"
 
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
+
+#include <gmp.h>
 
 scl::math::Number::Number() {
   mpz_init(m_value);
@@ -54,10 +57,33 @@ scl::math::Number scl::math::Number::Random(std::size_t bits, util::PRG& prg) {
   return r;
 }
 
+scl::math::Number scl::math::Number::RandomPrime(std::size_t bits,
+                                                 util::PRG& prg) {
+  auto r = Random(bits, prg);
+  Number prime;
+  mpz_nextprime(prime.m_value, r.m_value);
+  return prime;
+}
+
 scl::math::Number scl::math::Number::FromString(const std::string& str) {
   scl::math::Number num;
   mpz_set_str(num.m_value, str.c_str(), 16);
   return num;
+}  // LCOV_EXCL_LINE
+
+scl::math::Number scl::math::Number::Read(const unsigned char* buf) {
+  std::uint32_t size_and_sign;
+  std::memcpy(&size_and_sign, buf, sizeof(std::uint32_t));
+
+  bool negative = (size_and_sign >> 31) == 1;
+  auto size = size_and_sign & ((1 << 30) - 1);
+
+  Number r;
+  mpz_import(r.m_value, size, 1, 1, 0, 0, buf + sizeof(std::uint32_t));
+  if (negative) {
+    mpz_neg(r.m_value, r.m_value);
+  }
+  return r;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number::Number(int value) : Number() {
@@ -95,6 +121,12 @@ scl::math::Number scl::math::Number::operator/(const Number& number) const {
   scl::math::Number frac;
   mpz_div(frac.m_value, m_value, number.m_value);
   return frac;
+}  // LCOV_EXCL_LINE
+
+scl::math::Number scl::math::Number::operator%(const Number& mod) const {
+  scl::math::Number res;
+  mpz_mod(res.m_value, m_value, mod.m_value);
+  return res;
 }  // LCOV_EXCL_LINE
 
 scl::math::Number scl::math::Number::operator<<(int shift) const {
@@ -145,6 +177,10 @@ int scl::math::Number::Compare(const Number& number) const {
   return mpz_cmp(m_value, number.m_value);
 }
 
+std::size_t scl::math::Number::ByteSize() const {
+  return (BitSize() - 1) / 8 + 1;
+}
+
 std::size_t scl::math::Number::BitSize() const {
   return mpz_sizeinbase(m_value, 2);
 }
@@ -161,3 +197,48 @@ std::string scl::math::Number::ToString() const {
   free(cstr);
   return ss.str();
 }
+
+void scl::math::Number::Write(unsigned char* buf) const {
+  std::uint32_t size_and_sign = ByteSize();
+
+  if (mpz_sgn(m_value) < 0) {
+    size_and_sign |= (1 << 31);
+  }
+
+  std::memcpy(buf, &size_and_sign, sizeof(std::uint32_t));
+  mpz_export(buf + sizeof(std::uint32_t), NULL, 1, 1, 0, 0, m_value);
+}
+
+scl::math::Number scl::math::LCM(const Number& a, const Number& b) {
+  Number lcm;
+  mpz_lcm(lcm.m_value, a.m_value, b.m_value);
+  return lcm;
+}  // LCOV_EXCL_LINE
+
+scl::math::Number scl::math::GCD(const Number& a, const Number& b) {
+  Number gcd;
+  mpz_gcd(gcd.m_value, a.m_value, b.m_value);
+  return gcd;
+}  // LCOV_EXCL_LINE
+
+scl::math::Number scl::math::ModInverse(const Number& val, const Number& mod) {
+  if (mpz_sgn(mod.m_value) == 0) {
+    throw std::invalid_argument("modulus cannot be 0");
+  }
+
+  Number inv;
+  auto e = mpz_invert(inv.m_value, val.m_value, mod.m_value);
+  if (e == 0) {
+    throw std::logic_error("number not invertible");
+  }
+
+  return inv;
+}  // LCOV_EXCL_LINE
+
+scl::math::Number scl::math::ModExp(const Number& base,
+                                    const Number& exp,
+                                    const Number& mod) {
+  Number r;
+  mpz_powm(r.m_value, base.m_value, exp.m_value, mod.m_value);
+  return r;
+}  // LCOV_EXCL_LINE

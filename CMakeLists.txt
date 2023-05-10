@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 6.1.0 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 6.2.0 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -39,6 +39,7 @@ set(SCL_SOURCE_FILES
   src/scl/util/prg.cc
   src/scl/util/sha3.cc
   src/scl/util/sha256.cc
+  src/scl/util/cmdline.cc
 
   src/scl/math/mersenne61.cc
   src/scl/math/mersenne127.cc
@@ -100,6 +101,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/util/test_sha3.cc
     test/scl/util/test_sha256.cc
     test/scl/util/test_ecdsa.cc
+    test/scl/util/test_cmdline.cc
 
     test/scl/gf7.cc
     test/scl/math/test_mersenne61.cc
@@ -152,10 +154,8 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
   include(Catch)
   include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
 
-  # Lower the max size of Vec/Mat reads to speed up tests
-  add_compile_definitions(MAX_VEC_READ_SIZE=1024)
-  add_compile_definitions(MAX_MAT_READ_SIZE=1024)
   add_compile_definitions(SCL_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test/data/")
+  add_compile_definitions(SCL_UTIL_NO_EXIT_ON_ERROR)
 
   add_executable(scl_test ${SCL_SOURCE_FILES} ${SCL_TEST_SOURCE_FILES})
   target_link_libraries(scl_test Catch2::Catch2 pthread)

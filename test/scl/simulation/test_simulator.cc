@@ -248,8 +248,7 @@ TEST_CASE("Simulation odd/even iterations", "[sim]") {
   sim::DataMeasurement m_even;
   sim::DataMeasurement m_odd;
 
-  // Cannot use SECTION here as because it m_even somehow gets overwritten with
-  // garbage...
+  // Cannot use SECTION here as m_even somehow gets overwritten with garbage...
 
   {
     const auto creator = []() {
@@ -327,8 +326,7 @@ TEST_CASE("Simulation receive out-of-order", "[sim]") {
 /**
  * @brief Two party protocol that uses HasData.
  *
- * This protocol captures both failure cases for simulating a HasData call.
- Both
+ * This protocol captures both failure cases for simulating a HasData call. Both
  * failure cases arise
  */
 struct HasDataProtocol {

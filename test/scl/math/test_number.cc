@@ -17,6 +17,7 @@
 
 #include <catch2/catch.hpp>
 #include <sstream>
+#include <stdexcept>
 
 #include "scl/math/number.h"
 #include "scl/util/prg.h"
@@ -48,6 +49,9 @@ TEST_CASE("Number create", "[math]") {
   Number r1 = Number::Random(65, prg);
   REQUIRE(r1.ToString() == "Number{10584d2a1c30fa50d}");
   REQUIRE(r1.BitSize() == 65);
+
+  Number p = Number::RandomPrime(10, prg);
+  REQUIRE(p.ToString() == "Number{133}");  // 307
 
   std::stringstream ss;
   ss << r1;
@@ -201,6 +205,14 @@ TEST_CASE("Number division", "[math]") {
                          Catch::Matchers::Message("division by 0"));
 }
 
+TEST_CASE("Number modulus", "[math]") {
+  Number a(42);
+  Number b(10);
+
+  REQUIRE(a % b == Number(2));
+  REQUIRE(b % a == Number(10));
+}
+
 TEST_CASE("Number bit-shift", "[math]") {
   Number a(44334);
   REQUIRE(a << 5 == Number(1418688));
@@ -297,4 +309,60 @@ TEST_CASE("Number test bit", "[math]") {
   REQUIRE_FALSE(a.TestBit(3));
   REQUIRE(a.TestBit(4));
   REQUIRE(a.TestBit(5));
+}
+
+TEST_CASE("Number mod inverse invalid", "[math]") {
+  Number a(10);
+  REQUIRE_THROWS_MATCHES(math::ModInverse(a, Number(0)),
+                         std::invalid_argument,
+                         Catch::Matchers::Message("modulus cannot be 0"));
+
+  REQUIRE_THROWS_MATCHES(math::ModInverse(a, Number(2)),
+                         std::logic_error,
+                         Catch::Matchers::Message("number not invertible"));
+}
+
+TEST_CASE("Number read/write", "[math]") {
+  Number a(1234);
+
+  REQUIRE(a.BitSize() == 11);
+  REQUIRE(a.ByteSize() == 2);
+
+  auto buf =
+      std::make_unique<unsigned char[]>(a.ByteSize() + sizeof(std::uint32_t));
+
+  a.Write(buf.get());
+  REQUIRE(a == Number::Read(buf.get()));
+
+  auto prg = util::PRG::Create("rw");
+  REPEAT {
+    const auto x = Number::Random(100, prg);
+    auto bufx =
+        std::make_unique<unsigned char[]>(x.ByteSize() + sizeof(std::uint32_t));
+    x.Write(bufx.get());
+    REQUIRE(x == Number::Read(bufx.get()));
+  }
+}
+
+TEST_CASE("Number RSA example", "[math]") {
+  auto prg = util::PRG::Create("rsa");
+  const auto p = Number::RandomPrime(512, prg);
+  const auto q = Number::RandomPrime(512, prg);
+  REQUIRE(p != q);
+  const auto n = p * q;
+  const auto lm = math::LCM(p - Number(1), q - Number(1));
+
+  const auto e = Number(0x10001);
+  REQUIRE(math::GCD(e, lm) == Number(1));
+
+  const auto d = math::ModInverse(e, lm);
+  REQUIRE((d * e) % lm == Number(1));
+
+  Number msg(1234);
+
+  const auto ctxt = math::ModExp(msg, e, n);
+  REQUIRE(ctxt != msg);
+
+  const auto ptxt = math::ModExp(ctxt, d, n);
+  REQUIRE(ptxt == msg);
 }
