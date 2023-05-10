@@ -1,3 +1,9 @@
+6.2.0: More functionality for Number
+- Add modulo operator to Number.
+- Add some mathematical functions that operate on numbers.
+- Make Number serializable; add Serializer specialization.
+- Add a simple command-line argument parser.
+
 6.1.0: Extend serialization functionality
 - Make Write methods return the number of bytes written.
 - Make it possible to serialize vectors with arbitrary content.

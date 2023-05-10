@@ -18,6 +18,8 @@
 #include <catch2/catch.hpp>
 
 #include "scl/math/fp.h"
+#include "scl/math/number.h"
+#include "scl/serialization/serializer.h"
 #include "scl/serialization/serializers.h"
 
 using namespace scl;
@@ -116,4 +118,33 @@ TEST_CASE("Serialization Vec", "[misc]") {
   Sv::Read(w, buf);
 
   REQUIRE(v == w);
+}
+
+TEST_CASE("Serialization number", "[misc]") {
+  using Sn = seri::Serializer<math::Number>;
+
+  math::Number a(1234);
+  auto buf = std::make_unique<unsigned char[]>(Sn::SizeOf(a));
+
+  Sn::Write(a, buf.get());
+  math::Number b;
+  Sn::Read(b, buf.get());
+
+  REQUIRE(a == b);
+}
+
+TEST_CASE("Serialization number vector", "[misc]") {
+  using Sn = seri::Serializer<std::vector<math::Number>>;
+
+  std::vector<math::Number> nums = {math::Number(22222123),
+                                    math::Number(123),
+                                    math::Number(-10)};
+
+  auto buf = std::make_unique<unsigned char[]>(Sn::SizeOf(nums));
+  Sn::Write(nums, buf.get());
+
+  std::vector<math::Number> r;
+  Sn::Read(r, buf.get());
+
+  REQUIRE(nums == r);
 }

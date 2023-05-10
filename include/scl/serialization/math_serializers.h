@@ -20,6 +20,7 @@
 
 #include "scl/math/ff.h"
 #include "scl/math/mat.h"
+#include "scl/math/number.h"
 #include "scl/math/vec.h"
 #include "scl/serialization/serializer.h"
 
@@ -160,6 +161,47 @@ struct Serializer<math::Mat<T>> {
     std::memcpy(&r, buf + SIZE_TYPE_SIZE, SIZE_TYPE_SIZE);
     mat = math::Mat<T>::Read(r, c, buf + 2 * SIZE_TYPE_SIZE);
     return SizeOf(mat);
+  }
+};
+
+/**
+ * @brief Serializer specialization for math::Number.
+ */
+template <>
+struct Serializer<math::Number> {
+  /**
+   * @brief Get the serialized size of a math::Number.
+   * @param number the number.
+   * @return the serialized size of a math::Number.
+   *
+   * A math::Number is writte as <code>size_and_sign | number</code> where
+   * <code>size_and_sign</code> is a 4 byte value containing the byte size of
+   * the number and its sign.
+   */
+  static std::size_t SizeOf(const math::Number& number) {
+    return number.ByteSize() + sizeof(std::uint32_t);
+  }
+
+  /**
+   * @brief Write a number to a buffer.
+   * @param number the number.
+   * @param buf the buffer.
+   * @return the number of bytes written.
+   */
+  static std::size_t Write(const math::Number& number, unsigned char* buf) {
+    number.Write(buf);
+    return SizeOf(number);
+  }
+
+  /**
+   * @brief Read a math::Number from a buffer.
+   * @param number the number.
+   * @param buf the buffer.
+   * @return the number of bytes read.
+   */
+  static std::size_t Read(math::Number& number, const unsigned char* buf) {
+    number = math::Number::Read(buf);
+    return SizeOf(number);
   }
 };
 

@@ -28,6 +28,43 @@
 
 namespace scl::math {
 
+class Number;
+
+/**
+ * @brief Compute the least common multiple of two numbers.
+ * @param a the first number.
+ * @param b the second number.
+ * @return \f$lcm(a, b)\f$.
+ */
+Number LCM(const Number& a, const Number& b);
+
+/**
+ * @brief Compute the greatest common divisor of two numbers.
+ * @param a the first number.
+ * @param b the second number.
+ * @return \f$gcd(a, b)\f$.
+ */
+Number GCD(const Number& a, const Number& b);
+
+/**
+ * @brief Compute the modular inverse of a number.
+ * @param val the value to invert.
+ * @param mod the modulus.
+ * @return \f$val^{-1} \mod mod \f$.
+ * @throws std::logic_error if \p val is not invertible.
+ * @throws std::invalid_argument if \p mod is 0.
+ */
+Number ModInverse(const Number& val, const Number& mod);
+
+/**
+ * @brief Compute a modular exponentiation.
+ * @param base the base.
+ * @param exp the exponent.
+ * @param mod the modulus.
+ * @return \f$base^{exp} \mod mod\f$.
+ */
+Number ModExp(const Number& base, const Number& exp, const Number& mod);
+
 /**
  * @brief Arbitrary precision integer.
  */
@@ -35,11 +72,19 @@ class Number final : Print<Number> {
  public:
   /**
    * @brief Generate a random Number.
-   * @param bits the number of bits in the resulting number
-   * @param prg a prg for generating the random number
-   * @return a random Number
+   * @param bits the number of bits in the resulting number.
+   * @param prg a prg for generating the random number.
+   * @return a random Number.
    */
   static Number Random(std::size_t bits, util::PRG& prg);
+
+  /**
+   * @brief Generate a random prime.
+   * @param bits the number of bits in the resulting prime.
+   * @param prg a prg for generating the random prime.
+   * @return a random prime.
+   */
+  static Number RandomPrime(std::size_t bits, util::PRG& prg);
 
   /**
    * @brief Read a Number from a string
@@ -47,6 +92,13 @@ class Number final : Print<Number> {
    * @return a Number.
    */
   static Number FromString(const std::string& str);
+
+  /**
+   * @brief Read a number from a buffer.
+   * @param buf the buffer.
+   * @return a Number.
+   */
+  static Number Read(const unsigned char* buf);
 
   /**
    * @brief Construct a Number from an int.
@@ -85,7 +137,7 @@ class Number final : Print<Number> {
     Number copy(number);
     swap(*this, copy);
     return *this;
-  };
+  }
 
   /**
    * @brief Move assignment from a Number.
@@ -95,7 +147,7 @@ class Number final : Print<Number> {
   Number& operator=(Number&& number) noexcept {
     swap(*this, number);
     return *this;
-  };
+  }
 
   /**
    * @brief In-place addition of two numbers.
@@ -105,7 +157,7 @@ class Number final : Print<Number> {
   Number& operator+=(const Number& number) {
     *this = *this + number;
     return *this;
-  };
+  }
 
   /**
    * @brief Add two numbers.
@@ -122,7 +174,7 @@ class Number final : Print<Number> {
   Number& operator-=(const Number& number) {
     *this = *this - number;
     return *this;
-  };
+  }
 
   /**
    * @brief Subtract two Numbers.
@@ -145,7 +197,7 @@ class Number final : Print<Number> {
   Number& operator*=(const Number& number) {
     *this = *this * number;
     return *this;
-  };
+  }
 
   /**
    * @brief Multiply two Numbers.
@@ -162,7 +214,7 @@ class Number final : Print<Number> {
   Number& operator/=(const Number& number) {
     *this = *this / number;
     return *this;
-  };
+  }
 
   /**
    * @brief Divide two Numbers.
@@ -172,6 +224,23 @@ class Number final : Print<Number> {
   Number operator/(const Number& number) const;
 
   /**
+   * @brief In-place modulo operator.
+   * @param mod the modulus.
+   * @return this.
+   */
+  Number& operator%=(const Number& mod) {
+    *this = *this % mod;
+    return *this;
+  }
+
+  /**
+   * @brief Modulo operation.
+   * @param mod the modulus.
+   * @return \p this modulo \p mod.
+   */
+  Number operator%(const Number& mod) const;
+
+  /**
    * @brief In-place left shift.
    * @param shift the amount to left shift
    * @return this.
@@ -179,7 +248,7 @@ class Number final : Print<Number> {
   Number& operator<<=(int shift) {
     *this = *this << shift;
     return *this;
-  };
+  }
 
   /**
    * @brief Perform a left shift of a Number.
@@ -196,7 +265,7 @@ class Number final : Print<Number> {
   Number& operator>>=(int shift) {
     *this = *this >> shift;
     return *this;
-  };
+  }
 
   /**
    * @brief Perform a right shift of a Number.
@@ -213,7 +282,7 @@ class Number final : Print<Number> {
   Number& operator^=(const Number& number) {
     *this = *this ^ number;
     return *this;
-  };
+  }
 
   /**
    * @brief Exclusive or of two numbers.
@@ -230,7 +299,7 @@ class Number final : Print<Number> {
   Number& operator|=(const Number& number) {
     *this = *this | number;
     return *this;
-  };
+  }
 
   /**
    * @brief operator |
@@ -247,7 +316,7 @@ class Number final : Print<Number> {
   Number& operator&=(const Number& number) {
     *this = *this & number;
     return *this;
-  };
+  }
 
   /**
    * @brief operator &
@@ -280,42 +349,47 @@ class Number final : Print<Number> {
    */
   friend bool operator==(const Number& lhs, const Number& rhs) {
     return lhs.Compare(rhs) == 0;
-  };
+  }
 
   /**
    * @brief In-equality of two numbers.
    */
   friend bool operator!=(const Number& lhs, const Number& rhs) {
     return lhs.Compare(rhs) != 0;
-  };
+  }
 
   /**
    * @brief Strictly less-than of two numbers.
    */
   friend bool operator<(const Number& lhs, const Number& rhs) {
     return lhs.Compare(rhs) < 0;
-  };
+  }
 
   /**
    * @brief Less-than-or-equal of two numbers.
    */
   friend bool operator<=(const Number& lhs, const Number& rhs) {
     return lhs.Compare(rhs) <= 0;
-  };
+  }
 
   /**
    * @brief Strictly greater-than of two numbers.
    */
   friend bool operator>(const Number& lhs, const Number& rhs) {
     return lhs.Compare(rhs) > 0;
-  };
+  }
 
   /**
    * @brief Greater-than-or-equal of two numbers.
    */
   friend bool operator>=(const Number& lhs, const Number& rhs) {
     return lhs.Compare(rhs) >= 0;
-  };
+  }
+
+  /**
+   * @brief Get the size of this number in bytes.
+   */
+  std::size_t ByteSize() const;
 
   /**
    * @brief Get the size of this Number in bits.
@@ -340,7 +414,7 @@ class Number final : Print<Number> {
    */
   bool Odd() const {
     return TestBit(0);
-  };
+  }
 
   /**
    * @brief Test if this Number is even.
@@ -348,7 +422,13 @@ class Number final : Print<Number> {
    */
   bool Even() const {
     return !Odd();
-  };
+  }
+
+  /**
+   * @brief Write this number to a buffer.
+   * @param buf the buffer.
+   */
+  void Write(unsigned char* buf) const;
 
   /**
    * @brief Return a string representation of this Number.
@@ -362,10 +442,17 @@ class Number final : Print<Number> {
   friend void swap(Number& first, Number& second) {
     using std::swap;
     swap(first.m_value, second.m_value);
-  };
+  }
 
  private:
   mpz_t m_value;
+
+  friend Number LCM(const Number& a, const Number& b);
+  friend Number GCD(const Number& a, const Number& b);
+  friend Number ModInverse(const Number& val, const Number& mod);
+  friend Number ModExp(const Number& base,
+                       const Number& exp,
+                       const Number& mod);
 };
 
 }  // namespace scl::math

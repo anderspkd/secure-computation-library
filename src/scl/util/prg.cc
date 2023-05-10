@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 #include <emmintrin.h>
 
