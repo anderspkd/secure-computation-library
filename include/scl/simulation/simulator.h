@@ -24,11 +24,13 @@
 #include <memory>
 #include <queue>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "scl/protocol/base.h"
 #include "scl/simulation/config.h"
 #include "scl/simulation/event.h"
+#include "scl/simulation/manager.h"
 #include "scl/simulation/result.h"
 
 namespace scl::sim {
@@ -59,85 +61,25 @@ struct SimulationFailure final : public std::runtime_error {
  * number of bytes is specified by the second argument \p n while the network
  * conditions (bandwidth, latency, overhead, etc...) is specified by \p config.
  */
-util::Time::Duration ComputeRecvTime(const SimulatedNetworkConfig& config,
+util::Time::Duration ComputeRecvTime(const ChannelConfig& config,
                                      std::size_t n);
 
 /**
- * @brief Protocol creator interface.
- *
- * A ProtocolCreator is a supplier of the protocol that is being simulated.
- * Simulations need to be run multiple times in order to get good measurements.
- * This interface captures a type whose only job is to return a <i>fresh</i>
- * protocol definition every time it is called.
- */
-using ProtocolCreator =
-    std::function<std::vector<std::unique_ptr<proto::Protocol>>()>;
-
-/**
- * @brief Callback function types when a party creates an output.
- *
- * Whenever a party produces output during a simulation, a callback of this type
- * is called with the party's ID as the first argument, and the output produced
- * as the second.
- */
-using OutputCallback = std::function<void(std::size_t, const std::any&)>;
-
-/**
- * @brief Simulate a protocol execution.
- * @param protocol_creator a creator object for the protocol being simulated
- * @param config_creator a simulation config creator object
- * @param iterations how many iterations the simulation should run for
- * @param output_cb a function that is called when a party produce an output
+ * @brief Simulate the execution of a protocol.
+ * @param manager a simulation manager.
  * @return the simulation result.
  */
-std::vector<Result> Simulate(
-    const ProtocolCreator& protocol_creator,
-    const SimulatedNetworkConfigCreator& config_creator,
-    std::size_t iterations,
-    const OutputCallback& output_cb);
+std::vector<Result> Simulate(std::unique_ptr<Manager> manager);
 
 /**
- * @brief Simulate a protocol execution.
- * @param parties the parties of the protocol
- * @param config_creator a simulation config creator object
- * @param output_cb a function that is called when a party produce an output
+ * @brief Simulate a protocol for a single replication.
+ * @param protocol the protocol.
  * @return the simulation result.
  */
-std::vector<Result> Simulate(
-    std::vector<std::unique_ptr<proto::Protocol>> parties,
-    const SimulatedNetworkConfigCreator& config_creator,
-    const OutputCallback& output_cb);
-
-/**
- * @brief Simulate a protocol execution.
- * @param protocol_creator a creator object for the protocol being simulated
- * @param config_creator a simulation config creator object
- * @param iterations the number of iterations to run the simulation for
- */
 inline std::vector<Result> Simulate(
-    const ProtocolCreator& protocol_creator,
-    const SimulatedNetworkConfigCreator& config_creator,
-    std::size_t iterations) {
-  const auto cb = [](auto id, auto output) {
-    (void)id;
-    (void)output;
-  };
-  return Simulate(protocol_creator, config_creator, iterations, cb);
-}
-
-/**
- * @brief Simulate a protocol execution.
- * @param parties the parties of the protocol to simulate
- * @param config_creator a simulation config creator object
- */
-inline std::vector<Result> Simulate(
-    std::vector<std::unique_ptr<proto::Protocol>> parties,
-    const SimulatedNetworkConfigCreator& config_creator) {
-  const auto cb = [](auto id, auto output) {
-    (void)id;
-    (void)output;
-  };
-  return Simulate(std::move(parties), config_creator, cb);
+    std::vector<std::unique_ptr<proto::Protocol>> protocol) {
+  return Simulate(
+      std::make_unique<SingleReplicationManager>(std::move(protocol)));
 }
 
 }  // namespace scl::sim

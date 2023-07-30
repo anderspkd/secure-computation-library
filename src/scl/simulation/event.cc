@@ -20,87 +20,91 @@
 #include <chrono>
 #include <ios>
 
+using namespace scl;
+
 namespace {
 
-using Evt = scl::sim::Event;
-
-auto EventTypeToString(Evt::Type type) {
-  if (type == Evt::Type::START) {
+auto EventTypeToString(sim::Event::Type type) {
+  if (type == sim::Event::Type::START) {
     return "START";
   }
 
-  if (type == Evt::Type::STOP) {
+  if (type == sim::Event::Type::STOP) {
     return "STOP";
   }
 
-  if (type == Evt::Type::SEND) {
+  if (type == sim::Event::Type::SEND) {
     return "SEND";
   }
 
-  if (type == Evt::Type::RECV) {
+  if (type == sim::Event::Type::RECV) {
     return "RECV";
   }
 
-  if (type == Evt::Type::HAS_DATA) {
+  if (type == sim::Event::Type::HAS_DATA) {
     return "HAS_DATA";
   }
 
-  if (type == Evt::Type::OUTPUT) {
+  if (type == sim::Event::Type::OUTPUT) {
     return "OUTPUT";
   }
 
-  if (type == Evt::Type::SLEEP) {
+  if (type == sim::Event::Type::SLEEP) {
     return "SLEEP";
   }
 
-  if (type == Evt::Type::SEGMENT_BEGIN) {
+  if (type == sim::Event::Type::SEGMENT_BEGIN) {
     return "SEGMENT_BEGIN";
   }
 
-  if (type == Evt::Type::SEGMENT_END) {
+  if (type == sim::Event::Type::SEGMENT_END) {
     return "SEGMENT_END";
   }
 
-  if (type == Evt::Type::CHECKPOINT) {
+  if (type == sim::Event::Type::CHECKPOINT) {
     return "CHECKPOINT";
   }
 
-  if (type == Evt::Type::PACKET_SEND) {
+  if (type == sim::Event::Type::PACKET_SEND) {
     return "PACKET_SEND";
   }
 
-  if (type == Evt::Type::PACKET_RECV) {
+  if (type == sim::Event::Type::PACKET_RECV) {
     return "PACKET_RECV";
   }
 
-  // if (type == scl::Measurement::Type::CLOSE)
+  if (type == sim::Event::Type::KILLED) {
+    return "KILLED";
+  }
+
+  // if (type == Measurement::Type::CLOSE)
   return "CLOSE";
 }
 
-void WriteClose(std::ostream& os, const scl::sim::NetworkEvent* m) {
+void WriteClose(std::ostream& os, const sim::NetworkEvent* m) {
   os << " [Local=" << m->LocalParty() << ", Remote=" << m->RemoteParty() << "]";
 }
 
-void WriteSend(std::ostream& os, const scl::sim::NetworkDataEvent* m) {
+void WriteSend(std::ostream& os, const sim::NetworkDataEvent* m) {
   os << " ["
      << "Sender=" << m->LocalParty() << ", Receiver=" << m->RemoteParty()
      << ", Amount=" << m->DataAmount() << "]";
 }
 
-void WriteRecv(std::ostream& os, const scl::sim::NetworkDataEvent* m) {
+void WriteRecv(std::ostream& os, const sim::NetworkDataEvent* m) {
   os << " ["
      << "Receiver=" << m->LocalParty() << ", Sender=" << m->RemoteParty()
      << ", Amount=" << m->DataAmount() << "]";
 }
 
-void WritePacketRecv(std::ostream& os, const scl::sim::PacketRecvEvent* m) {
+void WritePacketRecv(std::ostream& os, const sim::PacketRecvEvent* m) {
   os << " ["
      << "Receiver=" << m->LocalParty() << ", Sender=" << m->RemoteParty()
      << ", Amount=" << m->DataAmount() << ", Blocking=" << std::boolalpha
      << m->Blocking() << "]";
 }
 
-void WriteSegment(std::ostream& os, const scl::sim::SegmentEvent* m) {
+void WriteSegment(std::ostream& os, const sim::SegmentEvent* m) {
   const auto name = m->Name();
   if (name.empty()) {
     os << " [Unnamed segment]";
@@ -109,21 +113,25 @@ void WriteSegment(std::ostream& os, const scl::sim::SegmentEvent* m) {
   }
 }
 
-void WriteHasData(std::ostream& os, const scl::sim::HasDataEvent* m) {
+void WriteHasData(std::ostream& os, const sim::HasDataEvent* m) {
   os << " [Local=" << m->LocalParty() << ", Remote=" << m->RemoteParty()
      << ", DataAvailable=" << std::boolalpha << m->HadData() << "]";
 }
 
-void WriteCheckpoint(std::ostream& os, const scl::sim::CheckpointEvent* m) {
-  os << " [" << m->Message() << "]";
+void WriteCheckpoint(std::ostream& os, const sim::CheckpointEvent* m) {
+  os << " [" << m->Id() << "]";
 }
 
 }  // namespace
 
-std::ostream& scl::sim::operator<<(std::ostream& os, const Evt* m) {
+std::ostream& sim::operator<<(std::ostream& os, Event::Type type) {
+  return os << EventTypeToString(type);
+}
+
+std::ostream& sim::operator<<(std::ostream& os, const sim::Event* m) {
   using namespace std::chrono;
   const auto t = m->EventType();
-  os << EventTypeToString(t) << " at ";
+  os << t << " at ";
   os << duration<double, std::milli>(m->Timestamp()).count();
   os << " ms";
   if (m->Offset() > util::Time::Duration::zero()) {
@@ -132,31 +140,32 @@ std::ostream& scl::sim::operator<<(std::ostream& os, const Evt* m) {
     os << " ms]";
   }
 
-  if (t == Evt::Type::SEGMENT_BEGIN || t == Evt::Type::SEGMENT_END) {
+  if (t == sim::Event::Type::SEGMENT_BEGIN ||
+      t == sim::Event::Type::SEGMENT_END) {
     WriteSegment(os, dynamic_cast<const SegmentEvent*>(m));
   }
 
-  if (t == Evt::Type::CLOSE) {
+  if (t == sim::Event::Type::CLOSE) {
     WriteClose(os, dynamic_cast<const NetworkEvent*>(m));
   }
 
-  if (t == Evt::Type::SEND || t == Evt::Type::PACKET_SEND) {
+  if (t == sim::Event::Type::SEND || t == sim::Event::Type::PACKET_SEND) {
     WriteSend(os, dynamic_cast<const NetworkDataEvent*>(m));
   }
 
-  if (t == Evt::Type::RECV) {
+  if (t == sim::Event::Type::RECV) {
     WriteRecv(os, dynamic_cast<const NetworkDataEvent*>(m));
   }
 
-  if (t == Evt::Type::PACKET_RECV) {
+  if (t == sim::Event::Type::PACKET_RECV) {
     WritePacketRecv(os, dynamic_cast<const PacketRecvEvent*>(m));
   }
 
-  if (t == Evt::Type::HAS_DATA) {
+  if (t == sim::Event::Type::HAS_DATA) {
     WriteHasData(os, dynamic_cast<const HasDataEvent*>(m));
   }
 
-  if (t == Evt::Type::CHECKPOINT) {
+  if (t == sim::Event::Type::CHECKPOINT) {
     WriteCheckpoint(os, dynamic_cast<const CheckpointEvent*>(m));
   }
 

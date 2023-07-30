@@ -27,7 +27,7 @@
 #include "scl/math/ff_ops.h"
 #include "scl/math/ops_gmp_ff.h"
 
-using Field = scl::math::Secp256k1::Order;
+using Field = scl::math::Secp256k1::Scalar;
 using Elem = Field::ValueType;
 
 #define NUM_LIMBS 4
@@ -39,46 +39,54 @@ using Elem = Field::ValueType;
     }                                          \
   } while (0)
 
-static const mp_limb_t kPrime[] = {
-    0xBFD25E8CD0364141,  //
-    0xBAAEDCE6AF48A03B,  //
-    0xFFFFFFFFFFFFFFFE,  //
-    0xFFFFFFFFFFFFFFFF   //
-};
+template <>
+scl::math::Number scl::math::Order<scl::math::FF<Field>>() {
+  return Number::FromString(
+      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+}
 
-static const mp_limb_t kMontyN[] = {
-    0xB4F20099AA774EC1,  //
-    0xAF5AE537CB4613DB,  //
-    0x7680CF3ED83054A1,  //
-    0x261776F29B6B106C   //
-};
+static const scl::math::RedParams<NUM_LIMBS> RD = {
+    // Prime
+    {
+        0xBFD25E8CD0364141,  //
+        0xBAAEDCE6AF48A03B,  //
+        0xFFFFFFFFFFFFFFFE,  //
+        0xFFFFFFFFFFFFFFFF   //
+    },
+    // Montgomery constant
+    {
+        0x4B0DFF665588B13F,  //
+        0x50A51AC834B9EC24,  //
+        0x897F30C127CFAB5E,  //
+        0xD9E8890D6494EF93   //
+    }};
 
 #define PTR(X) (X).data()
 
 template <>
 void scl::math::FieldConvertIn<Field>(Elem& out, const int value) {
   out = {0};
-  MontyInFromInt<NUM_LIMBS>(PTR(out), value, kPrime);
+  MontyInFromInt<NUM_LIMBS>(PTR(out), value, RD);
 }
 
 template <>
 void scl::math::FieldAdd<Field>(Elem& out, const Elem& op) {
-  MontyModAdd<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
+  MontyModAdd<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
 void scl::math::FieldSubtract<Field>(Elem& out, const Elem& op) {
-  MontyModSub<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
+  MontyModSub<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
 void scl::math::FieldNegate<Field>(Elem& out) {
-  MontyModNeg<NUM_LIMBS>(PTR(out), kPrime);
+  MontyModNeg<NUM_LIMBS>(PTR(out), RD);
 }
 
 template <>
 void scl::math::FieldMultiply<Field>(Elem& out, const Elem& op) {
-  MontyModMul<NUM_LIMBS>(PTR(out), PTR(op), kPrime, kMontyN);
+  MontyModMul<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 #define ONE \
@@ -94,7 +102,7 @@ void scl::math::FieldInvert<Field>(Elem& out) {
   };
 
   Elem res = ONE;
-  MontyModInv<NUM_LIMBS>(PTR(res), PTR(out), kPrime, kPrimeMinus2, kMontyN);
+  MontyModInv<NUM_LIMBS>(PTR(res), PTR(out), kPrimeMinus2, RD);
   out = res;
 }
 
@@ -105,23 +113,23 @@ bool scl::math::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
 
 template <>
 void scl::math::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
-  MontyFromBytes<NUM_LIMBS>(PTR(dest), src, kPrime);
+  MontyFromBytes<NUM_LIMBS>(PTR(dest), src, RD);
 }
 
 template <>
 void scl::math::FieldToBytes<Field>(unsigned char* dest, const Elem& src) {
-  MontyToBytes<NUM_LIMBS>(dest, PTR(src), kPrime, kMontyN);
+  MontyToBytes<NUM_LIMBS>(dest, PTR(src), RD);
 }
 
 template <>
 std::string scl::math::FieldToString<Field>(const Elem& in) {
-  return MontyToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
+  return MontyToString<NUM_LIMBS>(PTR(in), RD);
 }
 
 template <>
 void scl::math::FieldFromString<Field>(Elem& out, const std::string& src) {
   out = {0};
-  MontyFromString<NUM_LIMBS>(PTR(out), kPrime, src);
+  MontyFromString<NUM_LIMBS>(PTR(out), src, RD);
 }
 
 std::size_t scl::math::FFAccess<Field>::HigestSetBit(
@@ -141,7 +149,7 @@ scl::math::FF<Field> scl::math::FFAccess<Field>::FromMonty(
     const scl::math::FF<Field>& element) {
   mp_limb_t padded[2 * NUM_LIMBS] = {0};
   SCL_COPY(padded, PTR(element.m_value), NUM_LIMBS);
-  MontyRedc<NUM_LIMBS>(padded, kPrime, kMontyN);
+  MontyRedc<NUM_LIMBS>(padded, RD);
 
   FF<Field> r;
   SCL_COPY(PTR(r.m_value), padded, NUM_LIMBS);

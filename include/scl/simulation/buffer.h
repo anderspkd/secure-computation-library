@@ -36,16 +36,17 @@ struct ChannelBuffer {
 
   /**
    * @brief Read data from the channel.
-   * @param n the number of bytes to read
-   * @return the data.
+   * @param data the data to write.
+   * @param n the number of bytes to read.
    */
-  virtual std::vector<unsigned char> Read(std::size_t n) = 0;
+  virtual void Read(unsigned char* data, std::size_t n) = 0;
 
   /**
    * @brief Write data to the channel.
-   * @param data the data to write
+   * @param data the data to write.
+   * @param n the number of bytes to write.
    */
-  virtual void Write(const std::vector<unsigned char>& data) = 0;
+  virtual void Write(const unsigned char* data, std::size_t n) = 0;
 
   /**
    * @brief Get the amount of bytes that can be read from this channel.

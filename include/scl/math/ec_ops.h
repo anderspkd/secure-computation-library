@@ -110,7 +110,7 @@ void CurveScalarMultiply(typename C::ValueType& out, const Number& scalar);
  */
 template <typename C>
 void CurveScalarMultiply(typename C::ValueType& out,
-                         const FF<typename C::Order>& scalar);
+                         const FF<typename C::Scalar>& scalar);
 
 /**
  * @brief Check if two elliptic curve points are equal.

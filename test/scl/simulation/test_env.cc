@@ -37,15 +37,19 @@ auto SomeEvent(util::Time::Duration t) {
   return std::make_shared<sim::Event>(sim::Event::Type::START, t);
 }
 
+auto DefaultNetworkConfig() {
+  return std::make_shared<sim::SimpleNetworkConfig>();
+}
+
 }  // namespace
 
 TEST_CASE("Simulation env clock", "[sim]") {
   using namespace std::chrono_literals;
 
-  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(
       5,
-      sim::DefaultConfigCreator());
-  sim::SimulatedClock clock(ctx, 0);
+      DefaultNetworkConfig());
+  sim::Clock clock(ctx, 0);
 
   ctx->AddEvent(0, SomeEvent());
   ctx->UpdateCheckpoint();
@@ -71,10 +75,10 @@ TEST_CASE("Simulation env clock", "[sim]") {
 TEST_CASE("Simulation env clock checkpoint", "[sim]") {
   using namespace std::chrono_literals;
 
-  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(
       5,
-      sim::DefaultConfigCreator());
-  sim::SimulatedClock clock(ctx, 0);
+      DefaultNetworkConfig());
+  sim::Clock clock(ctx, 0);
 
   ctx->AddEvent(0, SomeEvent(10ms));
   ctx->UpdateCheckpoint();
@@ -84,19 +88,19 @@ TEST_CASE("Simulation env clock checkpoint", "[sim]") {
   REQUIRE(ctx->Trace(0).back()->Timestamp() >= 10ms);
 
   sim::CheckpointEvent* e = (sim::CheckpointEvent*)ctx->Trace(0).back().get();
-  REQUIRE(e->Message() == "asd");
+  REQUIRE(e->Id() == "asd");
 }
 
 TEST_CASE("Simulation env thread", "[sim]") {
   using namespace std::chrono_literals;
-  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(
       5,
-      sim::DefaultConfigCreator());
+      DefaultNetworkConfig());
 
   ctx->UpdateCheckpoint();
 
-  sim::SimulatedThreadCtx thread(ctx, 0);
-  sim::SimulatedClock clock(ctx, 0);
+  sim::ThreadCtx thread(ctx, 0);
+  sim::Clock clock(ctx, 0);
 
   ctx->AddEvent(0, SomeEvent(util::Time::Duration(1000ms)));
   thread.Sleep(1000000);

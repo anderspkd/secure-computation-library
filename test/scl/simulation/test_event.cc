@@ -126,6 +126,11 @@ TEST_CASE("Simulation Event", "[sim]") {
     REQUIRE(ToString(&e) == "CLOSE at 0 ms [Local=2, Remote=5]");
   }
 
+  SECTION("KILLED") {
+    sim::Event e(sim::Event::Type::KILLED, util::Time::Duration::zero());
+    REQUIRE(ToString(&e) == "KILLED at 0 ms");
+  }
+
   SECTION("CHECKPOINT") {
     sim::CheckpointEvent e(util::Time::Duration::zero(), "asd");
     REQUIRE(ToString(&e) == "CHECKPOINT at 0 ms [asd]");

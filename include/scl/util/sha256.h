@@ -36,7 +36,7 @@ class Sha256 final : public IUFHash<Sha256> {
   /**
    * @brief The type of a SHA256 digest.
    */
-  using DigestType = typename Digest<256>::Type;
+  using DigestType = Digest<256>;
 
   /**
    * @brief Update the hash function with a set of bytes.

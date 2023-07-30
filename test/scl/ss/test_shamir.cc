@@ -21,6 +21,7 @@
 #include "../gf7.h"
 #include "scl/math/fp.h"
 #include "scl/math/lagrange.h"
+#include "scl/math/poly.h"
 #include "scl/math/vec.h"
 #include "scl/ss/shamir.h"
 #include "scl/util/prg.h"
@@ -77,6 +78,36 @@ TEST_CASE("Shamir reconstruct detect", "[ss]") {
       Catch::Matchers::Message("error detected during recovery"));
 }
 
+namespace {
+
+math::Vec<FF> ShareWithDifferentAlphas(util::PRG& prg,
+                                       std::size_t t,
+                                       std::size_t n) {
+  auto c = math::Vec<FF>::Random(t + 1, prg);
+  c[0] = FF(123);
+  const auto p = math::Polynomial<FF>::Create(c);
+
+  std::vector<FF> shares;
+  shares.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    shares.emplace_back(p.Evaluate(FF{(int)i + 42}));
+  }
+  return math::Vec<FF>(shares);
+}
+
+}  // namespace
+
+TEST_CASE("Shamir reconstruct different x and alphas", "[ss]") {
+  auto prg = util::PRG::Create("shamir detect2");
+
+  const auto shares = ShareWithDifferentAlphas(prg, 3, 7);
+  const auto alphas = math::Vec<FF>::Range(42, 50);
+
+  REQUIRE(ss::ShamirRecoverD(shares, alphas, FF(0)) == FF(123));
+
+  REQUIRE(ss::ShamirRecoverD(shares, alphas, alphas[0]) == shares[0]);
+}
+
 TEST_CASE("Shamir reconstruct correct", "[sim]") {
   auto prg = util::PRG::Create("shamir correct");
   auto shares = ss::ShamirShare(FF(123), 2, 7, prg);
@@ -93,6 +124,21 @@ TEST_CASE("Shamir reconstruct correct", "[sim]") {
   REQUIRE_THROWS_MATCHES(ss::ShamirRecoverC(shares),
                          std::logic_error,
                          Catch::Matchers::Message("could not correct shares"));
+}
+
+TEST_CASE("Shamir reconstruct correct different alphas", "[ss]") {
+  auto prg = util::PRG::Create("shamir correct2");
+
+  auto shares = ShareWithDifferentAlphas(prg, 2, 7);
+  const auto alphas = math::Vec<FF>::Range(42, 50);
+
+  REQUIRE(ss::ShamirRecoverC(shares, alphas).f.ConstantTerm() == FF(123));
+
+  shares[4] = FF(5555);
+
+  const auto r = ss::ShamirRecoverC(shares, alphas);
+  REQUIRE(r.f.ConstantTerm() == FF(123));
+  REQUIRE(r.err.Evaluate(alphas[4]) == FF(0));
 }
 
 TEST_CASE("BerlekampWelch", "[ss][math]") {

@@ -104,7 +104,12 @@ class Event {
     /**
      * @brief Event made when a party receives a net::Packet.
      */
-    PACKET_RECV
+    PACKET_RECV,
+
+    /**
+     * @brief Event made when a party is stopped prematurely.
+     */
+    KILLED
   };
 
   /**
@@ -337,21 +342,26 @@ class CheckpointEvent final : public Event {
   /**
    * @brief Create a new checkpoint event.
    * @param timestamp the time of the event.
-   * @param message the message of the checkpoint.
+   * @param id the id of the checkpoint.
    */
-  CheckpointEvent(util::Time::Duration timestamp, const std::string& message)
-      : Event(Event::Type::CHECKPOINT, timestamp), m_message(message) {}
+  CheckpointEvent(util::Time::Duration timestamp, const std::string& id)
+      : Event(Event::Type::CHECKPOINT, timestamp), m_id(id) {}
 
   /**
-   * @brief Get the checkpoint message.
+   * @brief Get the checkpoint id.
    */
-  std::string Message() const {
-    return m_message;
+  std::string Id() const {
+    return m_id;
   }
 
  private:
-  std::string m_message;
+  std::string m_id;
 };
+
+/**
+ * @brief Pretty print an event type.
+ */
+std::ostream& operator<<(std::ostream& os, Event::Type type);
 
 /**
  * @brief Pretty print a measurement to a stream.

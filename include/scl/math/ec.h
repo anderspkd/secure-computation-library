@@ -47,7 +47,7 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
   /**
    * @brief A large sub-group of this curve.
    */
-  using Order = FF<typename Curve::Order>;
+  using ScalarField = FF<typename Curve::Scalar>;
 
   /**
    * @brief The size of a curve point in bytes.
@@ -165,7 +165,7 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
    * @param scalar the scalar
    * @return this.
    */
-  EC& operator*=(const Order& scalar) {
+  EC& operator*=(const ScalarField& scalar) {
     CurveScalarMultiply<Curve>(m_value, scalar);
     return *this;
   }
@@ -187,7 +187,7 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
    * @param scalar the scalar
    * @return the point multiplied with the scalar.
    */
-  friend EC operator*(const EC& point, const Order& scalar) {
+  friend EC operator*(const EC& point, const ScalarField& scalar) {
     EC copy(point);
     return copy *= scalar;
   }
@@ -208,10 +208,9 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
    * @param scalar the scalar
    * @return the point multiplied with the scalar.
    */
-  friend EC operator*(const FF<typename Curve::Order>& scalar,
-                      const EC& point) {
+  friend EC operator*(const ScalarField& scalar, const EC& point) {
     return point * scalar;
-  }
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Negate this point.
@@ -229,7 +228,7 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
    */
   bool Equal(const EC& other) const {
     return CurveEqual<Curve>(m_value, other.m_value);
-  }
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Check if this point is equal to the point at inifity.
@@ -237,7 +236,7 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
    */
   bool PointAtInfinity() const {
     return CurveIsPointAtInfinity<Curve>(m_value);
-  }
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Return this point as a pair of affine coordinates.
@@ -245,14 +244,14 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
    */
   std::array<Field, 2> ToAffine() const {
     return CurveToAffine<Curve>(m_value);
-  }
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Output this point as a string.
    */
   std::string ToString() const {
     return CurveToString<Curve>(m_value);
-  }
+  }  // LCOV_EXCL_LINE
 
   /**
    * @brief Write this point to a buffer.
@@ -261,7 +260,7 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
    */
   void Write(unsigned char* dest, bool compress = true) const {
     CurveToBytes<Curve>(dest, m_value, compress);
-  }
+  }  // LCOV_EXCL_LINE
 
  private:
   typename Curve::ValueType m_value;

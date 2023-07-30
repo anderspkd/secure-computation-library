@@ -29,9 +29,9 @@
 namespace scl::sim {
 
 /**
- * @brief Configuration for the simulated network.
+ * @brief Configuration for a channel between two parties.
  */
-class SimulatedNetworkConfig {
+class ChannelConfig {
  public:
   /**
    * @brief Builder used to create network configs.
@@ -39,39 +39,66 @@ class SimulatedNetworkConfig {
   class Builder;
 
   /**
+   * @brief Indicates which type of network the channel is emulating.
+   */
+  enum class NetworkType {
+    /**
+     * @brief The channel is a TCP channel.
+     */
+    TCP,
+
+    /**
+     * @brief The channel is a special channel where communication is instant.
+     */
+    INSTANT,
+  };
+
+  /**
+   * @brief Default network type is TCP.
+   */
+  constexpr static NetworkType DEFAULT_NETWORK_TYPE = NetworkType::TCP;
+
+  /**
    * @brief Default bandwidth of the simulated network, in bits/s.
    */
-  constexpr static std::size_t kDefaultBandwidth = 1000000;
+  constexpr static std::size_t DEFAULT_BANDWIDTH = 1000000;
 
   /**
    * @brief Default RTT of the simulated network in ms.
    */
-  constexpr static std::size_t kDefaultRTT = 100;
+  constexpr static std::size_t DEFAULT_RTT = 100;
 
   /**
    * @brief Default MSS in bytes.
    */
-  constexpr static std::size_t kDefaultMSS = 1460;
+  constexpr static std::size_t DEFAULT_MSS = 1460;
 
   /**
    * @brief Default package loss in percentage.
    */
-  constexpr static double kDefaultPackageLoss = 0;
+  constexpr static double DEFAULT_PACKAGE_LOSS = 0;
 
   /**
    * @brief Default TCP window size in bytes.
    */
-  constexpr static std::size_t kDefaultWindowSize = 65536;
+  constexpr static std::size_t DEFAULT_WINDOW_SIZE = 65536;
 
   /**
    * @brief Create a simulation config with default values.
    */
-  static SimulatedNetworkConfig Default();
+  static ChannelConfig Default();
 
   /**
    * @brief Create a simulation config for a loopback connection.
    */
-  static SimulatedNetworkConfig Loopback();
+  static ChannelConfig Loopback();
+
+  /**
+   * @brief The network type of the channel.
+   */
+  NetworkType Type() const {
+    return m_type;
+  }
 
   /**
    * @brief Bandwidth in Bits/s.
@@ -109,17 +136,20 @@ class SimulatedNetworkConfig {
   };
 
  private:
-  SimulatedNetworkConfig(std::size_t bandwidth,
-                         std::size_t rtt,
-                         std::size_t MSS,
-                         double package_loss,
-                         std::size_t window_size)
-      : m_bandwidth(bandwidth),
+  ChannelConfig(NetworkType type,
+                std::size_t bandwidth,
+                std::size_t rtt,
+                std::size_t MSS,
+                double package_loss,
+                std::size_t window_size)
+      : m_type(type),
+        m_bandwidth(bandwidth),
         m_rtt(rtt),
         m_MSS(MSS),
         m_package_loss(package_loss),
         m_window_size(window_size){};
 
+  NetworkType m_type;
   std::size_t m_bandwidth;
   std::size_t m_rtt;
   std::size_t m_MSS;
@@ -130,13 +160,12 @@ class SimulatedNetworkConfig {
 /**
  * @brief Pretty print the simulation config.
  */
-std::ostream& operator<<(std::ostream& os,
-                         const SimulatedNetworkConfig& config);
+std::ostream& operator<<(std::ostream& os, const ChannelConfig& config);
 
 /**
  * @brief Builder used to create network configs.
  */
-class SimulatedNetworkConfig::Builder {
+class ChannelConfig::Builder {
  public:
   /**
    * @brief Create an empty simulation config builder.
@@ -146,15 +175,26 @@ class SimulatedNetworkConfig::Builder {
   /**
    * @brief Build the simulation config.
    */
-  SimulatedNetworkConfig Build() const {
+  ChannelConfig Build() const {
     Validate();
-    return SimulatedNetworkConfig{
-        m_bandwidth.value_or(SimulatedNetworkConfig::kDefaultBandwidth),
-        m_rtt.value_or(SimulatedNetworkConfig::kDefaultRTT),
-        m_MSS.value_or(SimulatedNetworkConfig::kDefaultMSS),
-        m_package_loss.value_or(SimulatedNetworkConfig::kDefaultPackageLoss),
-        m_window_size.value_or(SimulatedNetworkConfig::kDefaultWindowSize)};
+    return ChannelConfig{
+        m_type.value_or(ChannelConfig::DEFAULT_NETWORK_TYPE),
+        m_bandwidth.value_or(ChannelConfig::DEFAULT_BANDWIDTH),
+        m_rtt.value_or(ChannelConfig::DEFAULT_RTT),
+        m_MSS.value_or(ChannelConfig::DEFAULT_MSS),
+        m_package_loss.value_or(ChannelConfig::DEFAULT_PACKAGE_LOSS),
+        m_window_size.value_or(ChannelConfig::DEFAULT_WINDOW_SIZE)};
   };
+
+  /**
+   * @brief Set the network type of this channel.
+   * @param type the network type.
+   * @return the builder.
+   */
+  Builder& Type(NetworkType type) {
+    m_type = type;
+    return *this;
+  }
 
   /**
    * @brief Set network bandwidth to use for the simulation.
@@ -207,6 +247,7 @@ class SimulatedNetworkConfig::Builder {
   }
 
  private:
+  std::optional<NetworkType> m_type;
   std::optional<std::size_t> m_bandwidth;
   std::optional<std::size_t> m_rtt;
   std::optional<std::size_t> m_MSS;
@@ -218,31 +259,32 @@ class SimulatedNetworkConfig::Builder {
 };
 
 /**
- * @brief Creator object for simulation network configs.
- *
- * The creator should be a function which receives a channel identifier and
- * returns network config for that channel.
+ * @brief Interface describing the network wide configuration.
  */
-using SimulatedNetworkConfigCreator =
-    std::function<SimulatedNetworkConfig(ChannelId)>;
+struct NetworkConfig {
+  /**
+   * @brief Destructor.
+   */
+  virtual ~NetworkConfig() {}
+
+  /**
+   * @brief Returns the configuration of a particular channel.
+   */
+  virtual ChannelConfig Get(ChannelId channel_id) = 0;
+};
 
 /**
- * @brief Default config creator implementation.
+ * @brief Network configuration for a simple network.
  *
- * This implementation returns a default config for all channels;
+ * SimpleNetworkConfig describes a network where everyone is connected on a
+ * channel configured according to ChannelConfig::Default. The only exception
+ * being channels that are self-connecting (i.e., from a party to itself). These
+ * channels are configured according to ChannelConfig::Loopback.
  */
-struct DefaultConfigCreator {
-  /**
-   * @brief Return a config based on a ChannelId.
-   * @param channel_id the ChannelId
-   *
-   * If the channel_id specifies a channel between two different peers, then
-   * sim::SimulatedNetworkConfig::Default() is returned, otherwise
-   * sim::SimulatedNetworkConfig::Loopback() is returned.
-   */
-  SimulatedNetworkConfig operator()(ChannelId channel_id) {
-    static auto config = SimulatedNetworkConfig::Default();
-    static auto lo = SimulatedNetworkConfig::Loopback();
+struct SimpleNetworkConfig final : public NetworkConfig {
+  ChannelConfig Get(ChannelId channel_id) override {
+    static auto config = ChannelConfig::Default();
+    static auto lo = ChannelConfig::Loopback();
 
     return (channel_id.local == channel_id.remote) ? lo : config;
   }

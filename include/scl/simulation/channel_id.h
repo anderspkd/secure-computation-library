@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <ostream>
 
 namespace scl::sim {
 
@@ -77,7 +78,14 @@ struct ChannelId {
   friend bool operator<(const ChannelId& cid0, const ChannelId& cid1) {
     return cid0.local < cid1.local ||
            (cid0.local == cid1.local && cid0.remote < cid1.remote);
-  };
+  }
+
+  /**
+   * @brief Print operator for ChannelId.
+   */
+  friend std::ostream& operator<<(std::ostream& os, const ChannelId& cid) {
+    return os << "ChannelId{" << cid.local << ", " << cid.remote << "}";
+  }
 };
 
 }  // namespace scl::sim
@@ -87,7 +95,7 @@ struct ChannelId {
 template <>
 struct std::hash<scl::sim::ChannelId> {
   std::size_t operator()(const scl::sim::ChannelId& cid) const {
-    return hash<unsigned>{}(cid.local) ^ (hash<unsigned>{}(cid.remote) << 3);
+    return cid.local ^ (cid.remote << 32);
   }
 };
 

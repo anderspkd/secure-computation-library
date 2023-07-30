@@ -19,15 +19,43 @@
 #define SCL_UTIL_TRAITS_H
 
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace scl::util {
 
+/// @cond
+
 template <typename>
-struct IsStdVector : std::false_type {};
+struct IsStdVectorImpl : std::false_type {};
 
 template <typename T, typename A>
-struct IsStdVector<std::vector<T, A>> : std::true_type {};
+struct IsStdVectorImpl<std::vector<T, A>> : std::true_type {};
+
+// https://stackoverflow.com/a/35207812
+template <typename T, typename V>
+struct HasOperatorMulImpl {
+  template <typename TT, typename VV>
+  static auto Test(TT*) -> decltype(std::declval<TT>() * std::declval<VV>());
+
+  template <typename, typename>
+  static auto Test(...) -> std::false_type;
+
+  using Type = typename std::is_same<T, decltype(Test<T, V>(0))>::type;
+};
+
+/// @endcond
+
+/**
+ * @brief Trait for determining if two types can be multipled.
+ * @tparam T the first type.
+ * @tparam V the second type.
+ *
+ * This trait evalutes to an std::true_type if <code>T operator*(V)</code> is
+ * defined.
+ */
+template <typename T, typename V>
+struct HasOperatorMul : HasOperatorMulImpl<T, V>::Type {};
 
 }  // namespace scl::util
 

@@ -35,7 +35,7 @@ namespace scl::sim {
  * This function simply generates a <code>CLOSE</code> event for the current
  * time of the running party.
  */
-std::shared_ptr<Event> SimulateClose(std::shared_ptr<SimulationContext> ctx,
+std::shared_ptr<Event> SimulateClose(std::shared_ptr<Context> ctx,
                                      ChannelId id);
 
 /**
@@ -54,7 +54,7 @@ std::shared_ptr<Event> SimulateClose(std::shared_ptr<SimulationContext> ctx,
  * records a write operation on the context with the time in the
  * <code>SEND</code> event for the number \p n of bytes sent.
  */
-std::shared_ptr<Event> SimulateSend(std::shared_ptr<SimulationContext> ctx,
+std::shared_ptr<Event> SimulateSend(std::shared_ptr<Context> ctx,
                                     ChannelId id,
                                     const unsigned char* src,
                                     std::size_t n);
@@ -76,7 +76,7 @@ std::shared_ptr<Event> SimulateSend(std::shared_ptr<SimulationContext> ctx,
  * <p>The time in the <code>RECV</code> event is adjusted by going through the
  * recorded write operations for the sending channel
  */
-std::shared_ptr<Event> SimulateRecv(std::shared_ptr<SimulationContext> ctx,
+std::shared_ptr<Event> SimulateRecv(std::shared_ptr<Context> ctx,
                                     ChannelId id,
                                     unsigned char* dst,
                                     std::size_t n);
@@ -98,7 +98,7 @@ std::shared_ptr<Event> SimulateRecv(std::shared_ptr<SimulationContext> ctx,
  * possible to determine if there are data available.
  */
 std::pair<bool, std::shared_ptr<Event>> SimulateHasData(
-    std::shared_ptr<SimulationContext> ctx,
+    std::shared_ptr<Context> ctx,
     ChannelId id);
 
 /**
@@ -109,15 +109,14 @@ std::pair<bool, std::shared_ptr<Event>> SimulateHasData(
  * sim::SimulateHasData, which performs the actual simulation of the methods in
  * the Channel interface.
  */
-class SimulatedChannel final : public net::Channel {
+class Channel final : public net::Channel {
  public:
   /**
    * @brief Construct a new Channel for simulations.
    * @param id the ID of the channel
    * @param ctx a simulation context object
    */
-  SimulatedChannel(ChannelId id, std::shared_ptr<SimulationContext> ctx)
-      : m_id(id), m_ctx(ctx){};
+  Channel(ChannelId id, std::shared_ptr<Context> ctx) : m_id(id), m_ctx(ctx){};
 
   void Close() override {
     m_ctx->AddEvent(m_id.local, SimulateClose(m_ctx, m_id));
@@ -144,7 +143,7 @@ class SimulatedChannel final : public net::Channel {
 
  private:
   ChannelId m_id;
-  std::shared_ptr<SimulationContext> m_ctx;
+  std::shared_ptr<Context> m_ctx;
 };
 
 }  // namespace scl::sim

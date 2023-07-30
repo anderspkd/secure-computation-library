@@ -18,10 +18,11 @@
 #ifndef SCL_SIMULATION_CONTEXT_H
 #define SCL_SIMULATION_CONTEXT_H
 
-#include <map>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <stdexcept>
+#include <unordered_map>
 
 #include "scl/simulation/buffer.h"
 #include "scl/simulation/channel_id.h"
@@ -34,15 +35,27 @@ namespace scl::sim {
 /**
  * @brief Context for simulations.
  */
-class SimulationContext {
+class Context {
  private:
   enum class State { PREPARE, COMMIT, ROLLBACK };
 
  public:
   /**
+   * @brief Provides a read-only view of a Context.
+   */
+  class View;
+
+  /**
    * @brief A write operation on the channel.
    */
   struct WriteOp {
+    /**
+     * @brief Construct a new WriteOp.
+     * @param amount the amount of data in the write operation.
+     * @param time the time of the write operation.
+     */
+    WriteOp(std::size_t amount, util::Time::Duration time)
+        : amount(amount), time(time) {}
     /**
      * @brief The amount of data written.
      */
@@ -66,9 +79,8 @@ class SimulationContext {
    * implementations that currently exist in SCL.
    */
   template <typename ChannelBufferT>
-  static std::shared_ptr<SimulationContext> Create(
-      std::size_t number_of_parties,
-      const SimulatedNetworkConfigCreator& config);
+  static std::shared_ptr<Context> Create(std::size_t number_of_parties,
+                                         std::shared_ptr<NetworkConfig> config);
 
   /**
    * @brief Construct a new simulation context.
@@ -77,16 +89,16 @@ class SimulationContext {
    * This constructor simply sets the network config for the context but
    * otherwise performs no initialization whatsoever. Use Create instead.
    */
-  SimulationContext(const SimulatedNetworkConfigCreator& config)
-      : m_network_conf_creator(config), m_nparties(0) {}
+  Context(std::shared_ptr<NetworkConfig> config)
+      : m_network_config(config), m_nparties(0) {}
 
   /**
-   * @brief Get the network config for a particular channel.
+   * @brief Get the config for a channel.
    * @param channel_id the ID of the channel
    * @return a SimulatedNetworkConfig for the channel.
    */
-  SimulatedNetworkConfig NetworkConfig(ChannelId channel_id) const {
-    return m_network_conf_creator(channel_id);
+  ChannelConfig ChannelConfiguration(ChannelId channel_id) const {
+    return m_network_config->Get(channel_id);
   }
 
   /**
@@ -106,21 +118,44 @@ class SimulationContext {
   }
 
   /**
-   * @brief Record a write operation
-   * @param id the ID of the channel the write was performed on
-   * @param n the number of bytes written
-   * @param ts a timestamp indicating when the write took place
+   * @brief Add a write operation.
+   * @param id the identifier of the channel that the write occured on.
+   * @param n the number of bytes written.
+   * @param time the time the write happened.
    */
-  void RecordWrite(ChannelId id, std::size_t n, util::Time::Duration ts) {
-    m_writes[id].emplace_back(WriteOp{n, ts});
+  void AddWrite(ChannelId id, std::size_t n, util::Time::Duration time) {
+    m_writes[id].emplace(n, time);
   }
 
   /**
-   * @brief Get recorded write operations on a particular channel.
-   * @param id the ID of the channel
+   * @brief Check if a channel has any unprocessed writes on it.
+   * @param id the identifier for the channel.
+   * @return true if the channel has unprocessed writes. False otherwise.
    */
-  std::vector<WriteOp>& Writes(ChannelId id) {
-    return m_writes[id];
+  bool HasWrite(ChannelId id) const {
+    return !(m_writes.find(id) == m_writes.end() || m_writes.at(id).empty());
+  }
+
+  /**
+   * @brief Get the next write on a channel.
+   * @param id the identifier of the channel.
+   * @return a write operation.
+   *
+   * This method does not check if there are any writes.
+   */
+  WriteOp& NextWrite(ChannelId id) {
+    return m_writes[id].front();
+  }
+
+  /**
+   * @brief Delete a write operation.
+   * @param id the identifier of the channel.
+   *
+   * This method is meant to be called after a write operation has had all its
+   * data processed. In a nutshell, when <code>op.amount == 0</code>.
+   */
+  void DeleteWrite(ChannelId id) {
+    m_writes[id].pop();
   }
 
   /**
@@ -144,6 +179,19 @@ class SimulationContext {
    */
   SimulationTrace Trace(std::size_t id) const {
     return m_traces[id];
+  }
+
+  /**
+   * @brief Check if a party has terminated.
+   * @param id the ID of the party.
+   * @return true if the party has terminated, and otherwise false.
+   */
+  bool HasTerminated(std::size_t id) const {
+    if (Trace(id).empty()) {
+      return false;
+    }
+    const auto t = Trace(id).back()->EventType();
+    return t == sim::Event::Type::STOP || t == sim::Event::Type::KILLED;
   }
 
   /**
@@ -210,20 +258,25 @@ class SimulationContext {
    */
   void Rollback(std::size_t id);
 
+  /**
+   * @brief Obtain a View of this context.
+   */
+  View GetView();
+
  private:
-  SimulatedNetworkConfigCreator m_network_conf_creator;
+  std::shared_ptr<NetworkConfig> m_network_config;
 
   std::size_t m_nparties;
 
   std::vector<SimulationTrace> m_traces;
   std::size_t m_trace_index;
 
-  std::map<ChannelId, std::shared_ptr<ChannelBuffer>> m_buffers;
+  std::unordered_map<ChannelId, std::shared_ptr<ChannelBuffer>> m_buffers;
 
   State m_state = State::COMMIT;
 
-  std::map<ChannelId, std::vector<WriteOp>> m_writes;
-  std::map<ChannelId, std::vector<WriteOp>> m_writes_backup;
+  std::unordered_map<ChannelId, std::queue<WriteOp>> m_writes;
+  std::unordered_map<ChannelId, std::queue<WriteOp>> m_writes_backup;
 
   util::Time::TimePoint m_checkpoint;
 
@@ -234,12 +287,52 @@ class SimulationContext {
  * @brief Create a simulation context with in-memory channels.
  */
 template <>
-std::shared_ptr<SimulationContext>
-SimulationContext::Create<MemoryBackedChannelBuffer>(
+std::shared_ptr<Context> Context::Create<MemoryBackedChannelBuffer>(
     std::size_t number_of_parties,
-    const SimulatedNetworkConfigCreator& config);
+    std::shared_ptr<NetworkConfig> config);
 
-// template <>
+/**
+ * @brief View of a context.
+ *
+ * View provides a read-only view of certain parts of the current Context.
+ */
+class Context::View {
+ public:
+  /**
+   * @brief Get the trace of a party.
+   * @param id the ID of the party.
+   */
+  SimulationTrace Trace(std::size_t id) const {
+    return m_ctx.Trace(id);
+  }
+
+  /**
+   * @brief Check if a party has terminated.
+   * @param id the ID of the party.
+   * @return true if the party has terminated, and otherwise false.
+   */
+  bool HasTerminated(std::size_t id) const {
+    return m_ctx.HasTerminated(id);
+  }
+
+  /**
+   * @brief Get the total number of parties in the simulation.
+   */
+  std::size_t NumberOfParties() const {
+    return m_ctx.NumberOfParties();
+  }
+
+ private:
+  friend Context;
+
+  View(const Context& ctx) : m_ctx(ctx) {}
+
+  const Context& m_ctx;
+};
+
+inline Context::View Context::GetView() {
+  return Context::View(*this);
+}
 
 }  // namespace scl::sim
 

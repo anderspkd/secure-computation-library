@@ -21,8 +21,11 @@
 #include <array>
 #include <cstdint>
 #include <iomanip>
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "scl/serialization/serializers.h"
 
 namespace scl::util {
 
@@ -72,6 +75,20 @@ struct IUFHash {
   IUFHash<HashImpl>& Update(std::string_view string) {
     return Update(reinterpret_cast<const unsigned char*>(string.data()),
                   string.size());
+  }
+
+  /**
+   * @brief Update the hash function with the content of a serializable type.
+   * @param data the data.
+   * @return the updated Hash object.
+   */
+  template <typename T>
+  IUFHash<HashImpl>& Update(const T& data) {
+    using Sr = seri::Serializer<T>;
+    const auto size = Sr::SizeOf(data);
+    const auto buf = std::make_unique<unsigned char[]>(size);
+    Sr::Write(data, buf.get());
+    return Update(buf.get(), size);
   }
 
   /**

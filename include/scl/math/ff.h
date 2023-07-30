@@ -255,6 +255,36 @@ class FF final : Add<FF<Field>>,
   friend class FFAccess;
 };
 
+/**
+ * @brief Returns the order of a finite field.
+ */
+template <typename F>
+Number Order();
+
+/**
+ * @brief Raise an element to a power.
+ * @param base the base.
+ * @param exp the exponent.
+ * @return \p base raised to the \p exp th power.
+ */
+template <typename T>
+FF<T> Exp(const FF<T>& base, std::size_t exp) {
+  if (exp == 0) {
+    return FF<T>::One();
+  }
+
+  const auto n = sizeof(std::size_t) * 8 - __builtin_clzll(exp);
+  FF r = FF<T>::One();
+  for (std::size_t i = n; i-- > 0;) {
+    r *= r;
+    if (((exp >> i) & 1) == 1) {
+      r *= base;
+    }
+  }
+
+  return r;
+}
+
 }  // namespace scl::math
 
 #endif  // SCL_MATH_FF_H

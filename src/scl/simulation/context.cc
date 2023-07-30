@@ -17,16 +17,19 @@
 
 #include "scl/simulation/context.h"
 
+#include "scl/simulation/config.h"
+#include "scl/simulation/event.h"
 #include "scl/simulation/mem_channel_buffer.h"
 #include "scl/simulation/simulator.h"
 
-using SimCtx = scl::sim::SimulationContext;
+using namespace scl;
 
 template <>
-std::shared_ptr<SimCtx> SimCtx::Create<scl::sim::MemoryBackedChannelBuffer>(
+std::shared_ptr<sim::Context>
+sim::Context::Create<sim::MemoryBackedChannelBuffer>(
     std::size_t number_of_parties,
-    const SimulatedNetworkConfigCreator& config) {
-  auto ctx = std::make_shared<SimulationContext>(config);
+    std::shared_ptr<sim::NetworkConfig> config) {
+  auto ctx = std::make_shared<Context>(config);
 
   ctx->m_nparties = number_of_parties;
   ctx->m_traces.resize(number_of_parties);
@@ -51,14 +54,9 @@ std::size_t Next(std::size_t id, std::size_t n) {
   return (id + 1) % n;
 }
 
-bool HasTerminated(const scl::sim::SimulationTrace& trace) {
-  return !trace.empty() &&
-         trace.back()->EventType() == scl::sim::Event::Type::STOP;
-}
-
 }  // namespace
 
-std::optional<std::size_t> SimCtx::NextToRun(
+std::optional<std::size_t> sim::Context::NextToRun(
     std::optional<std::size_t> current) {
   // party 0 is always the party to go first.
   if (!current.has_value()) {
@@ -70,11 +68,11 @@ std::optional<std::size_t> SimCtx::NextToRun(
   if (m_state == State::ROLLBACK) {
     // the last party in m_next_party_cand is assumed to be the party for
     // which current tried to Recv or HasData from.
-    auto next = m_next_party_cand.back();
+    const auto next = m_next_party_cand.back();
 
     // if this party has already finished, then current will never be able to
     // finish, so we crash the simulation here.
-    if (HasTerminated(m_traces[next])) {
+    if (HasTerminated(next)) {
       throw SimulationFailure(
           "party tried to receive data from terminated party");
     }
@@ -85,12 +83,14 @@ std::optional<std::size_t> SimCtx::NextToRun(
     if (next == current) {
       throw SimulationFailure("infinite loop detected");
     }
+
+    return next;
   }
 
   std::size_t next = Next(current.value(), m_nparties);
   std::size_t terminated = 0;
   while (terminated < m_nparties) {
-    if (!HasTerminated(m_traces[next])) {
+    if (!HasTerminated(next)) {
       return next;
     }
     terminated++;
@@ -100,14 +100,14 @@ std::optional<std::size_t> SimCtx::NextToRun(
   return {};
 }
 
-scl::util::Time::Duration SimCtx::Checkpoint(std::size_t id) {
+util::Time::Duration sim::Context::Checkpoint(std::size_t id) {
   const auto latest = LatestTimestamp(id);
   const auto last_checkpoint = m_checkpoint;
   UpdateCheckpoint();
   return latest + (m_checkpoint - last_checkpoint);
 }
 
-void SimCtx::Prepare(std::size_t id) {
+void sim::Context::Prepare(std::size_t id) {
   if (m_state == State::COMMIT || m_state == State::ROLLBACK) {
     // Save the current head of m_traces so we can discard new events if this
     // party has to rollback.
@@ -128,7 +128,7 @@ void SimCtx::Prepare(std::size_t id) {
   m_state = State::PREPARE;
 }
 
-void SimCtx::Commit(std::size_t id) {
+void sim::Context::Commit(std::size_t id) {
   if (m_state == State::PREPARE) {
     m_writes_backup.clear();
     for (std::size_t i = 0; i < m_nparties; ++i) {
@@ -142,7 +142,7 @@ void SimCtx::Commit(std::size_t id) {
   m_state = State::COMMIT;
 }
 
-void SimCtx::Rollback(std::size_t id) {
+void sim::Context::Rollback(std::size_t id) {
   if (m_state == State::PREPARE) {
     m_traces[id].resize(m_trace_index);
     m_writes = m_writes_backup;

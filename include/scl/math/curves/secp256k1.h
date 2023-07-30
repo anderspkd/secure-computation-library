@@ -57,7 +57,7 @@ struct Secp256k1 {
   /**
    * @brief Finite field modulo a Secp256k1 prime order sub-group.
    */
-  struct Order {
+  struct Scalar {
     /**
      * @brief Internal type of elements.
      */

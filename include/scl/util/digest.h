@@ -20,7 +20,6 @@
 
 #include <array>
 #include <cstddef>
-#include <iomanip>
 #include <string>
 
 #include "scl/util/str.h"
@@ -34,12 +33,7 @@ namespace scl::util {
  * This type is effectively <code>std::array<unsigned char, N / 8</code>.
  */
 template <std::size_t Bits>
-struct Digest {
-  /**
-   * @brief The actual type of a digest.
-   */
-  using Type = std::array<unsigned char, Bits / 8>;
-};
+using Digest = std::array<unsigned char, Bits / 8>;
 
 /**
  * @brief Convert a digest to a string.

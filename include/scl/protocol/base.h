@@ -48,7 +48,7 @@ struct Protocol {
   /**
    * @brief Default protocol name.
    */
-  constexpr static const char* kDefaultName = "UNNAMED";
+  constexpr static const char* DEFAULT_NAME = "UNNAMED";
 
   virtual ~Protocol(){};
   /**
@@ -67,7 +67,7 @@ struct Protocol {
    * other. The default value is Protocol::kDefaultName.
    */
   virtual std::string Name() const {
-    return Protocol::kDefaultName;
+    return Protocol::DEFAULT_NAME;
   }
 
   /**

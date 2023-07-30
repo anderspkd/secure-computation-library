@@ -36,21 +36,27 @@ using Elem = Field::ValueType;
     }                                          \
   } while (0)
 
-// The prime modulus p
-static const mp_limb_t kPrime[] = {
-    0xFFFFFFFEFFFFFC2F,  //
-    0xFFFFFFFFFFFFFFFF,  //
-    0xFFFFFFFFFFFFFFFF,  //
-    0xFFFFFFFFFFFFFFFF   //
-};
+static const scl::math::RedParams<NUM_LIMBS> RD = {
+    // Prime
+    {
+        0xFFFFFFFEFFFFFC2F,  //
+        0xFFFFFFFFFFFFFFFF,  //
+        0xFFFFFFFFFFFFFFFF,  //
+        0xFFFFFFFFFFFFFFFF   //
+    },
+    // Montgomery constant
+    {
+        0xD838091DD2253531,  //
+        0xBCB223FEDC24A059,  //
+        0x9C46C2C295F2B761,  //
+        0xC9BD190515538399   //
+    }};
 
-// n' such that 2^{256} * a + kPrime * n' == 1
-static const mp_limb_t kMontyN[] = {
-    0x27C7F6E22DDACACF,  //
-    0x434DDC0123DB5FA6,  //
-    0x63B93D3D6A0D489E,  //
-    0x3642E6FAEAAC7C66   //
-};
+template <>
+scl::math::Number scl::math::Order<scl::math::FF<Field>>() {
+  return Number::FromString(
+      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
+}
 
 // The internal data type is an STL array, but gmp expects pointers.
 #define PTR(X) (X).data()
@@ -58,27 +64,27 @@ static const mp_limb_t kMontyN[] = {
 template <>
 void scl::math::FieldConvertIn<Field>(Elem& out, const int value) {
   out = {0};
-  MontyInFromInt<NUM_LIMBS>(PTR(out), value, kPrime);
+  MontyInFromInt<NUM_LIMBS>(PTR(out), value, RD);
 }
 
 template <>
 void scl::math::FieldAdd<Field>(Elem& out, const Elem& op) {
-  MontyModAdd<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
+  MontyModAdd<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
 void scl::math::FieldSubtract<Field>(Elem& out, const Elem& op) {
-  MontyModSub<NUM_LIMBS>(PTR(out), PTR(op), kPrime);
+  MontyModSub<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
 void scl::math::FieldNegate<Field>(Elem& out) {
-  MontyModNeg<NUM_LIMBS>(PTR(out), kPrime);
+  MontyModNeg<NUM_LIMBS>(PTR(out), RD);
 }
 
 template <>
 void scl::math::FieldMultiply<Field>(Elem& out, const Elem& op) {
-  MontyModMul<NUM_LIMBS>(PTR(out), PTR(op), kPrime, kMontyN);
+  MontyModMul<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 #define ONE \
@@ -94,7 +100,7 @@ void scl::math::FieldInvert<Field>(Elem& out) {
   };
 
   Elem res = ONE;
-  MontyModInv<NUM_LIMBS>(PTR(res), PTR(out), kPrime, kPrimeMinus2, kMontyN);
+  MontyModInv<NUM_LIMBS>(PTR(res), PTR(out), kPrimeMinus2, RD);
   out = res;
 }
 
@@ -105,23 +111,23 @@ bool scl::math::FieldEqual<Field>(const Elem& in1, const Elem& in2) {
 
 template <>
 void scl::math::FieldFromBytes<Field>(Elem& dest, const unsigned char* src) {
-  MontyFromBytes<NUM_LIMBS>(PTR(dest), src, kPrime);
+  MontyFromBytes<NUM_LIMBS>(PTR(dest), src, RD);
 }
 
 template <>
 void scl::math::FieldToBytes<Field>(unsigned char* dest, const Elem& src) {
-  MontyToBytes<NUM_LIMBS>(dest, PTR(src), kPrime, kMontyN);
+  MontyToBytes<NUM_LIMBS>(dest, PTR(src), RD);
 }
 
 template <>
 void scl::math::FieldFromString<Field>(Elem& out, const std::string& src) {
   out = {0};
-  MontyFromString<NUM_LIMBS>(PTR(out), kPrime, src);
+  MontyFromString<NUM_LIMBS>(PTR(out), src, RD);
 }
 
 template <>
 std::string scl::math::FieldToString<Field>(const Elem& in) {
-  return MontyToString<NUM_LIMBS>(PTR(in), kPrime, kMontyN);
+  return MontyToString<NUM_LIMBS>(PTR(in), RD);
 }
 
 bool scl::math::FFAccess<Field>::IsSmaller(
@@ -144,7 +150,7 @@ scl::math::FF<Field> scl::math::FFAccess<Field>::ComputeSqrt(
 
   FF<Field> out;
   Elem res = ONE;
-  MontyModExp<NUM_LIMBS>(PTR(res), PTR(x.m_value), e, kPrime, kMontyN);
+  MontyModExp<NUM_LIMBS>(PTR(res), PTR(x.m_value), e, RD);
   out.m_value = res;
   return out;
 }  // LCOV_EXCL_LINE

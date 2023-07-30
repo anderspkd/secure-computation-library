@@ -28,7 +28,7 @@ using namespace scl;
 
 TEST_CASE("Feldman", "[ss]") {
   using EC = math::EC<math::Secp256k1>;
-  using FF = EC::Order;
+  using FF = EC::ScalarField;
 
   auto prg = util::PRG::Create();
   std::size_t t = 4;

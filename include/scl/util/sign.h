@@ -40,7 +40,7 @@ class ECDSA;
 template <>
 struct Signature<ECDSA> {
  private:
-  using ElementType = math::FF<math::Secp256k1::Order>;
+  using ElementType = math::FF<math::Secp256k1::Scalar>;
 
  public:
   /**
@@ -84,18 +84,16 @@ struct Signature<ECDSA> {
  * @brief The ECDSA signature scheme.
  */
 class ECDSA {
-  using Curve = math::EC<math::Secp256k1>;
-
  public:
   /**
    * @brief Public key type. A curve point.
    */
-  using PublicKey = Curve;
+  using PublicKey = math::EC<math::Secp256k1>;
 
   /**
    * @brief Secret key type. An element modulo the order of the curve.
    */
-  using SecretKey = Curve::Order;
+  using SecretKey = PublicKey::ScalarField;
 
   /**
    * @brief Derive the public key correspond to a given secret key.
@@ -118,10 +116,10 @@ class ECDSA {
   static Signature<ECDSA> Sign(const SecretKey& secret_key,
                                const D& digest,
                                PRG& prg) {
-    const auto k = Curve::Order::Random(prg);
+    const auto k = SecretKey::Random(prg);
     const auto R = k * PublicKey::Generator();
     const auto rx = ConversionFunc(R);
-    const auto h = DigestToElement<Curve::Order>(digest);
+    const auto h = DigestToElement(digest);
 
     return {rx, k.Inverse() * (h + secret_key * rx)};
   }
@@ -137,31 +135,44 @@ class ECDSA {
   static bool Verify(const PublicKey& public_key,
                      const Signature<ECDSA>& signature,
                      const D& digest) {
-    const auto h = DigestToElement<SecretKey>(digest);
+    const auto h = DigestToElement(digest);
     const auto [r, s] = signature;
     const auto si = s.Inverse();
-    const auto R1 = (h * si) * Curve::Generator();
+    const auto R1 = (h * si) * PublicKey::Generator();
     const auto R2 = (r * si) * public_key;
     const auto R = R1 + R2;
     return !R.PointAtInfinity() && ConversionFunc(R) == r;
   }
 
- private:
-  template <typename T, typename D>
-  static T DigestToElement(const D& digest) {
-    if (digest.size() < T::ByteSize()) {
-      unsigned char buf[T::ByteSize()] = {0};
-      std::copy(digest.begin(), digest.end(), buf);
-      return T::Read(buf);
-    }
-    return T::Read(digest.data());
+  /**
+   * @brief Computes the ECDSA conversion function.
+   * @param R the curve point to convert into a scalar field element.
+   * @return a scalar.
+   *
+   * This function computes the \f$C(R)\f$ function that takes curve point
+   * \f$R=(r_x, r_y)\f$ and outputs a scalar as \f$r_x \mod p\f$ where \f$p\f$
+   * is order of a subgroup.
+   */
+  static SecretKey ConversionFunc(const PublicKey& R) {
+    const auto rx_f = R.ToAffine()[0];
+    unsigned char rx_bytes[SecretKey::ByteSize()];
+    rx_f.Write(rx_bytes);
+    return SecretKey::Read(rx_bytes);
   }
 
-  static Curve::Order ConversionFunc(const PublicKey& R) {
-    const auto rx_f = R.ToAffine()[0];
-    unsigned char rx_bytes[Curve::Field::ByteSize()];
-    rx_f.Write(rx_bytes);
-    return Curve::Order::Read(rx_bytes);
+  /**
+   * @brief Converts a digest into an element of the scalar field.
+   * @param digest the digest.
+   * @return a scalar.
+   */
+  template <typename D>
+  static SecretKey DigestToElement(const D& digest) {
+    if (digest.size() < SecretKey::ByteSize()) {
+      unsigned char buf[SecretKey::ByteSize()] = {0};
+      std::copy(digest.begin(), digest.end(), buf);
+      return SecretKey::Read(buf);
+    }
+    return SecretKey::Read(digest.data());
   }
 };
 

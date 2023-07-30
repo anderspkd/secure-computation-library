@@ -44,6 +44,7 @@ TEMPLATE_TEST_CASE("Polynomial construct", "[ss][math]", FIELD_DEFS) {
   REQUIRE(x[0] == FF(1));
   REQUIRE(x[1] == FF(2));
   REQUIRE(x[2] == FF(6));
+  REQUIRE(x.Coefficients() == coeff);
 
   math::Vec with_zeros = {FF(1), FF(0), FF(3), FF(0)};
   auto y = math::Polynomial<FF>::Create(with_zeros);

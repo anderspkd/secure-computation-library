@@ -20,7 +20,9 @@
 #include <ostream>
 #include <stdexcept>
 
-void scl::sim::SimulatedNetworkConfig::Builder::Validate() const {
+using namespace scl;
+
+void sim::ChannelConfig::Builder::Validate() const {
   if (m_bandwidth.has_value()) {
     if (m_bandwidth.value() == 0) {
       throw std::invalid_argument("bandwidth cannot be 0");
@@ -49,28 +51,26 @@ void scl::sim::SimulatedNetworkConfig::Builder::Validate() const {
   }
 }
 
-std::ostream& scl::sim::operator<<(std::ostream& os,
-                                   const SimulatedNetworkConfig& config) {
-  os << "SimulationConfig{";
-  os << "Bandwidth: " << config.Bandwidth() << " bits/s, ";
-  os << "RTT: " << config.RTT() << " ms, ";
-  os << "MSS: " << config.MSS() << " bytes, ";
-  os << "PackageLoss: " << 100 * config.PackageLoss() << "%, ";
-  os << "WindowSize: " << config.WindowSize() << " bytes}";
+std::ostream& sim::operator<<(std::ostream& os, const ChannelConfig& config) {
+  if (config.Type() == sim::ChannelConfig::NetworkType::TCP) {
+    os << "SimulationConfig{";
+    os << "Type: TCP, ";
+    os << "Bandwidth: " << config.Bandwidth() << " bits/s, ";
+    os << "RTT: " << config.RTT() << " ms, ";
+    os << "MSS: " << config.MSS() << " bytes, ";
+    os << "PackageLoss: " << 100 * config.PackageLoss() << "%, ";
+    os << "WindowSize: " << config.WindowSize() << " bytes}";
+  } else {
+    os << "SimulationConfig{INSTANT}";
+  }
 
   return os;
 }
 
-scl::sim::SimulatedNetworkConfig scl::sim::SimulatedNetworkConfig::Default() {
-  return SimulatedNetworkConfig::Builder{}.Build();
+sim::ChannelConfig sim::ChannelConfig::Default() {
+  return ChannelConfig::Builder{}.Build();
 }
 
-scl::sim::SimulatedNetworkConfig scl::sim::SimulatedNetworkConfig::Loopback() {
-  return SimulatedNetworkConfig::Builder{}
-      .Bandwidth(-1)
-      .MSS(-1)
-      .PackageLoss(0)
-      .RTT(0)
-      .WindowSize(-1)
-      .Build();
+sim::ChannelConfig sim::ChannelConfig::Loopback() {
+  return ChannelConfig::Builder{}.Type(NetworkType::INSTANT).Build();
 }

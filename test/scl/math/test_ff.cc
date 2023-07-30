@@ -131,6 +131,7 @@ TEMPLATE_TEST_CASE("FF Multiplication", "[math][ff]", FIELD_DEFS) {
   REPEAT {
     auto a = RandomNonZero<FF>(prg);
     auto b = RandomNonZero<FF>(prg);
+    REQUIRE(a * b != zero);
     REQUIRE(a * b == b * a);
     auto c = RandomNonZero<FF>(prg);
     REQUIRE(c * (a + b) == c * a + c * b);
@@ -190,4 +191,19 @@ TEMPLATE_TEST_CASE("FF serialization", "[math][ff]", FIELD_DEFS) {
     auto b = FF::Read(buf);
     REQUIRE(a == b);
   }
+}
+
+TEMPLATE_TEST_CASE("FF Exp", "[math][ff]", FIELD_DEFS) {
+  using FF = TestType;
+
+  auto prg = util::PRG::Create("FF exp");
+
+  auto a = RandomNonZero<FF>(prg);
+
+  REQUIRE(a == Exp(a, 1));
+  REQUIRE(a * a == Exp(a, 2));
+
+  REQUIRE(a * a * a * a * a * a == Exp(a, 6));
+
+  REQUIRE(FF::One() == Exp(a, 0));
 }

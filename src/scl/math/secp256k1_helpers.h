@@ -44,23 +44,23 @@ struct FFAccess<Secp256k1::Field> {
  * @brief Helper class for Secp256k1::Order.
  */
 template <>
-struct FFAccess<Secp256k1::Order> {
+struct FFAccess<Secp256k1::Scalar> {
   /**
    * @brief Convert a field element out of montgomery representation.
    */
-  static FF<Secp256k1::Order> FromMonty(const FF<Secp256k1::Order>& element);
+  static FF<Secp256k1::Scalar> FromMonty(const FF<Secp256k1::Scalar>& element);
 
   /**
    * @brief Find the position of the highest set bit.
    */
-  static std::size_t HigestSetBit(const FF<Secp256k1::Order>& element);
+  static std::size_t HigestSetBit(const FF<Secp256k1::Scalar>& element);
 
   /**
    * @brief Check if a particular bit is set.
    *
    * \p pos is assumed to be at or below HighestSetBit(\p element).
    */
-  static bool TestBit(const FF<Secp256k1::Order>& element, std::size_t pos);
+  static bool TestBit(const FF<Secp256k1::Scalar>& element, std::size_t pos);
 };
 
 }  // namespace scl::math

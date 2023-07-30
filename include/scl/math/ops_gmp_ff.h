@@ -18,6 +18,7 @@
 #ifndef SCL_MATH_OPS_GMP_FF_H
 #define SCL_MATH_OPS_GMP_FF_H
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
@@ -33,147 +34,175 @@ namespace scl::math {
 #define SCL_BITS_PER_LIMB static_cast<std::size_t>(mp_bits_per_limb)
 #define SCL_BYTES_PER_LIMB sizeof(mp_limb_t)
 
-#define SCL_COPY(out, in, size)                \
-  do {                                         \
-    for (std::size_t i = 0; i < (size); ++i) { \
-      *((out) + i) = *((in) + i);              \
-    }                                          \
-  } while (0)
+/**
+ * @brief Reduction parameters used to perform Montgomery reduction.
+ * @tparam N the number of words in the parameters.
+ *
+ * This struct is used to perform Montgomery modular reductions and is used
+ * throughout all <code>Monty*</code> functions.
+ */
+template <std::size_t N>
+struct RedParams {
+  /**
+   * @brief The prime.
+   */
+  mp_limb_t prime[N];
+
+  /**
+   * @brief A constant used in montgomery reduction.
+   *
+   * This constant is computed as \f$mc = -prime^{-1} \mod 2^{w * N}\f$ where
+   * \f$w\f$ is the word size in bits (probably 64).
+   */
+  mp_limb_t mc[N];
+};
 
 /**
  * @brief Convert a value into montgomery form mod some prime.
- * @tparam N the size of the input
- * @param value the value to convert
- * @param mod the prime
+ * @tparam N the number of limbs in the value to convert.
+ * @param out the value to convert.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
-void MontyIn(mp_limb_t* value, const mp_limb_t* mod) {
+void MontyIn(mp_limb_t* out, const RedParams<N> rp) {
   mp_limb_t qp[N + 1];
   mp_limb_t shift[2 * N] = {0};
-  // multiply val by 2^{256}
-  SCL_COPY(shift + N, value, N);
-  // compute (val * 2^{256}) mod p
-  mpn_tdiv_qr(qp, value, 0, shift, 2 * N, mod, N);
+  // multiply val by 2^{w * N}
+  std::copy(out, out + N, shift + N);
+  // compute (val * 2^{w * N}) mod p
+  mpn_tdiv_qr(qp, out, 0, shift, 2 * N, rp.prime, N);
 }
 
 /**
  * @brief Perform a montgomery reduction.
- * @param val the value to reduce
- * @param mod the modulus
- * @param np a number n such that <code>2^{N} * a + mod * n == 1</code>
- * @tparam N the size of the input
+ * @tparam N the number of limbs in the value to reduce.
+ * @param out the value to reduce.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
-void MontyRedc(mp_limb_t* val, const mp_limb_t* mod, const mp_limb_t* np) {
-  // https://cp-algorithms.com/algebra/montgomery_multiplication.html#montgomery-reduction
+void MontyRedc(mp_limb_t* out, const RedParams<N> rp) {
+  // q = val * rp.mc
+  // TODO: This can be optimized a bit since q is reduced modulo 2^N below
   mp_limb_t q[2 * N];
-  // TODO: This multiplication can be optimized because we're only interested in
-  // the result mod r = 2^{N}.
-  mpn_mul_n(q, val, np, N);
+  mpn_mul_n(q, out, rp.mc, N);
+
+  // c = (q mod 2^N) * rp.prime
   mp_limb_t c[2 * N];
-  mpn_mul_n(c, q, mod, N);
-  auto borrow = mpn_sub_n(c, val, c, 2 * N);
+  mpn_mul_n(c, q, rp.prime, N);
 
-  SCL_COPY(val, c + N, N);
+  // val + c / 2^256
+  const auto carry = mpn_add_n(c, out, c, 2 * N);
+  std::copy(c + N, c + 2 * N, out);
 
-  if (borrow) {
-    mpn_add_n(val, val, mod, N);
+  if (carry || mpn_cmp(out, rp.prime, N) >= 0) {
+    mpn_sub_n(out, out, rp.prime, N);
   }
 }
 
 /**
- * @brief Convert an integer into a multi-precision value.
- * @param out result
- * @param value the int to convert from
- * @param mod a modulus
+ * @brief Convert an integer into a value.
+ * @tparam N the number of limbs in the output.
+ * @param out destination of the converted value.
+ * @param value the int to convert from.
+ * @param rp reduction parameters.
  *
  * This function converts an integer into an \p N limb multi-precision integer
  * modulo \p mod. The function assumes that \p out has been zeroed.
  */
 template <std::size_t N>
-void MontyInFromInt(mp_limb_t* out, const int value, const mp_limb_t* mod) {
+void MontyInFromInt(mp_limb_t* out, const int value, const RedParams<N> rp) {
   out[0] = std::abs(value);
   if (value < 0) {
-    mpn_sub_n(out, mod, out, N);
+    mpn_sub_n(out, rp.prime, out, N);
   }
-  MontyIn<N>(out, mod);
+  MontyIn<N>(out, rp);
 }
 
 /**
  * @brief Perform a modular addition.
- * @param out the first operand and destination of result
- * @param op the second operand
- * @param mod the modulus
+ * @tparam N the number of limbs in the values to add.
+ * @param out the first operand and destination of result.
+ * @param op the second operand.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
-void MontyModAdd(mp_limb_t* out, const mp_limb_t* op, const mp_limb_t* mod) {
+void MontyModAdd(mp_limb_t* out, const mp_limb_t* op, const RedParams<N> rp) {
   auto carry = mpn_add_n(out, out, op, N);
-  if (carry || mpn_cmp(out, mod, N) >= 0) {
-    mpn_sub_n(out, out, mod, N);
+  if (carry || mpn_cmp(out, rp.prime, N) >= 0) {
+    mpn_sub_n(out, out, rp.prime, N);
   }
 }
 
 /**
  * @brief Perform a modular subtraction.
- * @param out the first operand and destination of result
- * @param op the second operand
- * @param mod the modulus.
+ * @tparam N the number of limbs in the values to subtract.
+ * @param out the first operand and destination of result.
+ * @param op the second operand.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
-void MontyModSub(mp_limb_t* out, const mp_limb_t* op, const mp_limb_t* mod) {
+void MontyModSub(mp_limb_t* out, const mp_limb_t* op, const RedParams<N> rp) {
   auto carry = mpn_sub_n(out, out, op, N);
   if (carry) {
-    mpn_add_n(out, out, mod, N);
+    mpn_add_n(out, out, rp.prime, N);
   }
 }
 
 /**
  * @brief Perform a modular negation.
- * @param out the operand and destination of result
- * @param mod the modulus
+ * @tparam N the number of limbs in the value to negate.
+ * @param out the operand and destination of result.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
-void MontyModNeg(mp_limb_t* out, const mp_limb_t* mod) {
+void MontyModNeg(mp_limb_t* out, const RedParams<N> rp) {
   mp_limb_t t[N] = {0};
-  MontyModSub<N>(t, out, mod);
-  SCL_COPY(out, t, N);
+  MontyModSub<N>(t, out, rp);
+  std::copy(t, t + N, out);
 }
 
 /**
- * @brief Perform a modular multiplication in montgomery representation
- * @param out the first operand and destination of result
- * @param op the second operand
- * @param mod the modulus
- * @param np a constant used for montgomery reduction
- * @see MontyRedc
+ * @brief Multiply two values in Montgomery representation.
+ * @tparam N the number of limbs in the valus to multiply.
+ * @param out the first operand and destiantion of result.
+ * @param op the second operand.
+ * @param rp reduction parameters.
+ *
+ * This function performs an <i>interleaved</i> Montgomery modular
+ * multiplication.
  */
 template <std::size_t N>
-void MontyModMul(mp_limb_t* out,
-                 const mp_limb_t* op,
-                 const mp_limb_t* mod,
-                 const mp_limb_t* np) {
-  mp_limb_t res[2 * N];
-  mpn_mul_n(res, out, op, N);
-  MontyRedc<N>(res, mod, np);
-  SCL_COPY(out, res, N);
+void MontyModMul(mp_limb_t* out, const mp_limb_t* op, const RedParams<N> rp) {
+  mp_limb_t u[N + 1] = {0};
+
+  for (std::size_t i = 0; i < N; ++i) {
+    const auto c0 = mpn_addmul_1(u, op, N, out[i]);
+    const auto q = rp.mc[0] * u[0];
+    const auto c1 = mpn_addmul_1(u, rp.prime, N, q);
+    u[N] += c1 + c0;
+    std::copy(u + 1, u + N + 1, u);
+    u[N] = ((c1 & c0) | ((c1 | c0) & ~u[N])) >> (SCL_BITS_PER_LIMB - 1);
+  }
+
+  std::copy(u, u + N, out);
+  if (u[N] || mpn_cmp(out, rp.prime, N) >= 0) {
+    mpn_sub_n(out, out, rp.prime, N);
+  }
 }
 
 /**
- * @brief Perform a modular squaring in montgomery representation
- * @param out the output
- * @param op the operand to square
- * @param mod the modulus
- * @param np a constant used for montgomery reduction
+ * @brief Square a value in Montgomery representation.
+ * @tparam N the number of limbs in the value to square.
+ * @param out the output.
+ * @param op the operand to square.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
-void MontyModSqr(mp_limb_t* out,
-                 const mp_limb_t* op,
-                 const mp_limb_t* mod,
-                 const mp_limb_t* np) {
+void MontyModSqr(mp_limb_t* out, const mp_limb_t* op, const RedParams<N> rp) {
   mp_limb_t res[2 * N];
   mpn_sqr(res, op, N);
-  MontyRedc<N>(res, mod, np);
-  SCL_COPY(out, res, N);
+  MontyRedc<N>(res, rp);
+  std::copy(res, res + N, out);
 }
 
 /**
@@ -186,54 +215,53 @@ inline bool TestBit(const mp_limb_t* v, std::size_t pos) {
 }
 
 /**
- * @brief Modular exponentation
- * @param out output. Must initially be equal to 1 in montgomery form
- * @param x the base
- * @param e the exponent
- * @param mod the modulus
- * @param np a constant used for montgomery reduction
- *
- * This function performs a modular exponentation of a multiprecision integer in
- * montgomery form.
+ * @brief Modular exponentation.
+ * @tparam N the number of limbs in the base.
+ * @param out output. Must initially be equal to 1 in montgomery form.
+ * @param base the base.
+ * @param exp the exponent.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
 void MontyModExp(mp_limb_t* out,
-                 const mp_limb_t* x,
-                 const mp_limb_t* e,
-                 const mp_limb_t* mod,
-                 const mp_limb_t* np) {
-  auto n = mpn_sizeinbase(e, N, 2);
+                 const mp_limb_t* base,
+                 const mp_limb_t* exp,
+                 const RedParams<N> rp) {
+  auto n = mpn_sizeinbase(exp, N, 2);
   for (std::size_t i = n; i-- > 0;) {
-    MontyModSqr<N>(out, out, mod, np);
-    if (TestBit(e, i)) {
-      MontyModMul<N>(out, x, mod, np);
+    MontyModSqr<N>(out, out, rp);
+    if (TestBit(exp, i)) {
+      MontyModMul<N>(out, base, rp);
     }
   }
 }
 
 /**
  * @brief Compute a modular inverse.
- * @param out output destination
- * @param op the value to invert
- * @param mod the modulus
- * @param mod_minus_2 \p mod minus 2
- * @param np a constant used for montgomery reduction
+ * @tparam N the number of limbs in the value to invert.
+ * @param out output destination.
+ * @param op the value to invert.
+ * @param prime_minus_2 \p rp.prime minus 2.
+ * @param rp reduction parameters.
+ *
+ * This function computes a modular inverse using Fermats little thereom. The \p
+ * prime_minus_2 argument is assumed to be \f$rp.prime - 2\f$.
  */
 template <std::size_t N>
 void MontyModInv(mp_limb_t* out,
                  const mp_limb_t* op,
-                 const mp_limb_t* mod,
-                 const mp_limb_t* mod_minus_2,
-                 const mp_limb_t* np) {
+                 const mp_limb_t* prime_minus_2,
+                 const RedParams<N> rp) {
   if (mpn_zero_p(op, N)) {
     throw std::invalid_argument("0 not invertible modulo prime");
   }
 
-  MontyModExp<N>(out, op, mod_minus_2, mod, np);
+  MontyModExp<N>(out, op, prime_minus_2, rp);
 }
 
 /**
- * @brief Compute a comparison between two values
+ * @brief Compute a comparison between two values.
+ * @tparam N the number of limbs in the values to convert.
  * @return a value x such that <code>R(x, 0) <==> R(lhs, rhs)</code>.
  */
 template <std::size_t N>
@@ -243,38 +271,38 @@ int CompareValues(const mp_limb_t* lhs, const mp_limb_t* rhs) {
 
 /**
  * @brief Deserialize a value and convert to montgomery form.
- * @param out output destination
- * @param src where to read the value from
- * @param mod the modulus
+ * @tparam N the number of limbs in the value to convert.
+ * @param out output destination.
+ * @param src where to read the value from.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
 void MontyFromBytes(mp_limb_t* out,
                     const unsigned char* src,
-                    const mp_limb_t* mod) {
+                    const RedParams<N> rp) {
   for (int i = N - 1; i >= 0; --i) {
     for (int j = SCL_BYTES_PER_LIMB - 1; j >= 0; --j) {
       out[i] |= static_cast<mp_limb_t>(*src++) << (j * 8);
     }
   }
 
-  MontyIn<N>(out, mod);
+  MontyIn<N>(out, rp);
 }
 
 /**
  * @brief Write a value in montgomery form to a buffer.
- * @param dest the output buffer
- * @param src the input value
- * @param mod the modulus
- * @param np a montgomery constant
+ * @tparam N the number of limbs in value to convert.
+ * @param dest the output buffer.
+ * @param src the input value.
+ * @param rp reduction parameters.
  */
 template <std::size_t N>
 void MontyToBytes(unsigned char* dest,
                   const mp_limb_t* src,
-                  const mp_limb_t* mod,
-                  const mp_limb_t* np) {
+                  const RedParams<N> rp) {
   mp_limb_t padded[2 * N] = {0};
-  SCL_COPY(padded, src, N);
-  MontyRedc<N>(padded, mod, np);
+  std::copy(src, src + N, padded);
+  MontyRedc<N>(padded, rp);
 
   std::size_t c = 0;
   for (int i = N - 1; i >= 0; --i) {
@@ -287,6 +315,7 @@ void MontyToBytes(unsigned char* dest,
 
 /**
  * @brief Find the first non-zero character in a string.
+ * @return the position of the first non-zero character.
  *
  * This method is used handle a string representation of a number with leading
  * zeros.
@@ -294,15 +323,17 @@ void MontyToBytes(unsigned char* dest,
 std::size_t FindFirstNonZero(const std::string& s);
 
 /**
- * @brief Print a value.
+ * @brief Convert a value in Montgomery representation to a string.
+ * @tparam N the number of limbs in the value to convert.
+ * @param val the value to convert.
+ * @param rp reduction parameters used to convert \p val out of Montgomery form.
+ * @return \p val as a string.
  */
 template <std::size_t N>
-std::string MontyToString(const mp_limb_t* val,
-                          const mp_limb_t* mod,
-                          const mp_limb_t* np) {
+std::string MontyToString(const mp_limb_t* val, const RedParams<N> rp) {
   mp_limb_t padded[2 * N] = {0};
-  SCL_COPY(padded, val, N);
-  MontyRedc<N>(padded, mod, np);
+  std::copy(val, val + N, padded);
+  MontyRedc<N>(padded, rp);
 
   static const char* kHexChars = "0123456789abcdef";
   std::stringstream ss;
@@ -331,11 +362,15 @@ std::string MontyToString(const mp_limb_t* val,
 
 /**
  * @brief Read a value from a string.
+ * @tparam N the number of limbs in the value to convert.
+ * @param out the output destination.
+ * @param str the string to read the output from.
+ * @param rp reduction parameters used to convert out into Montgomery form.
  */
 template <std::size_t N>
 void MontyFromString(mp_limb_t* out,
-                     const mp_limb_t* mod,
-                     const std::string& str) {
+                     const std::string& str,
+                     const RedParams<N> rp) {
   if (str.length()) {
     auto n_ = str.length();
     if (n_ > 64) {
@@ -358,13 +393,12 @@ void MontyFromString(mp_limb_t* out,
       out[c--] =
           util::FromHexString<mp_limb_t>(std::string(beg + i, beg + end));
     }
-    MontyIn<N>(out, mod);
+    MontyIn<N>(out, rp);
   }
 }
 
 #undef SCL_BITS_PER_LIMB
 #undef SCL_BYTES_PER_LIMB
-#undef SCL_COPY
 
 }  // namespace scl::math
 
