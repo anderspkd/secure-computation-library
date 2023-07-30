@@ -274,7 +274,10 @@ class Vec {
    * @param scalar the scalar
    * @return a scaled version of this vector.
    */
-  Vec ScalarMultiply(const Elem& scalar) const {
+  template <
+      typename Scalar,
+      std::enable_if_t<util::HasOperatorMul<Elem, Scalar>::value, bool> = true>
+  Vec ScalarMultiply(const Scalar& scalar) const {
     std::vector<Elem> r;
     r.reserve(Size());
     for (const auto& v : m_values) {
@@ -288,7 +291,10 @@ class Vec {
    * @param scalar the scalar
    * @return a scaled version of this vector.
    */
-  Vec& ScalarMultiplyInPlace(const Elem& scalar) {
+  template <
+      typename Scalar,
+      std::enable_if_t<util::HasOperatorMul<Elem, Scalar>::value, bool> = true>
+  Vec& ScalarMultiplyInPlace(const Scalar& scalar) {
     for (auto& v : m_values) {
       v *= scalar;
     }

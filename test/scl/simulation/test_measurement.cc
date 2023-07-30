@@ -50,11 +50,8 @@ TEST_CASE("Measurement data", "[sim]") {
   dm.AddSample(7);
   dm.AddSample(9);
 
-  REQUIRE(dm.Min() == 2);
-  REQUIRE(dm.Max() == 9);
-  REQUIRE(dm.Mean() == 5);
-  REQUIRE(dm.Median() == 5);
-  REQUIRE(dm.StdDev() == 2);
+  REQUIRE(dm.Size() == 8);
+  REQUIRE(dm.Samples() == std::vector<long double>({2, 4, 4, 4, 5, 5, 7, 9}));
 }
 
 TEST_CASE("Measurement time", "[sim]") {
@@ -70,19 +67,9 @@ TEST_CASE("Measurement time", "[sim]") {
   tm.AddSample(7ms);
   tm.AddSample(9ms);
 
-  REQUIRE(tm.Min() == 2ms);
-  REQUIRE(tm.Max() == 9ms);
-  REQUIRE(tm.Mean() == 5ms);
-  REQUIRE(tm.Median() == 5ms);
-  REQUIRE(tm.StdDev() == 2ms);
-}
-
-TEST_CASE("Measurement median", "[sim]") {
-  sim::DataMeasurement dm;
-  REQUIRE(dm.Median() == 0);
-
-  dm.AddSample(123);
-  REQUIRE(dm.Median() == 123);
+  REQUIRE(tm.Size() == 8);
+  REQUIRE(tm.Samples() == std::vector<util::Time::Duration>(
+                              {2ms, 4ms, 4ms, 4ms, 5ms, 5ms, 7ms, 9ms}));
 }
 
 TEST_CASE("Measurement samples", "[sim]") {
@@ -95,5 +82,5 @@ TEST_CASE("Measurement samples", "[sim]") {
 
   dm.AddSample(22);
   REQUIRE(dm.Size() == 2);
-  REQUIRE(dm.Samples() == std::vector<long double>{22, 42});
+  REQUIRE(dm.Samples() == std::vector<long double>{42, 22});
 }

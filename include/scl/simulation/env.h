@@ -29,15 +29,14 @@ namespace scl::sim {
 /**
  * @brief A ProtocolEnvironment::Clock implementation for simulated protocols.
  */
-class SimulatedClock final : public proto::Env::Clock {
+class Clock final : public proto::Env::Clock {
  public:
   /**
    * @brief Create a new clock for simulations.
    * @param ctx a simulation context. Used to read the current time of the party
    * @param id the ID of the party
    */
-  SimulatedClock(std::shared_ptr<SimulationContext> ctx, std::size_t id)
-      : m_ctx(ctx), m_id(id){};
+  Clock(std::shared_ptr<Context> ctx, std::size_t id) : m_ctx(ctx), m_id(id){};
 
   /**
    * @brief Get the total elapsed time of this party.
@@ -60,21 +59,21 @@ class SimulatedClock final : public proto::Env::Clock {
   }
 
  private:
-  std::shared_ptr<SimulationContext> m_ctx;
+  std::shared_ptr<Context> m_ctx;
   std::size_t m_id;
 };
 
 /**
  * @brief A ProtocolEnvironment::Thread implementation for simulated protocols.
  */
-class SimulatedThreadCtx final : public proto::Env::Thread {
+class ThreadCtx final : public proto::Env::Thread {
  public:
   /**
    * @brief Create a new thread context for simulations.
    * @param ctx a simulation context
    * @param id the ID of the party
    */
-  SimulatedThreadCtx(std::shared_ptr<SimulationContext> ctx, std::size_t id)
+  ThreadCtx(std::shared_ptr<Context> ctx, std::size_t id)
       : m_ctx(ctx), m_id(id){};
 
   /**
@@ -94,7 +93,7 @@ class SimulatedThreadCtx final : public proto::Env::Thread {
   }
 
  private:
-  std::shared_ptr<SimulationContext> m_ctx;
+  std::shared_ptr<Context> m_ctx;
   std::size_t m_id;
 };
 

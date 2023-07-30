@@ -21,9 +21,12 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "scl/math/curves/secp256k1.h"
+#include "scl/math/ec.h"
 #include "scl/math/fp.h"
 #include "scl/math/mat.h"
 #include "scl/math/vec.h"
+#include "scl/util/traits.h"
 
 using namespace scl;
 
@@ -169,4 +172,26 @@ TEST_CASE("Vector sub vector", "[math][la]") {
   REQUIRE_THROWS_MATCHES(v.SubVector(2, 1),
                          std::logic_error,
                          Catch::Matchers::Message("invalid range"));
+}
+
+TEST_CASE("Vector scalar EC", "[math]") {
+  using Curve = math::EC<math::Secp256k1>;
+
+  auto v = math::Vec<Curve>{Curve::Generator(),
+                            Curve::Generator(),
+                            Curve::Generator()};
+
+  const auto s = Curve::ScalarField(123);
+  auto w = v.ScalarMultiply(s);
+
+  REQUIRE(w[0] == Curve::Generator() * s);
+  REQUIRE(w[1] == Curve::Generator() * s);
+  REQUIRE(w[2] == Curve::Generator() * s);
+
+  const auto z = math::Number(123);
+  auto u = w.ScalarMultiply(math::Number(123));
+
+  REQUIRE(u[0] == w[0] * z);
+  REQUIRE(u[1] == w[1] * z);
+  REQUIRE(u[2] == w[2] * z);
 }

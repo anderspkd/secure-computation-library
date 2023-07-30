@@ -78,6 +78,14 @@ class Polynomial {
   }
 
   /**
+   * @brief Get the coefficients of this polynomial.
+   * @return the coefficients.
+   */
+  Vec<T> Coefficients() const {
+    return m_coefficients;
+  }
+
+  /**
    * @brief Add two polynomials.
    */
   Polynomial Add(const Polynomial& q) const;

@@ -332,7 +332,10 @@ class Mat : Print<Mat<Elem>> {
    * @param scalar the scalar
    * @return this scaled by \p scalar.
    */
-  Mat ScalarMultiply(const Elem& scalar) const {
+  template <
+      typename Scalar,
+      std::enable_if_t<util::HasOperatorMul<Elem, Scalar>::value, bool> = true>
+  Mat ScalarMultiply(const Scalar& scalar) const {
     Mat copy(m_rows, m_cols, m_values);
     return copy.ScalarMultiplyInPlace(scalar);
   }
@@ -342,7 +345,10 @@ class Mat : Print<Mat<Elem>> {
    * @param scalar the scalar
    * @return this scaled by \p scalar.
    */
-  Mat& ScalarMultiplyInPlace(const Elem& scalar) {
+  template <
+      typename Scalar,
+      std::enable_if_t<util::HasOperatorMul<Elem, Scalar>::value, bool> = true>
+  Mat& ScalarMultiplyInPlace(const Scalar& scalar) {
     for (auto& v : m_values) {
       v *= scalar;
     }

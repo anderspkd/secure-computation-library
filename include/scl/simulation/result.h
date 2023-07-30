@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -83,7 +84,7 @@ class Result {
    * <p>This function is used by Simulate() to create its return value after
    * running a simulation. The input to this function is a list of traces
    * <code>traces</code> where <code>traces[i][j]</code> is trace from i'th
-   * iteration of party j.
+   * replication of party j.
    *
    * <p>Internally, this function will collect and aggregate all traces created
    * when simulation a party, and output a Result object for each party.
@@ -145,11 +146,11 @@ class Result {
   /**
    * @brief Write a trace to a stream.
    * @param stream the stream to write the trace to.
-   * @param iteration the simulation iteration
+   * @param replication the simulation replication
    * @param name the segment. None if the entire trace should be written.
    */
   void WriteTrace(std::ostream& stream,
-                  std::size_t iteration,
+                  std::size_t replication,
                   const SegmentName& name = {}) const;
 
   /**
@@ -158,15 +159,35 @@ class Result {
    */
   void Write(std::ostream& stream) const;
 
+  /**
+   * @brief Get the simulation trace from a particular replication.
+   * @param replication the replication.
+   * @return the simulation trace from a replication.
+   */
+  SimulationTrace Trace(std::size_t replication) const {
+    return m_traces[replication];
+  }
+
+  /**
+   * @brief Get the measurement associated with a checkpoint.
+   * @param key the string identifying the checkpoint.
+   * @return the time measurement.
+   */
+  TimeMeasurement Checkpoint(const std::string& key) const {
+    return m_checkpoints.at(key);
+  }
+
  private:
   static Result Create(const std::vector<SimulationTrace>& traces);
 
   Result(
       const std::vector<SimulationTrace>& traces,
       const std::unordered_map<SegmentName, SegmentMeasurement>& measurements,
+      const std::unordered_map<std::string, TimeMeasurement>& checkpoints,
       const std::vector<std::string>& segment_names)
       : m_traces(traces),
         m_measurements(measurements),
+        m_checkpoints(checkpoints),
         m_segment_names(segment_names){};
 
   // The raw simulation trace
@@ -174,6 +195,9 @@ class Result {
 
   // per-segment measurements
   std::unordered_map<SegmentName, SegmentMeasurement> m_measurements;
+
+  // user made checkpoints
+  std::unordered_map<std::string, TimeMeasurement> m_checkpoints;
 
   // segment names
   std::vector<std::string> m_segment_names;

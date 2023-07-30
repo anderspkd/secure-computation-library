@@ -32,6 +32,8 @@
 #include "scl/simulation/measurement.h"
 #include "scl/util/time.h"
 
+using namespace scl;
+
 namespace {
 
 struct SentRecv {
@@ -41,27 +43,31 @@ struct SentRecv {
 
 using SentRecvMap = std::unordered_map<std::size_t, SentRecv>;
 
+using CheckpointMap = std::unordered_map<std::string, util::Time::Duration>;
+
 struct Segment {
   // sent/recv to other parties
   SentRecvMap sr;
   // execution time of the segment
-  scl::util::Time::Duration dur;
+  util::Time::Duration dur;
+  // checkpoints found in the segment
+  CheckpointMap checkpoints;
 };
 
-std::string GetNameFromSegmentEvent(std::shared_ptr<scl::sim::Event> event) {
-  return std::dynamic_pointer_cast<scl::sim::SegmentEvent>(event)->Name();
+std::string GetNameFromSegmentEvent(std::shared_ptr<sim::Event> event) {
+  return std::dynamic_pointer_cast<sim::SegmentEvent>(event)->Name();
 }
 
 using NamedSegment = std::pair<std::string, Segment>;
 
-bool IsRecvEvent(std::shared_ptr<scl::sim::NetworkDataEvent> ptr) {
-  return ptr->EventType() == scl::sim::Event::Type::RECV ||
-         ptr->EventType() == scl::sim::Event::Type::PACKET_RECV;
+bool IsRecvEvent(std::shared_ptr<sim::NetworkDataEvent> ptr) {
+  return ptr->EventType() == sim::Event::Type::RECV ||
+         ptr->EventType() == sim::Event::Type::PACKET_RECV;
 }
 
-bool IsSendEvent(std::shared_ptr<scl::sim::NetworkDataEvent> ptr) {
-  return ptr->EventType() == scl::sim::Event::Type::SEND ||
-         ptr->EventType() == scl::sim::Event::Type::PACKET_SEND;
+bool IsSendEvent(std::shared_ptr<sim::NetworkDataEvent> ptr) {
+  return ptr->EventType() == sim::Event::Type::SEND ||
+         ptr->EventType() == sim::Event::Type::PACKET_SEND;
 }
 
 /**
@@ -73,7 +79,7 @@ template <typename It>
 NamedSegment ParseSegment(It start, const It end) {
   Segment seg;
 
-  std::shared_ptr<scl::sim::Event> event = *start;
+  std::shared_ptr<sim::Event> event = *start;
 
   const auto name = GetNameFromSegmentEvent(event);
   seg.dur = event->Timestamp();
@@ -82,7 +88,8 @@ NamedSegment ParseSegment(It start, const It end) {
 
   while (start < end) {
     event = *start;
-    auto ne = std::dynamic_pointer_cast<scl::sim::NetworkDataEvent>(event);
+
+    auto ne = std::dynamic_pointer_cast<sim::NetworkDataEvent>(event);
 
     if (ne != nullptr) {
       const auto id = ne->RemoteParty();
@@ -94,7 +101,12 @@ NamedSegment ParseSegment(It start, const It end) {
       }
     }
 
-    if (event->EventType() == scl::sim::Event::Type::SEGMENT_END) {
+    if (event->EventType() == sim::Event::Type::CHECKPOINT) {
+      const auto* ce = dynamic_cast<sim::CheckpointEvent*>(event.get());
+      seg.checkpoints[ce->Id()] = ce->Timestamp();
+    }
+
+    if (event->EventType() == sim::Event::Type::SEGMENT_END) {
       seg.dur = event->Timestamp() - seg.dur;
       return {name, seg};
     }
@@ -130,7 +142,7 @@ void UpdateSentRecv(SentRecvMap& m0, const SentRecvMap& m1) {
   }
 }
 
-using SegmentMap = std::unordered_map<scl::sim::Result::SegmentName, Segment>;
+using SegmentMap = std::unordered_map<sim::Result::SegmentName, Segment>;
 
 /**
  * @brief Merge segments by their name.
@@ -141,7 +153,7 @@ using SegmentMap = std::unordered_map<scl::sim::Result::SegmentName, Segment>;
 SegmentMap MergeSegments(const std::vector<NamedSegment>& segments) {
   SegmentMap m;
 
-  m[{}].dur = scl::util::Time::Duration::zero();
+  m[{}].dur = util::Time::Duration::zero();
 
   for (const auto& named_seg : segments) {
     const auto name = named_seg.first;
@@ -152,6 +164,8 @@ SegmentMap MergeSegments(const std::vector<NamedSegment>& segments) {
     } else {
       m[name].dur += segm.dur;
       UpdateSentRecv(m[name].sr, segm.sr);
+      m[name].checkpoints.insert(segm.checkpoints.begin(),
+                                 segm.checkpoints.end());
     }
 
     m[{}].dur += segm.dur;
@@ -163,10 +177,11 @@ SegmentMap MergeSegments(const std::vector<NamedSegment>& segments) {
 
 template <typename It>
 void ValidateTraceHeadAndTail(It head, It tail) {
-  if ((*head)->EventType() != scl::sim::Event::Type::START) {
+  if ((*head)->EventType() != sim::Event::Type::START) {
     throw std::logic_error("incomplete trace");
   }
-  if ((*tail)->EventType() != scl::sim::Event::Type::STOP) {
+  const auto last = (*tail)->EventType();
+  if (last != sim::Event::Type::STOP && last != sim::Event::Type::KILLED) {
     throw std::logic_error("truncated trace");
   }
 }
@@ -183,9 +198,10 @@ void AppendIfMissing(std::vector<std::string>& list,
 /**
  * @brief Create a result from a list of simulation traces.
  */
-scl::sim::Result scl::sim::Result::Create(
-    const std::vector<scl::sim::SimulationTrace>& traces) {
+sim::Result sim::Result::Create(
+    const std::vector<sim::SimulationTrace>& traces) {
   std::vector<SegmentMap> segments;
+
   for (const auto& trace : traces) {
     auto b = trace.begin();
     const auto e = trace.end();
@@ -196,9 +212,9 @@ scl::sim::Result scl::sim::Result::Create(
     // Extract each segment
     std::vector<NamedSegment> named_segments;
     while (b < e) {
-      std::shared_ptr<scl::sim::Event> event = *b;
+      std::shared_ptr<sim::Event> event = *b;
 
-      if (event->EventType() == scl::sim::Event::Type::SEGMENT_BEGIN) {
+      if (event->EventType() == sim::Event::Type::SEGMENT_BEGIN) {
         named_segments.emplace_back(ParseSegment(b, e));
       }
 
@@ -211,11 +227,19 @@ scl::sim::Result scl::sim::Result::Create(
 
   std::vector<std::string> segment_names;
   std::unordered_map<SegmentName, SegmentMeasurement> segment_measurements;
+  std::unordered_map<std::string, TimeMeasurement> checkpoints;
 
   for (const auto& seg_map : segments) {
     for (const auto& [seg_name, seg] : seg_map) {
       if (seg_name.has_value()) {
-        AppendIfMissing(segment_names, seg_name.value());
+        // clang-tidy cannot see that we check if seg_name has a value above, so
+        // disable the linter here to avoid false negatives.
+        const auto v = seg_name.value();  // NOLINT
+        AppendIfMissing(segment_names, v);
+      }
+
+      for (const auto& [s, c] : seg.checkpoints) {
+        checkpoints[s].AddSample(c);
       }
 
       segment_measurements[seg_name].duration_m.AddSample(seg.dur);
@@ -233,21 +257,21 @@ scl::sim::Result scl::sim::Result::Create(
     }
   }
 
-  return Result(traces, segment_measurements, segment_names);
+  return Result(traces, segment_measurements, checkpoints, segment_names);
 }
 
-std::vector<scl::sim::Result> scl::sim::Result::Create(
-    const std::vector<std::vector<scl::sim::SimulationTrace>>& traces) {
+std::vector<sim::Result> sim::Result::Create(
+    const std::vector<std::vector<sim::SimulationTrace>>& traces) {
   const auto num_parties = traces[0].size();
-  const auto num_iterations = traces.size();
+  const auto num_replications = traces.size();
 
   std::vector<Result> results;
   results.reserve(num_parties);
 
   for (std::size_t i = 0; i < num_parties; ++i) {
     std::vector<SimulationTrace> traces_for_party;
-    traces_for_party.reserve(num_iterations);
-    for (std::size_t j = 0; j < num_iterations; ++j) {
+    traces_for_party.reserve(num_replications);
+    for (std::size_t j = 0; j < num_replications; ++j) {
       traces_for_party.emplace_back(traces[j][i]);
     }
 
@@ -271,7 +295,7 @@ std::vector<std::size_t> KeySet(const std::unordered_map<std::size_t, V>& map) {
 
 }  // namespace
 
-std::vector<std::size_t> scl::sim::Result::Interactions(
+std::vector<std::size_t> sim::Result::Interactions(
     const SegmentName& name) const {
   return KeySet(m_measurements.at(name).channels_m);
 }
@@ -287,46 +311,41 @@ void WriteSegmentTrace(std::ostream& stream, It start, It end) {
 
 }  // namespace
 
-void scl::sim::Result::WriteTrace(
-    std::ostream& stream,
-    std::size_t iteration,
-    const scl::sim::Result::SegmentName& name) const {
-  if (iteration >= m_traces.size()) {
-    throw std::invalid_argument("invalid iteration");
+void sim::Result::WriteTrace(std::ostream& stream,
+                             std::size_t replication,
+                             const sim::Result::SegmentName& name) const {
+  if (replication >= m_traces.size()) {
+    throw std::invalid_argument("invalid replication");
   }
 
   if (!name.has_value()) {
     WriteSegmentTrace(stream,
-                      m_traces[iteration].begin(),
-                      m_traces[iteration].end());
+                      m_traces[replication].begin(),
+                      m_traces[replication].end());
   } else {
-    auto start = m_traces[iteration].begin();
-    auto end = m_traces[iteration].end();
-
     const auto& segment_name = name.value();
-    while (start != end) {
-      const auto seg_ev = std::dynamic_pointer_cast<SegmentEvent>(*start);
+    bool in_relevant_segment = false;
 
-      if (seg_ev != nullptr &&
-          seg_ev->EventType() == Event::Type::SEGMENT_BEGIN &&
-          seg_ev->Name() == segment_name) {
-        break;
+    for (const auto& e : m_traces[replication]) {
+      if (in_relevant_segment) {
+        stream << e << std::endl;
       }
-      start++;
-    }
 
-    auto offset = start + 1;
-    while (offset != end) {
-      const auto seg_ev = std::dynamic_pointer_cast<SegmentEvent>(*offset);
-      if (seg_ev != nullptr &&
-          seg_ev->EventType() == Event::Type::SEGMENT_END &&
-          seg_ev->Name() == segment_name) {
-        break;
+      const auto s = std::dynamic_pointer_cast<SegmentEvent>(e);
+
+      if (s != nullptr) {
+        if (!in_relevant_segment &&
+            s->EventType() == Event::Type::SEGMENT_BEGIN &&
+            s->Name() == segment_name) {
+          stream << e << std::endl;
+          in_relevant_segment = true;
+        }
+
+        if (in_relevant_segment && s->EventType() == Event::Type::SEGMENT_END) {
+          in_relevant_segment = false;
+        }
       }
-      offset++;
     }
-
-    WriteSegmentTrace(stream, start, offset + 1);
   }
 }
 
@@ -352,7 +371,7 @@ void WriteObj(std::ostream& stream, const long double& val) {
   stream << val;
 }
 
-void WriteObj(std::ostream& stream, const scl::util::Time::Duration& d) {
+void WriteObj(std::ostream& stream, const util::Time::Duration& d) {
   auto t = std::chrono::duration<long double, std::milli>(d).count();
   WriteObj(stream, t);
 }
@@ -374,37 +393,25 @@ void WriteUnit<long double>(std::ostream& stream) {
 }
 
 template <>
-void WriteUnit<scl::util::Time::Duration>(std::ostream& stream) {
+void WriteUnit<util::Time::Duration>(std::ostream& stream) {
   WriteObj(stream, std::string{"milliseconds"});
 }
 
 template <typename T>
-void WriteObj(std::ostream& stream, const scl::sim::Measurement<T>& m) {
+void WriteList(std::ostream& stream, const std::vector<T>& items);
+
+template <typename T>
+void WriteObj(std::ostream& stream, const sim::Measurement<T>& m) {
   stream << "{";
-  WriteKey(stream, "samples");
-  WriteObj(stream, m.Size());
-  stream << ",";
   WriteKey(stream, "unit");
   WriteUnit<T>(stream);
   stream << ",";
-  WriteKey(stream, "mean");
-  WriteObj(stream, m.Mean());
-  stream << ",";
-  WriteKey(stream, "median");
-  WriteObj(stream, m.Median());
-  stream << ",";
-  WriteKey(stream, "min");
-  WriteObj(stream, m.Min());
-  stream << ",";
-  WriteKey(stream, "max");
-  WriteObj(stream, m.Max());
-  stream << ",";
-  WriteKey(stream, "std_dev");
-  WriteObj(stream, m.StdDev());
+  WriteKey(stream, "samples");
+  WriteList(stream, m.Samples());
   stream << "}";
 }
 
-void WriteObj(std::ostream& stream, const scl::sim::SendRecvMeasurement& srm) {
+void WriteObj(std::ostream& stream, const sim::SendRecvMeasurement& srm) {
   stream << "{";
   WriteKey(stream, "sent");
   WriteObj(stream, srm.sent);
@@ -414,13 +421,12 @@ void WriteObj(std::ostream& stream, const scl::sim::SendRecvMeasurement& srm) {
   stream << "}";
 }
 
-void WriteObj(std::ostream& stream,
-              const scl::sim::Result::SegmentMeasurement& m) {
+void WriteObj(std::ostream& stream, const sim::Result::SegmentMeasurement& m) {
   stream << "{";
-  WriteKey(stream, "execution_time");
+  WriteKey(stream, "time");
   WriteObj(stream, m.duration_m);
   stream << ",";
-  WriteKey(stream, "send_recv");
+  WriteKey(stream, "data");
   WriteObj(stream, m.send_recv_m);
   stream << ",";
   WriteKey(stream, "channels");
@@ -459,7 +465,7 @@ void WriteMap(std::ostream& stream, const std::unordered_map<K, V>& map) {
 
 }  // namespace
 
-void scl::sim::Result::Write(std::ostream& stream) const {
+void sim::Result::Write(std::ostream& stream) const {
   stream << "{";
 
   WriteKey(stream, "names");
@@ -468,6 +474,10 @@ void scl::sim::Result::Write(std::ostream& stream) const {
 
   WriteKey(stream, "measurements");
   WriteMap(stream, m_measurements);
+  stream << ",";
+
+  WriteKey(stream, "checkpoints");
+  WriteMap(stream, m_checkpoints);
 
   stream << "}" << std::endl;
 }

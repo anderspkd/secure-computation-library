@@ -41,7 +41,7 @@ class Sha3 final : public IUFHash<Sha3<DigestSize>> {
   /**
    * @brief The type of a SHA3 digest.
    */
-  using DigestType = typename Digest<DigestSize>::Type;
+  using DigestType = Digest<DigestSize>;
 
   /**
    * @brief Update the hash function with a set of bytes.

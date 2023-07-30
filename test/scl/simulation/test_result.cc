@@ -113,11 +113,11 @@ TEST_CASE("Simulation result sent recv", "[sim]") {
                               Stop());
 
   auto r = sim::Result::Create(trace);
-  REQUIRE(r[0].TransferAmounts(2).sent.Mean() == 0);
-  REQUIRE(r[0].TransferAmounts(2).recv.Mean() == 444);
+  REQUIRE(r[0].TransferAmounts(2).sent.Samples()[0] == 0);
+  REQUIRE(r[0].TransferAmounts(2).recv.Samples()[0] == 444);
 
-  REQUIRE(r[0].TransferAmounts(1).sent.Mean() == 123 + 22);
-  REQUIRE(r[0].TransferAmounts(1, "bar").sent.Mean() == 22);
+  REQUIRE(r[0].TransferAmounts(1).sent.Samples()[0] == 123 + 22);
+  REQUIRE(r[0].TransferAmounts(1, "bar").sent.Samples()[0] == 22);
 
   std::vector<std::size_t> expected = {1, 2, 3};
   REQUIRE_THAT(r[0].Interactions(), Catch::Matchers::UnorderedEquals(expected));
@@ -126,16 +126,43 @@ TEST_CASE("Simulation result sent recv", "[sim]") {
                Catch::Matchers::UnorderedEquals(expected_bar));
 }
 
+namespace {
+
+std::shared_ptr<sim::Event> Checkpoint(const std::string& message) {
+  return std::make_shared<sim::CheckpointEvent>(util::Time::Duration::zero(),
+                                                message);
+}
+
+}  // namespace
+
+TEST_CASE("Simulation result with checkpoint", "[sim]") {
+  TraceT trace = CREATE_TRACE(Start(),
+                              BeginSegment(),
+                              Checkpoint("x"),
+                              EndSegment(),
+                              BeginSegment(),
+                              Checkpoint("x"),
+                              Checkpoint("y"),
+                              EndSegment(),
+                              Stop());
+
+  auto r = sim::Result::Create(trace);
+  REQUIRE(r[0].Checkpoint("x").Size() == 1);
+  REQUIRE(r[0].Checkpoint("y").Size() == 1);
+}
+
 TEST_CASE("Simulation result write", "[sim]") {
   // TODO: This doesn't really test anything besides that Write is
   // stable(-ish). Ideally, the test should check that the result is consistent
   // with the content of a file on disk, but that likely requires that Write is
-  // deterministic, which is not the case base writes a ton of unordered maps.
+  // deterministic, which is not the case because writes a ton of unordered
+  // maps.
 
   TraceT trace = CREATE_TRACE(Start(),
                               BeginSegment(),
                               Send(0, 1, 123),
                               Recv(0, 2, 444),
+                              Checkpoint("x"),
                               EndSegment(),
                               BeginSegment("bar"),
                               Send(0, 3, 42),
@@ -150,4 +177,13 @@ TEST_CASE("Simulation result write", "[sim]") {
   r[0].Write(ss0);
   r[0].Write(ss1);
   REQUIRE(ss0.str() == ss1.str());
+}
+
+TEST_CASE("Simulation result write trace invalid replication", "[sim]") {
+  TraceT trace = CREATE_TRACE(Start(), Stop());
+  auto r = sim::Result::Create(trace);
+
+  REQUIRE_THROWS_MATCHES(r[0].WriteTrace(std::cout, 42),
+                         std::invalid_argument,
+                         Catch::Matchers::Message("invalid replication"));
 }

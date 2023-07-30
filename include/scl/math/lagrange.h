@@ -52,8 +52,7 @@ namespace scl::math {
  * @see https://en.wikipedia.org/wiki/Lagrange_polynomial
  */
 template <typename T>
-Vec<T> ComputeLagrangeBasis(const math::Vec<T>& nodes, int x) {
-  const auto _x = T{x};
+Vec<T> ComputeLagrangeBasis(const math::Vec<T>& nodes, const T& x) {
   const auto n = nodes.Size();
   std::vector<T> b;
   b.reserve(n);
@@ -63,12 +62,23 @@ Vec<T> ComputeLagrangeBasis(const math::Vec<T>& nodes, int x) {
     for (std::size_t j = 0; j < n; ++j) {
       if (i != j) {
         const auto xj = nodes[j];
-        ell *= (_x - xj) / (xi - xj);
+        ell *= (x - xj) / (xi - xj);
       }
     }
     b.emplace_back(ell);
   }
   return b;
+}
+
+/**
+ * @brief Computes a lagrange basis for a set of nodes.
+ * @param nodes the set of nodes.
+ * @param x the evaluation point x.
+ * @see ComputeLagrangeBasis
+ */
+template <typename T>
+Vec<T> ComputeLagrangeBasis(const math::Vec<T>& nodes, int x) {
+  return ComputeLagrangeBasis(nodes, T{x});
 }
 
 }  // namespace scl::math

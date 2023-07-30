@@ -33,17 +33,18 @@ TEST_CASE("Simulation MemoryBackedChannelBuffer", "[sim]") {
 
   std::vector<unsigned char> data = {1, 2, 3, 4};
 
-  chl0->Write(data);
+  chl0->Write(data.data(), data.size());
 
   REQUIRE(chl0->Size() == 0);
   REQUIRE(chl1->Size() == 4);
 
-  auto d = chl1->Read(2);
+  std::vector<unsigned char> d(2);
+  chl1->Read(d.data(), 2);
   REQUIRE(d == std::vector<unsigned char>{1, 2});
   REQUIRE(chl1->Size() == 2);
 
-  auto e = chl1->Read(2);
-  REQUIRE(e == std::vector<unsigned char>{3, 4});
+  chl1->Read(d.data(), 2);
+  REQUIRE(d == std::vector<unsigned char>{3, 4});
   REQUIRE(chl1->Size() == 0);
 }
 
@@ -60,18 +61,19 @@ TEST_CASE("Simulation MemoryBackedChannelBuffer rollback", "[sim]") {
 
     local->Prepare();
 
-    local->Write(data);
+    local->Write(data.data(), data.size());
 
     REQUIRE(remote->Size() == 4);
 
     local->Rollback();
     REQUIRE(remote->Size() == 0);
 
-    remote->Write(data);
+    remote->Write(data.data(), data.size());
 
     local->Prepare();
     REQUIRE(local->Size() == 4);
-    local->Read(2);
+    std::vector<unsigned char> d(2);
+    local->Read(d.data(), 2);
     REQUIRE(local->Size() == 2);
     local->Rollback();
 
@@ -85,23 +87,24 @@ TEST_CASE("Simulation MemoryBackedChannelBuffer rollback", "[sim]") {
 
     local->Prepare();
 
-    local->Write(data);
+    local->Write(data.data(), data.size());
     local->Commit();
 
     local->Prepare();
-    local->Write(data);
+    local->Write(data.data(), data.size());
 
     REQUIRE(remote->Size() == 8);
     local->Rollback();
 
     REQUIRE(remote->Size() == 4);
 
-    remote->Write(data);
+    remote->Write(data.data(), data.size());
 
     local->Prepare();
 
     REQUIRE(local->Size() == 4);
-    local->Read(2);
+    std::vector<unsigned char> d(2);
+    local->Read(d.data(), 2);
     REQUIRE(local->Size() == 2);
 
     local->Rollback();
@@ -112,16 +115,17 @@ TEST_CASE("Simulation MemoryBackedChannelBuffer rollback", "[sim]") {
     auto lo = sim::MemoryBackedChannelBuffer::CreateLoopback();
 
     lo->Prepare();
-    lo->Write(data);
+    lo->Write(data.data(), data.size());
     REQUIRE(lo->Size() == 4);
     lo->Commit();
 
     lo->Prepare();
 
-    lo->Write(data);
+    lo->Write(data.data(), data.size());
     REQUIRE(lo->Size() == 8);
 
-    auto d3 = lo->Read(3);
+    std::vector<unsigned char> d3(3);
+    lo->Read(d3.data(), 3);
     REQUIRE(d3 == std::vector<unsigned char>{1, 2, 3});
     REQUIRE(lo->Size() == 5);
 

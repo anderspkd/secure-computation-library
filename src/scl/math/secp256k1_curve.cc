@@ -25,8 +25,10 @@
 #include "scl/math/ec_ops.h"
 #include "scl/math/fp.h"
 
-using Curve = scl::math::Secp256k1;
-using Field = scl::math::FF<Curve::Field>;
+using namespace scl;
+
+using Curve = math::Secp256k1;
+using Field = math::FF<Curve::Field>;
 using Point = Curve::ValueType;
 
 // clang-format off
@@ -40,7 +42,7 @@ using Point = Curve::ValueType;
 static const Field kCurveB(7);
 
 template <>
-void scl::math::CurveSetPointAtInfinity<Curve>(Point& out) {
+void math::CurveSetPointAtInfinity<Curve>(Point& out) {
   out = POINT_AT_INFINITY;
 }
 
@@ -55,38 +57,36 @@ bool Valid(const Field& x, const Field& y) {
 }  // namespace
 
 template <>
-void scl::math::CurveSetAffine<Curve>(Point& out,
-                                      const Field& x,
-                                      const Field& y) {
+void math::CurveSetAffine<Curve>(Point& out, const Field& x, const Field& y) {
   if (Valid(x, y)) {
-    out = {x, y, Field(1)};
+    out = {x, y, Field::One()};
   } else {
     throw std::invalid_argument("provided (x, y) not on curve");
   }
 }
 
 template <>
-std::array<Field, 2> scl::math::CurveToAffine<Curve>(const Point& point) {
-  const auto Z = GET_Z(point);
-  return {GET_X(point) / Z, GET_Y(point) / Z};
+std::array<Field, 2> math::CurveToAffine<Curve>(const Point& point) {
+  const auto Z = GET_Z(point).Inverse();
+  return {GET_X(point) * Z, GET_Y(point) * Z};
 }
 
 template <>
-bool scl::math::CurveEqual<Curve>(const Point& in1, const Point& in2) {
-  const auto Z1 = GET_Z(in1);
-  const auto Z2 = GET_Z(in2);
+bool math::CurveEqual<Curve>(const Point& in1, const Point& in2) {
+  const auto& Z1 = GET_Z(in1);
+  const auto& Z2 = GET_Z(in2);
   // (X1, Y1, Z1) eqv (X2, Y2, Z2) <==> (X1 * Z2, Y1 * Z2) == (X2 * Z1, Y2 * Z2)
   return GET_X(in1) * Z2 == GET_X(in2) * Z1 &&
          GET_Y(in1) * Z2 == GET_Y(in2) * Z1;
 }
 
 template <>
-bool scl::math::CurveIsPointAtInfinity<Curve>(const Point& point) {
-  return CurveEqual<Curve>(point, POINT_AT_INFINITY);
+bool math::CurveIsPointAtInfinity<Curve>(const Point& point) {
+  return GET_Z(point) == Field::Zero();
 }
 
 template <>
-std::string scl::math::CurveToString<Curve>(const Point& point) {
+std::string math::CurveToString<Curve>(const Point& point) {
   std::string str;
   if (CurveIsPointAtInfinity<Curve>(point)) {
     str = "EC{POINT_AT_INFINITY}";
@@ -100,7 +100,7 @@ std::string scl::math::CurveToString<Curve>(const Point& point) {
 }  // LCOV_EXCL_LINE
 
 template <>
-void scl::math::CurveSetGenerator<Curve>(Point& out) {
+void math::CurveSetGenerator<Curve>(Point& out) {
   static const Point gen = {
       Field::FromString(
           "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
@@ -112,69 +112,97 @@ void scl::math::CurveSetGenerator<Curve>(Point& out) {
 }
 
 template <>
-void scl::math::CurveDouble<Curve>(Point& out) {
-  if (!CurveIsPointAtInfinity<Curve>(out)) {
-    if (GET_Y(out) == Field::Zero()) {
-      CurveSetPointAtInfinity<Curve>(out);
-    } else if (!CurveIsPointAtInfinity<Curve>(out)) {
-      const auto X = GET_X(out);
-      const auto Y = GET_Y(out);
-      const auto Z = GET_Z(out);
+void math::CurveDouble<Curve>(Point& out) {
+  // https://eprint.iacr.org/2015/1060.pdf algorithm 9.
 
-      const auto W = Field(3) * X * X;
-      const auto S = Y * Z;
-      const auto B = X * Y * S;
-      const auto eight = Field(8);
-      const auto H = W * W - eight * B;
+  static const auto b3 = Field(3 * 7);
 
-      out[0] = Field(2) * H * S;
-      const auto Ssqr = S * S;
-      out[1] = W * (Field(4) * B - H) - eight * Y * Y * Ssqr;
-      out[2] = eight * Ssqr * S;
-    }
-  }
+  auto t0 = GET_Y(out) * GET_Y(out);
+  auto z3 = t0 + t0;
+  z3 = z3 + z3;
+
+  z3 = z3 + z3;
+  auto t1 = GET_Y(out) * GET_Z(out);
+  auto t2 = GET_Z(out) * GET_Z(out);
+
+  t2 = b3 * t2;
+  auto x3 = t2 * z3;
+  auto y3 = t0 + t2;
+
+  z3 = t1 * z3;
+  t1 = t2 + t2;
+  t2 = t1 + t2;
+
+  t0 = t0 - t2;
+  y3 = t0 * y3;
+  y3 = x3 + y3;
+
+  t1 = GET_X(out) * GET_Y(out);
+  x3 = t0 * t1;
+  x3 = x3 + x3;
+
+  out[0] = x3;
+  out[1] = y3;
+  out[2] = z3;
 }
 
 template <>
-void scl::math::CurveAdd<Curve>(Point& out, const Point& in) {
-  if (CurveIsPointAtInfinity<Curve>(out)) {
-    out = in;
-  } else if (!CurveIsPointAtInfinity<Curve>(in)) {
-    const auto X1 = GET_X(out);
-    const auto Y1 = GET_Y(out);
-    const auto Z1 = GET_Z(out);
-    const auto X2 = GET_X(in);
-    const auto Y2 = GET_Y(in);
-    const auto Z2 = GET_Z(in);
+void math::CurveAdd<Curve>(Point& out, const Point& in) {
+  // https://eprint.iacr.org/2015/1060.pdf algorithm 7
 
-    const auto U1 = Y2 * Z1;
-    const auto U2 = Y1 * Z2;
-    const auto V1 = X2 * Z1;
-    const auto V2 = X1 * Z2;
+  static const auto b3 = Field(3 * 7);
 
-    if (V1 == V2) {
-      if (U1 != U2) {
-        CurveSetPointAtInfinity<Curve>(out);
-      } else {
-        CurveDouble<Curve>(out);
-      }
-    } else {
-      const auto U = U1 - U2;
-      const auto V = V1 - V2;
-      const auto W = Z1 * Z2;
-      const auto Vsqr = V * V;
-      const auto VsqrV2 = Vsqr * V2;
-      const auto Vcbe = Vsqr * V;
-      const auto A = U * U * W - Vcbe - Field(2) * VsqrV2;
-      out[0] = V * A;
-      out[1] = U * (VsqrV2 - A) - Vcbe * U2;
-      out[2] = Vcbe * W;
-    }
-  }
+  auto t0 = GET_X(out) * GET_X(in);
+  auto t1 = GET_Y(out) * GET_Y(in);
+  auto t2 = GET_Z(out) * GET_Z(in);
+
+  auto t3 = GET_X(out) + GET_Y(out);
+  auto t4 = GET_X(in) + GET_Y(in);
+  t3 = t3 * t4;
+
+  t4 = t0 + t1;
+  t3 = t3 - t4;
+  t4 = GET_Y(out) + GET_Z(out);
+
+  auto x3 = GET_Y(in) + GET_Z(in);
+  t4 = t4 * x3;
+  x3 = t1 + t2;
+
+  t4 = t4 - x3;
+  x3 = GET_X(out) + GET_Z(out);
+  auto y3 = GET_X(in) + GET_Z(in);
+
+  x3 = x3 * y3;
+  y3 = t0 + t2;
+  y3 = x3 - y3;
+
+  x3 = t0 + t0;
+  t0 = x3 + t0;
+  t2 = b3 * t2;
+
+  auto z3 = t1 + t2;
+  t1 = t1 - t2;
+  y3 = b3 * y3;
+
+  x3 = t4 * y3;
+  t2 = t3 * t1;
+  x3 = t2 - x3;
+
+  y3 = y3 * t0;
+  t1 = t1 * z3;
+  y3 = t1 + y3;
+
+  t0 = t0 * t3;
+  z3 = z3 * t4;
+  z3 = z3 + t0;
+
+  out[0] = x3;
+  out[1] = y3;
+  out[2] = z3;
 }
 
 template <>
-void scl::math::CurveNegate<Curve>(Point& out) {
+void math::CurveNegate<Curve>(Point& out) {
   if (GET_Y(out) == Field::Zero()) {
     CurveSetPointAtInfinity<Curve>(out);
   } else {
@@ -183,14 +211,14 @@ void scl::math::CurveNegate<Curve>(Point& out) {
 }
 
 template <>
-void scl::math::CurveSubtract<Curve>(Point& out, const Point& in) {
+void math::CurveSubtract<Curve>(Point& out, const Point& in) {
   Point copy(in);
   CurveNegate<Curve>(copy);
   CurveAdd<Curve>(out, copy);
 }
 
 template <>
-void scl::math::CurveScalarMultiply<Curve>(Point& out, const Number& scalar) {
+void math::CurveScalarMultiply<Curve>(Point& out, const Number& scalar) {
   if (!CurveIsPointAtInfinity<Curve>(out)) {
     const auto n = scalar.BitSize();
     Point res;
@@ -207,16 +235,16 @@ void scl::math::CurveScalarMultiply<Curve>(Point& out, const Number& scalar) {
 }
 
 template <>
-void scl::math::CurveScalarMultiply<Curve>(Point& out,
-                                           const FF<Curve::Order>& scalar) {
+void math::CurveScalarMultiply<Curve>(Point& out,
+                                      const FF<Curve::Scalar>& scalar) {
   if (!CurveIsPointAtInfinity<Curve>(out)) {
-    auto x = FFAccess<Curve::Order>::FromMonty(scalar);
-    const auto n = FFAccess<Curve::Order>::HigestSetBit(x);
+    auto x = FFAccess<Curve::Scalar>::FromMonty(scalar);
+    const auto n = FFAccess<Curve::Scalar>::HigestSetBit(x);
     Point res;
     CurveSetPointAtInfinity<Curve>(res);
     for (auto i = n; i-- > 0;) {
       CurveDouble<Curve>(res);
-      if (FFAccess<Curve::Order>::TestBit(x, i)) {
+      if (FFAccess<Curve::Scalar>::TestBit(x, i)) {
         CurveAdd<Curve>(res, out);
       }
     }
@@ -241,18 +269,18 @@ namespace {
 
 Field ComputeOtherCoordinate(const Field& x) {
   auto y_sqr = x * x * x + kCurveB;
-  auto z = scl::math::FFAccess<Curve::Field>::ComputeSqrt(y_sqr);
+  auto z = math::FFAccess<Curve::Field>::ComputeSqrt(y_sqr);
   return z;
 }
 
 bool IsSmaller(const Field& y, const Field& y_neg) {
-  return scl::math::FFAccess<Curve::Field>::IsSmaller(y, y_neg);
+  return math::FFAccess<Curve::Field>::IsSmaller(y, y_neg);
 }
 
 }  // namespace
 
 template <>
-void scl::math::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
+void math::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
   const auto flags = *src;
 
   if (IS_POINT_AT_INFINITY(flags)) {
@@ -290,9 +318,9 @@ void scl::math::CurveFromBytes<Curve>(Point& out, const unsigned char* src) {
 #define MARK_SELECT_SMALLER(buf) (*(buf) |= SELECT_SMALLER_FLAG)
 
 template <>
-void scl::math::CurveToBytes<Curve>(unsigned char* dest,
-                                    const Point& in,
-                                    bool compress) {
+void math::CurveToBytes<Curve>(unsigned char* dest,
+                               const Point& in,
+                               bool compress) {
   // Make sure flag byte is zeroed.
   *dest = 0;
 
@@ -313,7 +341,7 @@ void scl::math::CurveToBytes<Curve>(unsigned char* dest,
     // x and y.
     if (compress) {
       // include a flag which indicates which of {y, -y} is the smaller.
-      const auto y = ap[1];
+      const auto& y = ap[1];
       const auto yn = y.Negated();
 
       if (IsSmaller(y, yn)) {

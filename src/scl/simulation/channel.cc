@@ -27,8 +27,7 @@
 
 using EventPtr = std::shared_ptr<scl::sim::Event>;
 
-EventPtr scl::sim::SimulateClose(std::shared_ptr<SimulationContext> ctx,
-                                 ChannelId id) {
+EventPtr scl::sim::SimulateClose(std::shared_ptr<Context> ctx, ChannelId id) {
   const auto lid = id.local;
   const auto trt = ctx->Checkpoint(lid);
   return std::make_shared<NetworkEvent>(Event::Type::CLOSE, trt, id);
@@ -37,13 +36,13 @@ EventPtr scl::sim::SimulateClose(std::shared_ptr<SimulationContext> ctx,
 #define SCL_LOCAL_COMP_BEGIN const auto scl__lcb = scl::util::Time::Now()
 #define SCL_LOCAL_COMP_END scl::util::Time::Now() - scl__lcb
 
-EventPtr scl::sim::SimulateSend(std::shared_ptr<SimulationContext> ctx,
+EventPtr scl::sim::SimulateSend(std::shared_ptr<Context> ctx,
                                 ChannelId id,
                                 const unsigned char* src,
                                 std::size_t n) {
   SCL_LOCAL_COMP_BEGIN;
 
-  ctx->Buffer(id)->Write({src, src + n});
+  ctx->Buffer(id)->Write(src, n);
 
   const auto local_comp_time = SCL_LOCAL_COMP_END;
   const auto exec_time = ctx->Checkpoint(id.local) - local_comp_time;
@@ -51,46 +50,36 @@ EventPtr scl::sim::SimulateSend(std::shared_ptr<SimulationContext> ctx,
   auto event =
       std::make_shared<NetworkDataEvent>(Event::Type::SEND, exec_time, id, n);
   ctx->AddCandidateToRun(id.remote);
-  ctx->RecordWrite(id, n, exec_time);
+  ctx->AddWrite(id, n, exec_time);
   return event;
 }
 
 namespace {
 
-scl::util::Time::Duration AdjustRecvTime(
-    std::shared_ptr<scl::sim::SimulationContext> ctx,
-    scl::sim::ChannelId id,
-    scl::util::Time::Duration t,
-    std::size_t n) {
+scl::util::Time::Duration AdjustRecvTime(std::shared_ptr<scl::sim::Context> ctx,
+                                         scl::sim::ChannelId id,
+                                         scl::util::Time::Duration t,
+                                         std::size_t n) {
   auto rem = n;
-  auto wb = ctx->Writes(id).begin();
-  auto we = ctx->Writes(id).end();
 
-  while (rem > 0 && wb != we) {
-    // TODO: It would probably be nicer to let ctx clean up the list of write
-    // ops so this check isn't necessary.
-
-    if (wb->amount == 0) {
-      wb++;
-      continue;
-    }
-
+  while (rem > 0 && ctx->HasWrite(id)) {
+    auto& w = ctx->NextWrite(id);
     scl::util::Time::Duration recv_time;
-    if (wb->amount >= rem) {
-      const auto delay = scl::sim::ComputeRecvTime(ctx->NetworkConfig(id), rem);
-      recv_time = wb->time + delay;
-      wb->amount -= rem;
-      rem = 0;
-    } else /* wb->amount < rem */ {
+    if (w.amount > rem) {
       const auto delay =
-          scl::sim::ComputeRecvTime(ctx->NetworkConfig(id), wb->amount);
-      recv_time = wb->time + delay;
-      rem -= wb->amount;
-      wb->amount = 0;
+          scl::sim::ComputeRecvTime(ctx->ChannelConfiguration(id), rem);
+      recv_time = w.time + delay;
+      w.amount -= rem;
+      rem = 0;
+    } else {
+      const auto delay =
+          scl::sim::ComputeRecvTime(ctx->ChannelConfiguration(id), w.amount);
+      recv_time = w.time + delay;
+      rem -= w.amount;
+      ctx->DeleteWrite(id);
     }
 
     t = std::max(t, recv_time);
-    wb++;
   }
 
   return t;
@@ -98,7 +87,7 @@ scl::util::Time::Duration AdjustRecvTime(
 
 }  // namespace
 
-EventPtr scl::sim::SimulateRecv(std::shared_ptr<SimulationContext> ctx,
+EventPtr scl::sim::SimulateRecv(std::shared_ptr<Context> ctx,
                                 ChannelId id,
                                 unsigned char* dst,
                                 std::size_t n) {
@@ -109,8 +98,7 @@ EventPtr scl::sim::SimulateRecv(std::shared_ptr<SimulationContext> ctx,
     throw SimulationFailure();
   }
 
-  auto data = ctx->Buffer(id)->Read(n);
-  std::copy(data.begin(), data.end(), dst);
+  ctx->Buffer(id)->Read(dst, n);
 
   const auto local_comp_time = SCL_LOCAL_COMP_END;
   const auto exec_time = ctx->Checkpoint(id.local) - local_comp_time;
@@ -124,49 +112,85 @@ EventPtr scl::sim::SimulateRecv(std::shared_ptr<SimulationContext> ctx,
 }
 
 std::pair<bool, EventPtr> scl::sim::SimulateHasData(
-    std::shared_ptr<SimulationContext> ctx,
+    std::shared_ptr<Context> ctx,
     ChannelId id) {
   // The other party hasn't had a chance to run yet, so it's not possible to
   // determine if there's data available for us.
   if (ctx->Trace(id.remote).empty()) {
     ctx->AddCandidateToRun(id.remote);
-    throw SimulationFailure();
+    throw SimulationFailure("other party hasnt started yet");
   }
 
-  const auto other_latest = ctx->LatestTimestamp(id.remote);
+  // We determine if there is data available by inspecting the list of WriteOps
+  // created by the remote party. Since each WriteOp has a timestamp, we can use
+  // that to determine if the data would have arrived at us yet.
+  //
+  // The rules for what to return, and when to fail the simulation goes as
+  // follows:
+  //
+  //  - WriteOp op exists such that op.amount > 0. This op corresponds to the
+  //    data that we would receive the next time we call Recv on this channel.
+  //
+  //    If it is the case that
+  //
+  //      op.time + time_to_send_1_byte <= our_current_time,
+  //
+  //    then we can return has_data == true. Otherwise, we can return false.
+  //    Note that, even if the remote party is behind is in time, we know that
+  //    it is not possible for it to send data that we would receive earlier
+  //    than the data connected to op.
+  //
+  //  - No WriteOp exists. In this case, we either return has_data == false, or
+  //    we fail the simulation. We can return has_data == false if
+  //
+  //      remote_current_time - time_to_send_1_byte >= our_current_time
+  //
+  //    as we know that no Send that the remote party makes, would have arrived
+  //    to us before now. On the other hand, if the above does not hold, then we
+  //    cannot say for sure that the remote party might not send data that we
+  //    would be able to receive now, and so we have to fail the simulation.
+
+  // Time it takes for 1 byte to go from the remote party to us.
+  const auto offset = ComputeRecvTime(ctx->ChannelConfiguration(id.Flip()), 1);
+
+  // Go through each write op of the other party, and find the earliest one.
   const auto me_latest = ctx->Checkpoint(id.local);
-
-  // The other party is still running, but is chronologically behind us, so it's
-  // not possible to determine if there's data available for us.
-  if (ctx->Trace(id.remote).back()->EventType() != Event::Type::STOP &&
-      other_latest < me_latest) {
-    ctx->AddCandidateToRun(id.remote);
-    throw SimulationFailure();
+  bool has_data = false;
+  bool has_result = false;
+  if (ctx->HasWrite(id.Flip())) {
+    if (ctx->NextWrite(id.Flip()).time + offset <= me_latest) {
+      has_data = true;
+    } else {
+      has_data = false;
+      has_result = true;
+    }
   }
 
-  // Check all handled writes of the other party. If there's one which took
-  // place before me_latest that we haven't read yet, then there's data
-  // available. Note that ordering of the writes do not matter here. We're just
-  // interested in some unhandled write.
-  bool has_data = false;
-  for (const auto& wop : ctx->Writes(id.Flip())) {
-    if (wop.time <= me_latest && wop.amount > 0) {
-      has_data = true;
-      break;
+  // Handle the case where no WriteOp existed at all. Here we will fail the
+  // simulation if the remote party is too far behind us in time.
+  if (!has_data && !has_result) {
+    const auto other_latest = ctx->LatestTimestamp(id.remote) - offset;
+    if (!ctx->HasTerminated(id.remote) && other_latest <= me_latest) {
+      ctx->AddCandidateToRun(id.remote);
+      throw SimulationFailure("no data, and we're ahead");
     }
   }
 
   const auto event = std::make_shared<HasDataEvent>(me_latest, id, has_data);
-  ctx->AddEvent(id.local, event);
   return {has_data, event};
 }
 
-void scl::sim::SimulatedChannel::Send(const scl::net::Packet& packet) {
+void scl::sim::Channel::Send(const scl::net::Packet& packet) {
   const auto packet_size = packet.Size();
   const auto size_size = sizeof(net::Packet::SizeType);
 
+  // A packet is a size + content, which are sent separately.
   scl::net::Channel::Send(packet);
 
+  // Sending the size and conte each generate a "SEND" event. These are removed
+  // here, and replaced by a single "PACKET_SEND" event that is set to have
+  // happened at the same time as the first event, and with an amount equal to
+  // the sum of the two events.
   const auto data_event = m_ctx->PopLastEvent(m_id.local);
   const auto size_event = m_ctx->PopLastEvent(m_id.local);
   const auto event =
@@ -185,10 +209,19 @@ std::size_t GetDataAmount(scl::sim::Event* event) {
 
 }  // namespace
 
-std::optional<scl::net::Packet> scl::sim::SimulatedChannel::Recv(bool block) {
+std::optional<scl::net::Packet> scl::sim::Channel::Recv(bool block) {
+  // A packet is received a little differently, depending on whether it blocks
+  // or not. If the recv is blocking, then we receive a size + content. If the
+  // receive is non-blocking, then we first check if there's data before
+  // receiving the size + content.
+
   auto p = net::Channel::Recv(block);
 
   if (block) {
+    // Receive was blocking, so we need to remove the two last events,
+    // corresponding to the receiving the size of the packet, and the packet's
+    // content. The information in these two events is then turned into a
+    // PACKET_RECV event.
     const auto data_event = m_ctx->PopLastEvent(m_id.local);
     const auto size_event = m_ctx->PopLastEvent(m_id.local);
 
@@ -201,6 +234,12 @@ std::optional<scl::net::Packet> scl::sim::SimulatedChannel::Recv(bool block) {
             GetDataAmount(data_event.get()) + GetDataAmount(size_event.get()),
             true));
   } else {
+    // If the receive was non-blocking, then we either have one event (in case
+    // there was no data to receive), or three (in case there was data to
+    // receive).
+    //
+    // The extra event here, compared to the blocking case, is an event arising
+    // from a call to HasData.
     if (p.has_value()) {
       const auto data_event = m_ctx->PopLastEvent(m_id.local);
       const auto size_event = m_ctx->PopLastEvent(m_id.local);

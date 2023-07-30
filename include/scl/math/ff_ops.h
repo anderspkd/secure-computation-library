@@ -23,6 +23,8 @@
 #include <string>
 #include <type_traits>
 
+#include "scl/math/number.h"
+
 namespace scl::math {
 
 /**

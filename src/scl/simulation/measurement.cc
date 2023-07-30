@@ -17,10 +17,67 @@
 
 #include "scl/simulation/measurement.h"
 
-std::ostream& scl::sim::operator<<(std::ostream& os,
-                                   const scl::sim::TimeMeasurement& m) {
-  auto mean = std::chrono::duration<double, std::milli>(m.Mean()).count();
-  auto std_dev = std::chrono::duration<double, std::milli>(m.StdDev()).count();
+#include <cmath>
+
+using namespace scl;
+
+namespace {
+
+template <typename T>
+T Zero() {
+  return 0;
+}
+
+template <>
+util::Time::Duration Zero() {
+  return util::Time::Duration::zero();
+}
+
+template <typename T>
+T Mean(const sim::Measurement<T>& m) {
+  T sum = Zero<T>();
+  for (const auto& v : m.Samples()) {
+    sum += v;
+  }
+  return sum / m.Size();
+}
+
+long double Sqrt(long double v) {
+  return std::sqrt(v);
+}
+
+long double Sqr(long double v) {
+  return v * v;
+}
+
+util::Time::Duration Sqrt(const util::Time::Duration& v) {
+  long double u = std::sqrt(v.count());
+  std::chrono::duration<long double, util::Time::Duration::period> w(u);
+  return std::chrono::duration_cast<util::Time::Duration>(w);
+}
+
+util::Time::Duration Sqr(const util::Time::Duration& v) {
+  long double u = v.count();
+  std::chrono::duration<long double, util::Time::Duration::period> w(u * u);
+  return std::chrono::duration_cast<util::Time::Duration>(w);
+}
+
+template <typename T>
+T StdDev(const sim::Measurement<T>& m) {
+  const auto mu = Mean(m);
+  auto sum = Zero<T>();
+  for (const auto& v : m.Samples()) {
+    sum += Sqr(v - mu);
+  }
+  return Sqrt(sum / m.Size());
+}
+
+}  // namespace
+
+std::ostream& sim::operator<<(std::ostream& os, const sim::TimeMeasurement& m) {
+  const auto mean = std::chrono::duration<double, std::milli>(Mean(m)).count();
+  const auto std_dev =
+      std::chrono::duration<double, std::milli>(StdDev(m)).count();
 
   os << "{"
      << "\"mean\": " << mean << ", "
@@ -30,12 +87,14 @@ std::ostream& scl::sim::operator<<(std::ostream& os,
   return os;
 }
 
-std::ostream& scl::sim::operator<<(std::ostream& os,
-                                   const scl::sim::DataMeasurement& m) {
+std::ostream& sim::operator<<(std::ostream& os, const sim::DataMeasurement& m) {
+  const auto mean = Mean(m);
+  const auto std_dev = StdDev(m);
+
   os << "{"
-     << "\"mean\": " << m.Mean() << ", "
+     << "\"mean\": " << mean << ", "
      << "\"unit\": \"B\", "
-     << "\"std_dev\": " << m.StdDev() << "}";
+     << "\"std_dev\": " << std_dev << "}";
 
   return os;
 }

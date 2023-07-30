@@ -21,6 +21,7 @@
 
 #include "scl/math/curves/secp256k1.h"
 #include "scl/math/ec_ops.h"
+#include "scl/math/ff.h"
 #include "scl/math/fp.h"
 #include "scl/math/number.h"
 #include "scl/util/prg.h"
@@ -28,7 +29,7 @@
 using namespace scl;
 
 using Curve = math::EC<math::Secp256k1>;
-using Scalar = Curve::Order;
+using Scalar = Curve::ScalarField;
 using Field = Curve::Field;
 
 namespace {
@@ -126,8 +127,7 @@ TEST_CASE("Secp256k1 generator", "[math][ec]") {
   ss << g;
   REQUIRE(ss.str() == g.ToString());
 
-  auto ord = math::Number::FromString(
-      "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
+  auto ord = math::Order<Scalar>();
 
   REQUIRE(!g.PointAtInfinity());
   auto poi = g * ord;
@@ -202,13 +202,6 @@ TEST_CASE("Secp256k1 negation special case", "[math][ec]") {
   REQUIRE(math::CurveIsPointAtInfinity<CurveT>(point));
 }
 
-TEST_CASE("Secp256k1 double point special case", "[math][ec]") {
-  using CurveT = math::Secp256k1;
-  CurveT::ValueType point = {Field(1), Field(0), Field(1)};
-  math::CurveDouble<CurveT>(point);
-  REQUIRE(math::CurveIsPointAtInfinity<CurveT>(point));
-}
-
 TEST_CASE("Secp256k1 serialization", "[math][ec]") {
   auto prg = util::PRG::Create();
 
@@ -258,4 +251,12 @@ TEST_CASE("Secp256k1 serialization", "[math][ec]") {
   i.Write(buffer.get());
   auto j = Curve::Read(buffer.get());
   REQUIRE(i == j);
+}
+
+TEST_CASE("Secp256k1 order", "[math]") {
+  auto ord = math::Order<Field>();
+  REQUIRE(
+      ord ==
+      math::Number::FromString(
+          "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"));
 }

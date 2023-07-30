@@ -23,6 +23,7 @@
 #include <memory>
 #include <ratio>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -40,29 +41,39 @@
 #include "scl/simulation/result.h"
 #include "scl/util/time.h"
 
+using namespace scl;
+
 namespace {
 
-/**
- * @brief Create an Event of some type and duration.
- */
-auto CreateEvent(scl::sim::Event::Type t, scl::util::Time::Duration d) {
-  return std::make_shared<scl::sim::Event>(t, d);
+auto CreateEvent(sim::Event::Type t, util::Time::Duration d) {
+  return std::make_shared<sim::Event>(t, d);
 }
 
-std::vector<scl::net::Network> CreateNetworks(
-    std::shared_ptr<scl::sim::SimulationContext> ctx) {
-  std::vector<scl::net::Network> networks;
+auto CreateSegmentEvent(util::Time::Duration t,
+                        const std::string& n,
+                        bool is_end) {
+  if (is_end) {
+    return std::make_shared<sim::SegmentEvent>(sim::Event::Type::SEGMENT_END,
+                                               t,
+                                               n);
+  }
+  return std::make_shared<sim::SegmentEvent>(sim::Event::Type::SEGMENT_BEGIN,
+                                             t,
+                                             n);
+}
+
+auto CreateNetworks(std::shared_ptr<sim::Context> ctx) {
+  std::vector<net::Network> networks;
   const auto n = ctx->NumberOfParties();
   networks.reserve(n);
 
   for (std::size_t i = 0; i < n; ++i) {
-    std::vector<std::shared_ptr<scl::net::Channel>> channels;
+    std::vector<std::shared_ptr<net::Channel>> channels;
     channels.reserve(n);
 
     for (std::size_t j = 0; j < n; ++j) {
-      scl::sim::ChannelId cid(i, j);
-      channels.emplace_back(
-          std::make_shared<scl::sim::SimulatedChannel>(cid, ctx));
+      sim::ChannelId cid(i, j);
+      channels.emplace_back(std::make_shared<sim::Channel>(cid, ctx));
     }
 
     networks.emplace_back(channels, i);
@@ -71,98 +82,101 @@ std::vector<scl::net::Network> CreateNetworks(
   return networks;
 }  // LCOV_EXCL_LINE
 
-/**
- * @brief Create a SEGMENT_END or SEGMENT_BEGIN event.
- */
-std::shared_ptr<scl::sim::Event> CreateSegmentEvent(scl::util::Time::Duration t,
-                                                    const std::string& n,
-                                                    bool is_end) {
-  if (is_end) {
-    return std::make_shared<scl::sim::SegmentEvent>(
-        scl::sim::Event::Type::SEGMENT_END,
-        t,
-        n);
-  }
-  return std::make_shared<scl::sim::SegmentEvent>(
-      scl::sim::Event::Type::SEGMENT_BEGIN,
-      t,
-      n);
-}
+struct RunResult {
+  std::unique_ptr<proto::Protocol> next;
+  std::any output;
+};
 
-/**
- * @brief Run a protocol step for a party.
- */
-std::unique_ptr<scl::proto::Protocol> Run(
-    std::shared_ptr<scl::sim::SimulationContext> ctx,
-    std::size_t party_id,
-    scl::proto::Protocol* party,
-    scl::proto::Env& env,
-    const scl::sim::OutputCallback& output_callback) {
-  if (ctx->Trace(party_id).empty()) {
-    ctx->AddEvent(party_id,
-                  CreateEvent(scl::sim::Event::Type::START,
-                              scl::util::Time::Duration::zero()));
+RunResult Run(std::shared_ptr<sim::Context> ctx,
+              std::size_t id,
+              proto::Protocol* protocol,
+              proto::Env& env) {
+  RunResult result;
+
+  if (ctx->Trace(id).empty()) {
+    ctx->AddEvent(
+        id,
+        CreateEvent(sim::Event::Type::START, util::Time::Duration::zero()));
+  }
+
+  if (protocol == nullptr) {
+    // handling of entries which are null.
+    ctx->AddEvent(
+        id,
+        CreateEvent(sim::Event::Type::STOP, util::Time::Duration::zero()));
+    return result;
   }
 
   ctx->AddEvent(
-      party_id,
-      CreateSegmentEvent(ctx->LatestTimestamp(party_id), party->Name(), false));
+      id,
+      CreateSegmentEvent(ctx->LatestTimestamp(id), protocol->Name(), false));
 
   ctx->UpdateCheckpoint();
-  auto next = party->Run(env);
-  const auto exec_time = ctx->Checkpoint(party_id);
+  result.next = protocol->Run(env);
+  const auto exec_time = ctx->Checkpoint(id);
 
-  const auto output = party->Output();
-  if (output.has_value()) {
-    ctx->AddEvent(party_id,
-                  CreateEvent(scl::sim::Event::Type::OUTPUT, exec_time));
-    output_callback(party_id, output);
+  result.output = protocol->Output();
+
+  if (result.output.has_value()) {
+    ctx->AddEvent(id, CreateEvent(sim::Event::Type::OUTPUT, exec_time));
   }
 
-  ctx->AddEvent(party_id, CreateSegmentEvent(exec_time, party->Name(), true));
+  ctx->AddEvent(id, CreateSegmentEvent(exec_time, protocol->Name(), true));
 
-  if (next == nullptr) {
-    ctx->AddEvent(party_id,
-                  CreateEvent(scl::sim::Event::Type::STOP, exec_time));
+  if (result.next == nullptr) {
+    ctx->AddEvent(id, CreateEvent(sim::Event::Type::STOP, exec_time));
   }
 
-  return next;
+  return result;
 }
 
-/**
- * @brief Run a simulation.
- */
-std::vector<scl::sim::SimulationTrace> RunSimulation(
-    std::vector<std::unique_ptr<scl::proto::Protocol>> protocols,
-    const scl::sim::SimulatedNetworkConfigCreator& config_creator,
-    const scl::sim::OutputCallback& output_callback) {
-  const auto n = protocols.size();
-  auto ps = std::move(protocols);
+std::vector<proto::Env> CreateEnvs(const std::vector<net::Network>& networks,
+                                   std::shared_ptr<sim::Context> ctx) {
+  std::vector<proto::Env> envs;
+  envs.reserve(ctx->NumberOfParties());
+  for (std::size_t i = 0; i < ctx->NumberOfParties(); ++i) {
+    envs.emplace_back(proto::Env{networks[i],
+                                 std::make_unique<sim::Clock>(ctx, i),
+                                 std::make_unique<sim::ThreadCtx>(ctx, i)});
+  }
+  return envs;
+}
 
-  auto ctx =
-      scl::sim::SimulationContext::Create<scl::sim::MemoryBackedChannelBuffer>(
-          n,
-          config_creator);
+auto RunSimulation(std::size_t replication, sim::Manager* manager) {
+  auto ps = manager->Protocol();
+  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(
+      ps.size(),
+      manager->NetworkConfiguration());
 
   auto networks = CreateNetworks(ctx);
+  auto envs = CreateEnvs(networks, ctx);
 
   auto next_id = ctx->NextToRun();
+
   while (next_id.has_value()) {
     auto id = next_id.value();
 
     try {
       ctx->Prepare(id);
 
-      scl::proto::Env env{
-          networks[id],
-          std::make_unique<scl::sim::SimulatedClock>(ctx, id),
-          std::make_unique<scl::sim::SimulatedThreadCtx>(ctx, id)};
+      auto result = Run(ctx, id, ps[id].get(), envs[id]);
 
-      ps[id] = Run(ctx, id, ps[id].get(), env, output_callback);
+      ps[id] = std::move(result.next);
+
+      if (result.output.has_value()) {
+        manager->HandleOutput(replication, id, result.output);
+      }
+
+      if (ps[id] != nullptr && manager->Terminate(id, ctx->GetView())) {
+        ps[id] = nullptr;
+        ctx->AddEvent(
+            id,
+            CreateEvent(sim::Event::Type::KILLED, ctx->LatestTimestamp(id)));
+      }
 
       ctx->Commit(id);
 
-    } catch (scl::sim::SimulationFailure& e) {
+    } catch (sim::SimulationFailure& e) {
       ctx->Rollback(id);
     }
 
@@ -174,26 +188,12 @@ std::vector<scl::sim::SimulationTrace> RunSimulation(
 
 }  // namespace
 
-std::vector<scl::sim::Result> scl::sim::Simulate(
-    const ProtocolCreator& protocol_creator,
-    const SimulatedNetworkConfigCreator& config_creator,
-    std::size_t iterations,
-    const OutputCallback& output_cb) {
+std::vector<sim::Result> sim::Simulate(std::unique_ptr<Manager> manager) {
   std::vector<std::vector<SimulationTrace>> traces;
-  for (std::size_t i = 0; i < iterations; ++i) {
-    traces.emplace_back(
-        RunSimulation(protocol_creator(), config_creator, output_cb));
+  auto network_conf = manager->NetworkConfiguration();
+  for (std::size_t i = 0; i < manager->Replications(); ++i) {
+    traces.emplace_back(RunSimulation(i, manager.get()));
   }
 
-  return Result::Create(traces);
-}
-
-std::vector<scl::sim::Result> scl::sim::Simulate(
-    std::vector<std::unique_ptr<proto::Protocol>> parties,
-    const SimulatedNetworkConfigCreator& config_creator,
-    const OutputCallback& output_cb) {
-  std::vector<std::vector<SimulationTrace>> traces;
-  traces.emplace_back(
-      RunSimulation(std::move(parties), config_creator, output_cb));
   return Result::Create(traces);
 }

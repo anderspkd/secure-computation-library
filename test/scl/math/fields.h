@@ -27,7 +27,7 @@ using GF7 = math::FF<GaloisField7>;
 
 #ifdef SCL_ENABLE_EC_TESTS
 using Secp256k1_Field = math::FF<math::Secp256k1::Field>;
-using Secp256k1_Order = math::FF<math::Secp256k1::Order>;
+using Secp256k1_Order = math::FF<math::Secp256k1::Scalar>;
 #endif
 
 }  // namespace scl::test

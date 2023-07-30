@@ -36,12 +36,16 @@ auto SomeEvent() {
                                       util::Time::Duration::zero());
 }
 
+auto DefaultNetworkConfig() {
+  return std::make_shared<sim::SimpleNetworkConfig>();
+}
+
 }  // namespace
 
 TEST_CASE("Simulation context add events", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(
       5,
-      sim::DefaultConfigCreator());
+      DefaultNetworkConfig());
 
   ctx->AddEvent(2, SomeEvent());
   ctx->AddEvent(2, SomeEvent());
@@ -55,9 +59,9 @@ TEST_CASE("Simulation context add events", "[sim]") {
 }
 
 TEST_CASE("Simulation context total run time", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<sim::MemoryBackedChannelBuffer>(
+  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(
       5,
-      sim::DefaultConfigCreator());
+      DefaultNetworkConfig());
 
   ctx->AddEvent(0, SomeEvent());
   auto t0 = ctx->Checkpoint(0);
@@ -71,13 +75,15 @@ TEST_CASE("Simulation context total run time", "[sim]") {
 namespace {
 
 struct DummyChannelBuffer final : public sim::ChannelBuffer {
-  std::vector<unsigned char> Read(std::size_t n) override {
+  void Read(unsigned char* data, std::size_t n) override {
+    (void)data;
     (void)n;
     throw std::logic_error("not supported");
   }
 
-  void Write(const std::vector<unsigned char>& data) override {
+  void Write(const unsigned char* data, std::size_t n) override {
     (void)data;
+    (void)n;
     throw std::logic_error("not supported");
   }
 
@@ -107,11 +113,10 @@ struct DummyChannelBuffer final : public sim::ChannelBuffer {
 namespace scl {
 
 template <>
-std::shared_ptr<sim::SimulationContext>
-sim::SimulationContext::Create<DummyChannelBuffer>(
+std::shared_ptr<sim::Context> sim::Context::Create<DummyChannelBuffer>(
     std::size_t n,
-    const sim::SimulatedNetworkConfigCreator& config_creator) {
-  auto ctx = std::make_shared<sim::SimulationContext>(config_creator);
+    std::shared_ptr<sim::NetworkConfig> config) {
+  auto ctx = std::make_shared<sim::Context>(config);
 
   ctx->m_nparties = n;
   ctx->m_traces.resize(n);
@@ -132,9 +137,8 @@ sim::SimulationContext::Create<DummyChannelBuffer>(
       (ctx)->Buffer(sim::ChannelId((i), (j))))
 
 TEST_CASE("Simulation context prepare-commit-rollback", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
-      5,
-      sim::DefaultConfigCreator());
+  auto ctx =
+      sim::Context::Create<DummyChannelBuffer>(5, DefaultNetworkConfig());
 
   ctx->Prepare(0);
 
@@ -181,9 +185,8 @@ TEST_CASE("Simulation context prepare-commit-rollback", "[sim]") {
 }
 
 TEST_CASE("Simulation context invalid prepare-commit-rollback", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
-      5,
-      sim::DefaultConfigCreator());
+  auto ctx =
+      sim::Context::Create<DummyChannelBuffer>(5, DefaultNetworkConfig());
 
   REQUIRE_THROWS_MATCHES(ctx->Commit(0),
                          std::logic_error,
@@ -214,9 +217,8 @@ auto StartEvent() {
 }  // namespace
 
 TEST_CASE("Simulation context NextToRun simple", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
-      3,
-      sim::DefaultConfigCreator());
+  auto ctx =
+      sim::Context::Create<DummyChannelBuffer>(3, DefaultNetworkConfig());
 
   // First party to run is always party 0
   auto next = ctx->NextToRun();
@@ -249,10 +251,10 @@ TEST_CASE("Simulation context NextToRun simple", "[sim]") {
 }
 
 TEST_CASE("Simulation context NextToRun fails", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
-      3,
-      sim::DefaultConfigCreator());
+  auto ctx =
+      sim::Context::Create<DummyChannelBuffer>(3, DefaultNetworkConfig());
 
+  // 0 running
   auto next = ctx->NextToRun();
   ctx->Prepare(0);
 
@@ -261,10 +263,13 @@ TEST_CASE("Simulation context NextToRun fails", "[sim]") {
 
   ctx->Rollback(0);
 
+  // 2 running
   next = ctx->NextToRun(next);
-  next = ctx->NextToRun(next);
-  REQUIRE(next.has_value());
-  REQUIRE(next.value() == 2);
+  if (!next.has_value()) {
+    FAIL("no output");
+  } else {
+    REQUIRE(next.value() == 2);
+  }
 
   ctx->Prepare(2);
 
@@ -294,23 +299,22 @@ TEST_CASE("Simulation context NextToRun fails", "[sim]") {
 }
 
 TEST_CASE("Simulation context rollback write ops", "[sim]") {
-  auto ctx = sim::SimulationContext::Create<DummyChannelBuffer>(
-      3,
-      sim::DefaultConfigCreator());
+  auto ctx =
+      sim::Context::Create<DummyChannelBuffer>(3, DefaultNetworkConfig());
 
   const auto ts = util::Time::Duration::zero();
 
   // party 0 sends to party 1
   ctx->Prepare(0);
-  ctx->RecordWrite({0, 1}, 10, ts);
+  ctx->AddWrite({0, 1}, 10, ts);
   ctx->Commit(0);
 
   // party 1 receives data from party 0, but then performs a rollback.
   ctx->Prepare(1);
-  REQUIRE(ctx->Writes({0, 1})[0].amount == 10);
-  ctx->Writes({0, 1})[0].amount = 0;
+  REQUIRE(ctx->NextWrite({0, 1}).amount == 10);
+  ctx->NextWrite({0, 1}).amount = 0;
   ctx->Rollback(1);
 
   // the change to the write op above should be undone by the rollback.
-  REQUIRE(ctx->Writes({0, 1})[0].amount == 10);
+  REQUIRE(ctx->NextWrite({0, 1}).amount == 10);
 }

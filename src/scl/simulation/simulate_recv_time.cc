@@ -22,6 +22,8 @@
 #include "scl/simulation/config.h"
 #include "scl/simulation/simulator.h"
 
+using namespace scl;
+
 namespace {
 
 /**
@@ -43,8 +45,7 @@ long double TransferSizeWithHeadersBits(std::size_t nbytes,
 /**
  * @brief Get the RTT from a config in seconds.
  */
-long double RoundTripTimeSeconds(
-    const scl::sim::SimulatedNetworkConfig& config) noexcept {
+long double RoundTripTimeSeconds(const sim::ChannelConfig& config) noexcept {
   using namespace std::chrono_literals;
   const auto d = std::chrono::milliseconds(config.RTT());
   return d / 1.0s;
@@ -54,7 +55,7 @@ long double RoundTripTimeSeconds(
  * @brief Compute the maximum TCP throughput assuming package loss of 0%
  */
 long double ThroughputZeroPackageLoss(
-    const scl::sim::SimulatedNetworkConfig& config) noexcept {
+    const sim::ChannelConfig& config) noexcept {
   // Simple throughput formula:
   // https://tetcos.com/pdf/v13/Experiments/Mathematical-Modelling-of-TCP-Throughput-Performance.pdf
   const auto rtt = RoundTripTimeSeconds(config);
@@ -72,7 +73,7 @@ long double ThroughputZeroPackageLoss(
  * @brief Compute TCP throughput assuming package loss using Mathis et. al.
  */
 long double ThroughputNonZeroPackageLoss(
-    const scl::sim::SimulatedNetworkConfig& config) noexcept {
+    const sim::ChannelConfig& config) noexcept {
   const auto mss = (long double)config.MSS();
   const auto loss_term = std::sqrt(3.0 / (2.0 * config.PackageLoss()));
   const auto rtt = RoundTripTimeSeconds(config);
@@ -80,11 +81,8 @@ long double ThroughputNonZeroPackageLoss(
   return loss_term * (8 * mss / rtt);
 }
 
-}  // namespace
-
-scl::util::Time::Duration scl::sim::ComputeRecvTime(
-    const SimulatedNetworkConfig& config,
-    std::size_t n) {
+util::Time::Duration ComputeRecvTimeTcp(const sim::ChannelConfig& config,
+                                        std::size_t n) {
   const auto total_size_bits = TransferSizeWithHeadersBits(n, config.MSS());
   auto actual_tp = ThroughputZeroPackageLoss(config);
 
@@ -96,4 +94,15 @@ scl::util::Time::Duration scl::sim::ComputeRecvTime(
   const auto t = total_size_bits / actual_tp + RoundTripTimeSeconds(config);
   const auto t_sec = std::chrono::duration<double>(t);
   return std::chrono::duration_cast<util::Time::Duration>(t_sec);
+}
+
+}  // namespace
+
+util::Time::Duration sim::ComputeRecvTime(const ChannelConfig& config,
+                                          std::size_t n) {
+  if (config.Type() == sim::ChannelConfig::NetworkType::TCP) {
+    return ComputeRecvTimeTcp(config, n);
+  }
+  // sim::ChannelConfig::NetworkType::INSTANT
+  return util::Time::Duration::zero();
 }

@@ -29,16 +29,6 @@ namespace scl::sim {
 
 /**
  * @brief Measurement from a simulation.
- *
- * <p>A measurement holds the raw samples that are extracted from a protocol,
- * but provides several functions that derive useful statistics about these
- * samples. Provided statistics are:
- *
- * <ul>
- * <li>Mean() and Median()</li>
- * <li>Min() and Max()</li>
- * <li>StdDev() i.e., standard deviation</li>
- * </ul>
  */
 template <typename T>
 class Measurement {
@@ -49,9 +39,6 @@ class Measurement {
    */
   void AddSample(const T& sample) {
     m_samples.emplace_back(sample);
-    // Maybe it makes more sense to use a datastructure here where insertion
-    // anywhere is constant time?
-    std::sort(m_samples.begin(), m_samples.end());
   }
 
   /**
@@ -78,113 +65,9 @@ class Measurement {
     return m_samples.empty();
   }
 
-  /**
-   * @brief Mean.
-   * @return mean of the samples in this measurement.
-   */
-  T Mean() const;
-
-  /**
-   * @brief Median.
-   * @return median of the samples in this measurement.
-   */
-  T Median() const;
-
-  /**
-   * @brief Mininum.
-   * @return smallest observed sample.
-   */
-  T Min() const {
-    return Empty() ? Zero() : m_samples[0];
-  }
-
-  /**
-   * @brief Maximum.
-   * @return largest observed sample.
-   */
-  T Max() const {
-    return Empty() ? Zero() : m_samples[Size() - 1];
-  }
-
-  /**
-   * @brief Standard deviation.
-   * @return standard deviation of the samples in this measurement.
-   */
-  T StdDev() const;
-
  private:
   std::vector<T> m_samples;
-
-  static T Zero() {
-    return 0;
-  }
-
-  static T Sqrt(const T& v) {
-    return std::sqrt(v);
-  }
-
-  static T Sqr(const T& v) {
-    return v * v;
-  }
 };
-
-template <typename T>
-T Measurement<T>::Mean() const {
-  T sum = Zero();
-  for (const auto& v : m_samples) {
-    sum += v;
-  }
-  return sum / Size();
-}
-
-template <typename T>
-T Measurement<T>::Median() const {
-  if (Empty()) {
-    return Zero();
-  }
-
-  if (Size() == 1) {
-    return m_samples[0];
-  }
-
-  const auto i = Size() / 2;
-  if (Size() % 2 == 0) {
-    return m_samples[i];
-  }
-
-  return m_samples[i] + m_samples[i + 1];
-}
-
-template <typename T>
-T Measurement<T>::StdDev() const {
-  const auto mu = Mean();
-  auto sum = Zero();
-  for (const auto& v : m_samples) {
-    sum += Sqr(v - mu);
-  }
-  return Sqrt(sum / Size());
-}
-
-template <>
-inline util::Time::Duration Measurement<util::Time::Duration>::Zero() {
-  return util::Time::Duration::zero();
-}
-
-template <>
-inline util::Time::Duration Measurement<util::Time::Duration>::Sqrt(
-    const util::Time::Duration& v) {
-  long double u = std::sqrt(v.count());
-  std::chrono::duration<long double, util::Time::Duration::period> w(u);
-  return std::chrono::duration_cast<util::Time::Duration>(w);
-}
-
-template <>
-inline util::Time::Duration Measurement<util::Time::Duration>::Sqr(
-    const util::Time::Duration& v) {
-  long double u = v.count();
-  std::chrono::duration<long double, util::Time::Duration::period> w(u * u);
-  return std::chrono::duration_cast<util::Time::Duration>(w);
-}
 
 /**
  * @brief A measurement for time related observations.

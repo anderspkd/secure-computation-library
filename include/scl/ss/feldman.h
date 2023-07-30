@@ -38,7 +38,7 @@ struct FeldmanSharing {
   /**
    * @brief The shares.
    */
-  math::Vec<typename G::Order> shares;
+  math::Vec<typename G::ScalarField> shares;
 
   /**
    * @brief The commitments.
@@ -55,7 +55,7 @@ struct FeldmanSharing {
  * @return a Feldman secret-sharing.
  */
 template <typename G>
-FeldmanSharing<G> FeldmanShare(const typename G::Order& secret,
+FeldmanSharing<G> FeldmanShare(const typename G::ScalarField& secret,
                                std::size_t t,
                                std::size_t n,
                                util::PRG& prg) {
@@ -84,7 +84,7 @@ struct ShareAndIndex {
   /**
    * @brief The share.
    */
-  typename G::Order share;
+  typename G::ScalarField share;
 };
 
 /**
@@ -100,7 +100,8 @@ struct ShareAndIndex {
 template <typename G>
 bool FeldmanVerify(const ShareAndIndex<G>& share_and_index,
                    const math::Vec<G>& commits) {
-  const auto ns = math::Vec<typename G::Order>::Range(1, commits.Size() + 1);
+  const auto ns =
+      math::Vec<typename G::ScalarField>::Range(1, commits.Size() + 1);
   const auto lb = math::ComputeLagrangeBasis(ns, share_and_index.index);
   const auto v =
       math::UncheckedInnerProd<G>(lb.begin(), lb.end(), commits.begin());

@@ -93,9 +93,6 @@ class Channel {
   virtual std::optional<Packet> Recv(bool block = true);
 };
 
-#undef SCL_C
-#undef SCL_CC
-
 }  // namespace scl::net
 
 #endif  // SCL_NET_CHANNEL_H

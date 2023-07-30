@@ -16,7 +16,7 @@
 
 cmake_minimum_required( VERSION 3.14 )
 
-project( scl VERSION 6.2.0 DESCRIPTION "Secure Computation Library" )
+project( scl VERSION 0.7.0 DESCRIPTION "Secure Computation Library" )
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -64,7 +64,7 @@ if(WITH_EC MATCHES ON)
     src/scl/math/ops_gmp_ff.cc
     src/scl/math/secp256k1_field.cc
     src/scl/math/secp256k1_curve.cc
-    src/scl/math/secp256k1_order.cc
+    src/scl/math/secp256k1_scalar.cc
     src/scl/math/number.cc)
 endif()
 
@@ -102,6 +102,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/util/test_sha256.cc
     test/scl/util/test_ecdsa.cc
     test/scl/util/test_cmdline.cc
+    test/scl/util/test_merkle.cc
 
     test/scl/gf7.cc
     test/scl/math/test_mersenne61.cc
@@ -137,7 +138,9 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     test/scl/simulation/test_result.cc
     test/scl/simulation/test_measurement.cc
     test/scl/simulation/test_mem_channel_buffer.cc
+    test/scl/simulation/test_channel.cc
     test/scl/simulation/test_env.cc
+    test/scl/simulation/test_manager.cc
 
     test/scl/serialization/test_serializer.cc)
 
