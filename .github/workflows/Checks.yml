@@ -7,22 +7,9 @@ on:
       - '!master'
 
 jobs:
-  documentation:
-    name: Documentation
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup
-        run: sudo apt-get install -y doxygen
-
-      - name: Documentation
-        shell: bash
-        run: ./scripts/build_documentation.sh
-
   headers:
-    name: Header files
-    runs-on: ubuntu-latest
+    name: headers
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
 
@@ -33,17 +20,14 @@ jobs:
         run: ./scripts/check_header_guards.py
 
   style:
-    name: Code style
-    runs-on: ubuntu-latest
+    name: style
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
 
       - name: Setup
-        run: sudo apt-get install -y clang-format
+        run: sudo apt-get install -y clang-format-15
 
       - name: Check
         shell: bash
-        run: |
-          find . -type f \( -iname "*.h" -o -iname "*.cc" \) -exec clang-format -n {} \; &> checks.txt
-          cat checks.txt
-          test ! -s checks.txt
+        run: ./scripts/check_formatting.sh

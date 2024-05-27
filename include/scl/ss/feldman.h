@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,26 +24,76 @@
 #include <type_traits>
 
 #include "scl/math/lagrange.h"
-#include "scl/math/vec.h"
+#include "scl/math/vector.h"
 #include "scl/ss/shamir.h"
 #include "scl/util/prg.h"
 
 namespace scl::ss {
 
 /**
- * @brief A Feldman secret-sharing.
+ * @brief A verifiable secret share for Feldman VSSS.
  */
-template <typename G>
-struct FeldmanSharing {
+template <typename GROUP>
+struct FeldmanShare {
   /**
-   * @brief The shares.
+   * @brief The group that commitments live in.
    */
-  math::Vec<typename G::ScalarField> shares;
+  using Group = GROUP;
+
+  /**
+   * @brief The field that shares live in.
+   */
+  using Field = typename GROUP::ScalarField;
+
+  /**
+   * @brief The share.
+   */
+  Field share;
 
   /**
    * @brief The commitments.
    */
-  math::Vec<G> commitments;
+  math::Vector<Group> commitments;
+};
+
+/**
+ * @brief A verifiable secret-sharing suitable for Feldman VSSS.
+ *
+ * This struct captures a set of secret shares produced by the Feldman
+ * verifiable secret sharing schemes. In this scheme, a secret is shared into
+ * \f$n\f$ shares and \f$t+1\f$ commitments. The share held by a party is one of
+ * the \f$n\f$ shares, and all \f$t+1\f$ commitments.
+ */
+template <typename GROUP>
+struct FeldmanSharing {
+  /**
+   * @brief The group that commitments live in.
+   */
+  using Group = GROUP;
+
+  /**
+   * @brief The field that shares live in.
+   */
+  using Field = typename GROUP::ScalarField;
+
+  /**
+   * @brief The shares.
+   */
+  math::Vector<typename GROUP::ScalarField> shares;
+
+  /**
+   * @brief The commitments.
+   */
+  math::Vector<GROUP> commitments;
+
+  /**
+   * @brief Get a particular party's share.
+   * @param party_id the ID of the party.
+   * @return \p party_id's share.
+   */
+  FeldmanShare<GROUP> getShare(std::size_t party_id) const {
+    return {shares[party_id], commitments};
+  }
 };
 
 /**
@@ -54,58 +104,62 @@ struct FeldmanSharing {
  * @param prg a PRG for creating randomness.
  * @return a Feldman secret-sharing.
  */
-template <typename G>
-FeldmanSharing<G> FeldmanShare(const typename G::ScalarField& secret,
-                               std::size_t t,
-                               std::size_t n,
-                               util::PRG& prg) {
-  const auto shares = ShamirShare(secret, t, n, prg);
+template <typename GROUP>
+FeldmanSharing<GROUP> feldmanSecretShare(
+    const typename FeldmanSharing<GROUP>::Field& secret,
+    std::size_t t,
+    std::size_t n,
+    util::PRG& prg) {
+  const auto shares = shamirSecretShare(secret, t, n, prg);
 
-  std::vector<G> comm;
+  std::vector<GROUP> comm;
   comm.reserve(t + 1);
-  const auto gen = G::Generator();
-  for (std::size_t i = 0; i < t + 1; ++i) {
+  const auto gen = GROUP::generator();
+  comm.emplace_back(secret * gen);
+  for (std::size_t i = 0; i < t; ++i) {
     comm.emplace_back(shares[i] * gen);
   }
 
-  return {shares, math::Vec<G>{comm}};
+  return {shares, math::Vector<GROUP>{comm}};
 }
 
 /**
- * @brief A Feldman secret-share and the owner's index.
- */
-template <typename G>
-struct ShareAndIndex {
-  /**
-   * @brief The index.
-   */
-  std::size_t index;
-
-  /**
-   * @brief The share.
-   */
-  typename G::ScalarField share;
-};
-
-/**
  * @brief Verify a share given a set of commitments.
- * @param share_and_index the secret-share and its index.
- * @param commits a set of commitments.
+ * @param share the share to verify.
+ * @param share_index the index (e.g., party ID) of the share.
  * @return true if the provided share is valid for that index, and false
  * otherwise.
  *
  * This function checks if a provided share is consistent with a set of
  * commitments.
  */
-template <typename G>
-bool FeldmanVerify(const ShareAndIndex<G>& share_and_index,
-                   const math::Vec<G>& commits) {
-  const auto ns =
-      math::Vec<typename G::ScalarField>::Range(1, commits.Size() + 1);
-  const auto lb = math::ComputeLagrangeBasis(ns, share_and_index.index);
+template <typename GROUP>
+bool feldmanVerify(const FeldmanShare<GROUP>& share, std::size_t share_index) {
+  using F = typename GROUP::ScalarField;
+  const auto ns = math::Vector<F>::range(share.commitments.size());
+  const auto lb = math::computeLagrangeBasis(ns, share_index);
   const auto v =
-      math::UncheckedInnerProd<G>(lb.begin(), lb.end(), commits.begin());
-  return v == G::Generator() * share_and_index.share;
+      math::innerProd<GROUP>(lb.begin(), lb.end(), share.commitments.begin());
+  return v == GROUP::generator() * share.share;
+}
+
+/**
+ * @brief Verify a share given a set of commitments.
+ * @param share the share to verify.
+ * @param commitments the commitments to verify against.
+ * @param share_index the index (e.g., party ID) of the share.
+ * @return true if the provided share is valid for that index, and false
+ * otherwise.
+ *
+ * This function checks if a provided share is consistent with a set of
+ * commitments.
+ */
+template <typename GROUP>
+bool feldmanVerify(
+    const typename FeldmanShare<GROUP>::Field& share,
+    const math::Vector<typename FeldmanShare<GROUP>::Group>& commitments,
+    std::size_t share_index) {
+  return feldmanVerify<GROUP>({share, commitments}, share_index);
 }
 
 }  // namespace scl::ss

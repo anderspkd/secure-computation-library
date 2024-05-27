@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,64 +20,28 @@
 
 #include <gmp.h>
 
-#include "scl/math/ec.h"
+#include "scl/math/curves/ec_ops.h"
 #include "scl/math/ff.h"
+#include "scl/math/fields/secp256k1_field.h"
+#include "scl/math/fields/secp256k1_scalar.h"
 
-namespace scl::math {
+namespace scl::math::ec {
 
 /**
  * @brief Elliptic curve definition for secp256k1.
+ * @see http://www.secg.org/sec2-v2.pdf
  */
 struct Secp256k1 {
   /**
-   * @brief The Field over which secp256k1 is defined.
+   * @brief The finite field defined by
+   * \f$p=2^{256}-2^{32}-2^{9}-2^{8}-2^{7}-2^{6}-2^{4}-1\f$
    */
-  struct Field {
-    /**
-     * @brief Field elements are stored as 4 limb numbers internally.
-     */
-    using ValueType = std::array<mp_limb_t, 4>;
-
-    /**
-     * @brief Name of the secp256k1 field.
-     */
-    constexpr static const char* NAME = "secp256k1_field";
-
-    /**
-     * @brief Byte size of a secp256k1 field element.
-     */
-    constexpr static const std::size_t BYTE_SIZE = 4 * sizeof(mp_limb_t);
-
-    /**
-     * @brief Bit size of a secp256k1 field element.
-     */
-    constexpr static const std::size_t BIT_SIZE = 8 * BYTE_SIZE;
-  };
+  using Field = ff::Secp256k1Field;
 
   /**
-   * @brief Finite field modulo a Secp256k1 prime order sub-group.
+   * @brief The finite field defined by a large prime order subgroup.
    */
-  struct Scalar {
-    /**
-     * @brief Internal type of elements.
-     */
-    using ValueType = std::array<mp_limb_t, 4>;
-
-    /**
-     * @brief Name of the field.
-     */
-    constexpr static const char* NAME = "secp256k1_order";
-
-    /**
-     * @brief Size of an element in bytes.
-     */
-    constexpr static const std::size_t BYTE_SIZE = 4 * sizeof(mp_limb_t);
-
-    /**
-     * @brief Size of an element in bits.
-     */
-    constexpr static const std::size_t BIT_SIZE = 8 * BYTE_SIZE;
-  };
+  using Scalar = ff::Secp256k1Scalar;
 
   /**
    * @brief Secp256k1 curve elements are stored in projective coordinates.
@@ -90,6 +54,6 @@ struct Secp256k1 {
   constexpr static const char* NAME = "secp256k1";
 };
 
-}  // namespace scl::math
+}  // namespace scl::math::ec
 
 #endif  // SCL_MATH_CURVES_SECP256K1_H

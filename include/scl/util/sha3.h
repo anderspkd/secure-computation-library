@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,10 +18,8 @@
 #ifndef SCL_UTIL_SHA3_H
 #define SCL_UTIL_SHA3_H
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 #include "scl/util/digest.h"
 #include "scl/util/iuf_hash.h"
@@ -32,32 +30,32 @@ namespace scl::util {
  * @brief SHA3 hash function.
  * @tparam DigestSize the output size in bits. Must be either 256, 384 or 512
  */
-template <std::size_t DigestSize>
-class Sha3 final : public IUFHash<Sha3<DigestSize>> {
-  static_assert(DigestSize == 256 || DigestSize == 384 || DigestSize == 512,
+template <std::size_t BITS>
+class Sha3 final : public IUFHash<Sha3<BITS>> {
+  static_assert(BITS == 256 || BITS == 384 || BITS == 512,
                 "Invalid SHA3 digest size. Must be 256, 384 or 512");
 
  public:
   /**
    * @brief The type of a SHA3 digest.
    */
-  using DigestType = Digest<DigestSize>;
+  using DigestType = Digest<BITS>;
 
   /**
    * @brief Update the hash function with a set of bytes.
    * @param bytes a pointer to a number of bytes.
    * @param nbytes the number of bytes.
    */
-  void Hash(const unsigned char* bytes, std::size_t nbytes);
+  void hash(const unsigned char* bytes, std::size_t nbytes);
 
   /**
    * @brief Finalize and return the digest.
    */
-  DigestType Write();
+  DigestType write();
 
  private:
   static const std::size_t STATE_SIZE = 25;
-  static const std::size_t CAPACITY = 2 * DigestSize / (8 * sizeof(uint64_t));
+  static const std::size_t CAPACITY = 2 * BITS / (8 * sizeof(uint64_t));
   static const std::size_t CUTTOFF = STATE_SIZE - (CAPACITY & (~0x80000000));
 
   uint64_t m_state[STATE_SIZE] = {0};
@@ -71,10 +69,10 @@ class Sha3 final : public IUFHash<Sha3<DigestSize>> {
  * @brief Keccak function.
  * @param state the current state
  */
-void Keccakf(uint64_t state[25]);
+void keccakf(uint64_t state[25]);
 
-template <std::size_t DigestSize>
-void Sha3<DigestSize>::Hash(const unsigned char* bytes, std::size_t nbytes) {
+template <std::size_t BITS>
+void Sha3<BITS>::hash(const unsigned char* bytes, std::size_t nbytes) {
   unsigned int old_tail = (8 - m_byte_index) & 7;
   const unsigned char* p = bytes;
 
@@ -96,7 +94,7 @@ void Sha3<DigestSize>::Hash(const unsigned char* bytes, std::size_t nbytes) {
     m_saved = 0;
 
     if (++m_word_index == CUTTOFF) {
-      Keccakf(m_state);
+      keccakf(m_state);
       m_word_index = 0;
     }
   }
@@ -114,7 +112,7 @@ void Sha3<DigestSize>::Hash(const unsigned char* bytes, std::size_t nbytes) {
     m_state[m_word_index] ^= t;
 
     if (++m_word_index == CUTTOFF) {
-      Keccakf(m_state);
+      keccakf(m_state);
       m_word_index = 0;
     }
     p += sizeof(uint64_t);
@@ -125,12 +123,12 @@ void Sha3<DigestSize>::Hash(const unsigned char* bytes, std::size_t nbytes) {
   }
 }
 
-template <std::size_t DigestSize>
-auto Sha3<DigestSize>::Write() -> Sha3<DigestSize>::DigestType {
+template <std::size_t BITS>
+auto Sha3<BITS>::write() -> Sha3<BITS>::DigestType {
   uint64_t t = (uint64_t)(((uint64_t)(0x02 | (1 << 2))) << ((m_byte_index)*8));
   m_state[m_word_index] ^= m_saved ^ t;
   m_state[CUTTOFF - 1] ^= 0x8000000000000000ULL;
-  Keccakf(m_state);
+  keccakf(m_state);
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
     const unsigned int t1 = (uint32_t)m_state[i];

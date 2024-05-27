@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,97 +29,181 @@
 
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
-#include "scl/net/mem_channel.h"
+#include "scl/net/loopback.h"
 #include "scl/net/sys_iface.h"
 #include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
 
 namespace scl::net {
 
+struct MockNetwork;
+
 /**
  * @brief A Network.
+ *
+ * <p>A Network is effectively a list of Channel's with a bunch of helper
+ * functions and is the main interface that an MPC protocol will use to
+ * communicate with other parties.
+ *
+ * <p>Below is shown how a typical Beaver multiplication might be carried out
+ * using a Network object to communicate:
+ *
+ * @code
+ * Network nw = ... // initialize in some way
+ *
+ * for (int i = 0; i < nw.size(); i++) {
+ *   Packet pkt = getDataToSend();
+ *   co_await nw.party(i)->send(pkt);
+ * }
+ *
+ * for (int i = 0; i < nw.size(); i++) {
+ *   auto recvd = co_await nw.party(i)->recv();
+ *   processReceivedData(recvd);
+ * }
+ * @endcode
  */
 class Network {
  public:
   /**
    * @brief Create a network using a network config.
-   * @param config the network configuration to use
-   * @tparam ChannelT the channel type
+   * @param config the network configuration to use.
    *
-   * This creates a network where parties are connected using private
-   * peer-to-peer channels.
+   * Creates a new network where the connection information about the parties of
+   * the network is read from a provided config. In the resulting network, the
+   * local party is connected to itself with a LoopbackChannel, and to everyone
+   * else with a TcpChannel.
    */
-  template <typename ChannelT>
-  static Network Create(const NetworkConfig& config);
+  static coro::Task<Network> create(const NetworkConfig& config);
 
   /**
    * @brief Create a new network.
-   * @param channels a list of peer-to-peer channels
-   * @param my_id the ID of the local party
+   * @param channels the list of channels in the network.
+   * @param id the ID of the local party
    */
-  Network(const std::vector<std::shared_ptr<Channel>>& channels,
-          std::size_t my_id)
-      : m_channels(channels), m_id(my_id){};
+  Network(const std::vector<std::shared_ptr<Channel>>& channels, std::size_t id)
+      : m_channels(channels), m_id(id){};
 
   Network() = default;
 
   /**
-   * @brief Get a channel to a particular party.
-   * @param id the id of the party
+   * @brief Get a communication channel to some party.
+   * @param id the id of the party.
+   * @return the channel to party \p id.
    */
-  Channel* Party(unsigned id) {
+  Channel* party(unsigned id) {
     return m_channels[id].get();
   }
 
   /**
    * @brief Get the next party according to its ID.
+   * @return channel to the party with ID <code>(myId() + 1) % size()</code>.
    */
-  Channel* Next() {
-    const auto next_id = m_id == Size() - 1 ? 0 : m_id + 1;
+  Channel* next() {
+    const auto next_id = m_id == size() - 1 ? 0 : m_id + 1;
     return m_channels[next_id].get();
   }
 
   /**
    * @brief Get the previous party according to its ID.
+   * @return channel to the party with ID <code>(myId() - 1) % size()</code>.
    */
-  Channel* Previous() {
-    const auto prev_id = m_id == 0 ? Size() - 1 : m_id - 1;
+  Channel* previous() {
+    const auto prev_id = m_id == 0 ? size() - 1 : m_id - 1;
     return m_channels[prev_id].get();
   }
 
   /**
    * @brief Get the other party in the network.
+   * @return channel to the party with ID <code>1 - myId()</code>.
+   * @throws std::logic error if the network contains more than two parties.
    *
-   * If the network has more than two parties then this method throws an
-   * std::logic_error as the concept of "other" party is ambigious in that case.
+   * This function is only meaningful for a two-party network.
    */
-  Channel* Other() {
-    if (Size() != 2) {
+  Channel* other() {
+    if (size() != 2) {
       throw std::logic_error("other party ambiguous for more than 2 parties");
     }
     return m_channels[1 - m_id].get();
   }
 
   /**
-   * @brief The size of the network.
+   * @brief Get the channel to the local party.
+   * @return the channel to the party with ID equal to myId().
    */
-  std::size_t Size() const {
+  Channel* me() {
+    return party(myId());
+  }
+
+  /**
+   * @brief Send a packet to all parties on this network.
+   * @param packet the packet.
+   *
+   * This function is equivalent to
+   * @code
+   * for (int i = 0; i < size(); i++) {
+   *   co_await party(i)->send(packet);
+   * }
+   * @endcode
+   */
+  coro::Task<void> send(const Packet& packet) {
+    for (std::size_t i = 0; i < size(); i++) {
+      co_await party(i)->send(packet);
+    }
+  }
+
+  /**
+   * @brief Receive data from a subset of parties.
+   * @param t the minimum number of parties to receive data from.
+   * @return list of received packets.
+   *
+   * Attempts to receive data from all parties, but stops when a Packet has been
+   * received from at least t parties. The return value is a std::vector of
+   * size() std::optional elements. Positions with no values correspond to
+   * parties that did not send anything. Thus, the return value will have at
+   * least \p t positions with values.
+   */
+  coro::Task<std::vector<std::optional<Packet>>> recv(std::size_t t) {
+    std::vector<coro::Task<Packet>> recvs;
+    recvs.reserve(size());
+    for (std::size_t i = 0; i < size(); i++) {
+      recvs.emplace_back(party(i)->recv());
+    }
+    co_return co_await coro::batch(std::move(recvs), t);
+  }
+
+  /**
+   * @brief Receive data from all parties on the network.
+   * @return list of received packets.
+   */
+  coro::Task<std::vector<Packet>> recv() {
+    std::vector<coro::Task<Packet>> recvs;
+    recvs.reserve(size());
+    for (std::size_t i = 0; i < size(); i++) {
+      recvs.emplace_back(party(i)->recv());
+    }
+    co_return co_await coro::batch(std::move(recvs));
+  }
+
+  /**
+   * @brief The number of parties in this network.
+   */
+  std::size_t size() const {
     return m_channels.size();
   };
 
   /**
    * @brief The ID of the local party.
    */
-  std::size_t MyId() const {
+  std::size_t myId() const {
     return m_id;
   };
 
   /**
    * @brief Closes all channels in the network.
    */
-  void Close() {
+  void close() {
     for (auto& c : m_channels) {
-      c->Close();
+      c->close();
     }
   };
 
@@ -127,94 +211,6 @@ class Network {
   std::vector<std::shared_ptr<Channel>> m_channels;
   std::size_t m_id;
 };
-
-/**
- * @brief A fake network. Useful for testing.
- */
-struct FakeNetwork {
-  /**
-   * @brief Create a fake network of some size for a specific party.
-   * @param id the ID of the party owning the fake network
-   * @param n the size of the network
-   * @return a FakeNetwork.
-   */
-  static FakeNetwork Create(unsigned id, std::size_t n);
-
-  /**
-   * @brief The ID of the party owning this fake network.
-   */
-  unsigned id;
-
-  /**
-   * @brief The network object held by the local party.
-   */
-  Network my_network;
-
-  /**
-   * @brief Channels that send data to the local party.
-   *
-   * The channel on index <code>i != id</code> of this list can be used to send
-   * data to the local party. The channel on index <code>id</code> is a
-   * <code>nullptr</code>.
-   */
-  std::vector<std::shared_ptr<Channel>> incoming;
-};
-
-/**
- * @brief Create a fully connected network that resides in memory.
- * @param n the size of the network
- * @return a fully connected network.
- *
- * This function creates a list of networks of \p n parties where each pair of
- * parties are connected to eachother by a InMemoryChannel.
- */
-std::vector<Network> CreateMemoryBackedNetwork(std::size_t n);
-
-template <typename ChannelT>
-Network Network::Create(const NetworkConfig& config) {
-  std::vector<std::shared_ptr<Channel>> channels(config.NetworkSize());
-
-  // connect to ourselves.
-  channels[config.Id()] = MemoryBackedChannel::CreateLoopback();
-
-  // This thread runs a server which accepts connections from all parties with
-  // an ID strictly greater than ours.
-  std::thread connector([&channels, &config]() {
-    const auto id = config.Id();
-
-    // the number of connections we should listen for.
-    const auto m = config.NetworkSize() - id - 1;
-
-    if (m > 0) {
-      auto port = config.GetParty(id).port;
-      auto server_socket = CreateServerSocket<>((int)port, (int)m);
-
-      for (std::size_t i = id + 1; i < config.NetworkSize(); ++i) {
-        auto conn = AcceptConnection(server_socket);
-        std::shared_ptr<Channel> channel =
-            std::make_shared<ChannelT>(conn.socket);
-
-        auto p = channel->Recv().value();
-        channels[p.Read<unsigned>()] = channel;
-      }
-      SysIFace::Close(server_socket);
-    }
-  });
-
-  Packet p;
-  for (std::size_t i = 0; i < config.Id(); ++i) {
-    const auto party = config.GetParty(i);
-    auto socket = ConnectAsClient<>(party.hostname, (int)party.port);
-    std::shared_ptr<Channel> channel = std::make_shared<ChannelT>(socket);
-    p << (unsigned)config.Id();
-    channel->Send(p);
-    channels[i] = channel;
-    p.ResetWritePtr();
-  }
-
-  connector.join();
-  return Network{channels, config.Id()};
-}
 
 }  // namespace scl::net
 

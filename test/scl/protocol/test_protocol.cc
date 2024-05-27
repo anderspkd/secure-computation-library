@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,138 +15,64 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
-#include <thread>
-#include <typeinfo>
+#include <catch2/catch_test_macros.hpp>
+#include <memory>
 
 #include "./beaver.h"
 #include "./triple.h"
+#include "scl/coro/runtime.h"
 #include "scl/math/fp.h"
+#include "scl/net/loopback.h"
 #include "scl/net/network.h"
 #include "scl/protocol/base.h"
 #include "scl/protocol/env.h"
+#include "scl/protocol/eval.h"
 #include "scl/ss/additive.h"
 
 using namespace scl;
 
 using FF = math::Fp<61>;
 
-auto prg = util::PRG::Create();
-auto xs = ss::AdditiveShare(FF(42), 2, prg);
-auto ys = ss::AdditiveShare(FF(11), 2, prg);
-auto ts = test::RandomTriple<FF>(prg);
+auto prg = util::PRG::create();
+auto x = FF(42);
+auto y = FF(11);
+auto xs = ss::additiveShare(x, 2, prg);
+auto ys = ss::additiveShare(y, 2, prg);
+auto ts = test::randomTriple2<FF>(prg);
 
 namespace {
 
-auto CreateEnv(net::Network& network) {
-  return proto::Env{network,
-                    std::make_unique<proto::RealTimeClock>(),
-                    std::make_unique<proto::StlThreadContext>()};
+std::array<proto::Env, 2> createEnvs() {
+  auto p0p0 = net::LoopbackChannel::create();
+  auto p1p1 = net::LoopbackChannel::create();
+  auto p0p1 = net::LoopbackChannel::createPaired();
+
+  return {proto::createDefaultEnv(net::Network({p0p0, p0p1[0]}, 0)),
+          proto::createDefaultEnv(net::Network({p1p1, p0p1[1]}, 1))};
+}
+
+coro::Task<FF> runBeaverMulTwoParties() {
+  auto envs = createEnvs();
+
+  auto beaver0 = std::make_unique<test::BeaverMul<FF>>(xs[0], ys[0], ts[0]);
+  auto beaver1 = std::make_unique<test::BeaverMul<FF>>(xs[1], ys[1], ts[1]);
+
+  std::vector<coro::Task<FF>> protocol_evaluations;
+  protocol_evaluations.emplace_back(
+      proto::evaluate<FF>(std::move(beaver0), envs[0]));
+  protocol_evaluations.emplace_back(
+      proto::evaluate<FF>(std::move(beaver1), envs[1]));
+
+  std::vector<FF> shares =
+      co_await coro::batch(std::move(protocol_evaluations));
+
+  co_return shares[0] + shares[1];
 }
 
 }  // namespace
 
-TEST_CASE("Dynamic protocol beaver step-by-step", "[protocol]") {
-  auto networks = net::CreateMemoryBackedNetwork(2);
-
-  std::unique_ptr<proto::Protocol> p0 =
-      std::make_unique<test::BeaverMul<FF>::Init>(xs[0], ys[0], ts[0]);
-  std::unique_ptr<proto::Protocol> p1 =
-      std::make_unique<test::BeaverMul<FF>::Init>(xs[1], ys[1], ts[1]);
-
-  auto env0 = CreateEnv(networks[0]);
-  auto env1 = CreateEnv(networks[1]);
-
-  p0 = p0->Run(env0);
-  p1 = p1->Run(env1);
-
-  REQUIRE(p0->Run(env0) == nullptr);
-  REQUIRE(p1->Run(env1) == nullptr);
-
-  auto z0 = std::any_cast<math::Vec<FF>>(p0->Output());
-  auto z1 = std::any_cast<math::Vec<FF>>(p1->Output());
-
-  REQUIRE(z0.Size() == 100);
-  REQUIRE(z1.Size() == 100);
-
-  REQUIRE(z0[0] + z1[0] == FF(42) * FF(11));
-}
-
-TEST_CASE("Dynamic protocol eval beaver", "[protocol]") {
-  auto networks = net::CreateMemoryBackedNetwork(2);
-
-  auto p0 = test::BeaverMul<FF>::Create(xs[0], ys[0], ts[0]);
-  auto p1 = test::BeaverMul<FF>::Create(xs[1], ys[1], ts[1]);
-
-  math::Vec<FF> z0;
-  math::Vec<FF> z1;
-
-  std::thread t0([&]() {
-    proto::Evaluate(std::move(p0), networks[0], [&](const std::any& v) {
-      z0 = std::any_cast<math::Vec<FF>>(v);
-    });
-  });
-  std::thread t1([&]() {
-    proto::Evaluate(std::move(p1), networks[1], [&](const std::any& v) {
-      z1 = std::any_cast<math::Vec<FF>>(v);
-    });
-  });
-
-  t0.join();
-  t1.join();
-
-  REQUIRE(z0.Size() == 100);
-  REQUIRE(z1.Size() == 100);
-
-  for (std::size_t i = 0; i < 100; ++i) {
-    REQUIRE(z0[i] + z1[i] == FF(42) * FF(11));
-  }
-}
-
-TEST_CASE("Dynamic protocol eval null protocol", "[protocol]") {
-  auto networks = net::CreateMemoryBackedNetwork(1);
-  proto::Evaluate(nullptr, networks[0]);
-}
-
-TEST_CASE("Protocol env real-time clock", "[protocol]") {
-  proto::RealTimeClock clock;
-
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(100ms);
-
-  auto d = clock.Read();
-
-  REQUIRE(d <= 110ms);
-  REQUIRE(d >= 100ms);
-}
-
-TEST_CASE("Protocol env real-time clock checkpoint", "[protocol]") {
-  // https://truong.io/posts/capturing_stdout_for_c++_unit_testing.html
-
-  proto::RealTimeClock clock;
-
-  std::stringstream buf;
-  std::streambuf* coutbuf = std::cout.rdbuf(buf.rdbuf());
-
-  clock.Checkpoint("asd");
-
-  auto output = buf.str();
-
-  std::cout.rdbuf(coutbuf);
-
-  REQUIRE_THAT(output, Catch::Matchers::StartsWith("asd @"));
-}
-
-TEST_CASE("Protocol env Stl thread context", "[protocol]") {
-  proto::StlThreadContext ctx;
-
-  using namespace std::chrono_literals;
-
-  auto t0 = util::Time::Now();
-
-  ctx.Sleep(100);
-
-  auto t1 = util::Time::Now();
-
-  REQUIRE(t1 - t0 >= 100ms);
+TEST_CASE("Beaver multiplication protocol", "[proto]") {
+  auto rt = coro::DefaultRuntime::create();
+  auto z = rt->run(runBeaverMulTwoParties());
+  REQUIRE(z == x * y);
 }

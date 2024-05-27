@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,10 +26,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "scl/math/la.h"
 #include "scl/math/lagrange.h"
+#include "scl/math/matrix.h"
 #include "scl/math/poly.h"
-#include "scl/math/vec.h"
+#include "scl/math/vector.h"
 #include "scl/util/prg.h"
 
 namespace scl::ss {
@@ -49,21 +49,22 @@ namespace scl::ss {
  * points in which \f$f\f$ is evaluated is called the alphas.
  */
 template <typename T>
-math::Vec<T> ShamirShare(const T& secret,
-                         std::size_t t,
-                         std::size_t n,
-                         util::PRG& prg) {
-  auto c = math::Vec<T>::Random(t + 1, prg);
+math::Vector<T> shamirSecretShare(const T& secret,
+                                  std::size_t t,
+                                  std::size_t n,
+                                  util::PRG& prg) {
+  auto c = math::Vector<T>::random(t + 1, prg);
   c[0] = secret;
-  const auto p = math::Polynomial<T>::Create(c);
+  const auto p = math::Polynomial<T>::create(c);
 
   std::vector<T> shares;
   shares.reserve(n);
+  auto x = T::one();
   for (std::size_t i = 1; i <= n; ++i) {
-    shares.emplace_back(p.Evaluate(T{(int)i}));
+    shares.emplace_back(p.evaluate(x++));
   }
 
-  return math::Vec<T>(shares);
+  return math::Vector<T>(shares);
 }
 
 /**
@@ -78,11 +79,11 @@ math::Vec<T> ShamirShare(const T& secret,
  * \f$\alpha_i=\mathtt{alphas}[i]\f$ and returns \f$f(x)\f$.
  */
 template <typename T>
-T ShamirRecoverP(const math::Vec<T>& shares,
-                 const math::Vec<T>& alphas,
+T shamirRecoverP(const math::Vector<T>& shares,
+                 const math::Vector<T>& alphas,
                  const T& x) {
-  const auto lb = math::ComputeLagrangeBasis(alphas, x);
-  return math::UncheckedInnerProd<T>(shares.begin(), shares.end(), lb.begin());
+  const auto lb = math::computeLagrangeBasis(alphas, x);
+  return math::innerProd<T>(shares.begin(), shares.end(), lb.begin());
 }
 
 /**
@@ -96,67 +97,61 @@ T ShamirRecoverP(const math::Vec<T>& shares,
  * obtained from ss::ShamirShare.
  */
 template <typename T>
-T ShamirRecoverP(const math::Vec<T>& shares) {
-  return ShamirRecoverP(shares,
-                        math::Vec<T>::Range(1, shares.Size() + 1),
-                        T::Zero());
+T shamirRecoverP(const math::Vector<T>& shares) {
+  return shamirRecoverP(shares,
+                        math::Vector<T>::range(1, shares.size() + 1),
+                        T{});
 }
 
 /**
  * @brief Recover a Shamir secret-shared secret with error detection.
  * @param shares the shares.
  * @param alphas the alphas.
+ * @param t the number of shares that might contain errors.
+ * @param d the degree of the sharing.
  * @param x the evaluation point.
  * @return a value.
  * @throws std::logic_error if the provided shares are not consistent.
- *
- * Let \f$n=\mathtt{shares.size()}\f$ and \f$t=(n-1)/2\f$. This function
- * interpolates a polynomial \f$f\f$ running through \f$(s_i,\alpha_i)\f$ where
- * \f$s_i=\mathtt{shares}[i]\f$, \f$\alpha_i=\mathtt{alphas}[i]\f$ for
- * \f$i=1,\dots,t\f$. Note that this implies that \f$f\f$ has degree
- * \f$t\f$. The interpolated polynomial must be consistent with the remaining
- * shares and alphas, that is \f$f(\alpha_i)=s_i\f$ for \f$i=t+1,\dots,n\f$. If
- * this is the case, then \f$f(x)\f$ is returned, otherwise an
- * <code>std::logic_error</code> is thrown.
  */
 template <typename T>
-T ShamirRecoverD(const math::Vec<T>& shares,
-                 const math::Vec<T>& alphas,
+T shamirRecoverD(const math::Vector<T>& shares,
+                 const math::Vector<T>& alphas,
+                 std::size_t t,
+                 std::size_t d,
                  const T& x) {
-  const std::size_t t = (shares.Size() - 1) / 2;
-  const std::size_t n = 2 * t + 1;
-  const auto ns = alphas.SubVector(t + 1);
+  if (shares.size() < d + t || alphas.size() < d + t) {
+    throw std::logic_error("not enough shares provided to detect errors");
+  }
 
-  for (std::size_t i = t + 1; i < n; ++i) {
-    // Shares are indexed starting from 1.
-    auto lb = math::ComputeLagrangeBasis(ns, alphas[i]);
-    auto yi = math::UncheckedInnerProd<T>(shares.begin(),
-                                          shares.begin() + t + 1,
-                                          lb.begin());
+  const std::size_t m = d + 1;
+  const auto ns = alphas.subVector(d + 1);
+
+  for (std::size_t i = m; i < d + t; ++i) {
+    auto lb = math::computeLagrangeBasis(ns, alphas[i]);
+    auto yi =
+        math::innerProd<T>(shares.begin(), shares.begin() + m, lb.begin());
     if (yi != shares[i]) {
       throw std::logic_error("error detected during recovery");
     }
   }
 
-  auto lb = math::ComputeLagrangeBasis(ns, x);
-  return math::UncheckedInnerProd<T>(shares.begin(),
-                                     shares.begin() + t + 1,
-                                     lb.begin());
+  auto lb = math::computeLagrangeBasis(ns, x);
+  return math::innerProd<T>(shares.begin(), shares.begin() + m, lb.begin());
 }
 
 /**
  * @brief Recover a Shamir secret-shared secret with error detection.
  * @param shares the shares.
+ * @param t the degree of the sharing.
  * @return a value.
  *
  * This function is identical to ss::ShamirRecoverD with
  * \f$\mathtt{alphas}=(1,\dots,\mathtt{shares.size()}+1)\f$ and \f$x=0\f$.
  */
 template <typename T>
-T ShamirRecoverD(const math::Vec<T>& shares) {
-  const std::size_t t = (shares.Size() - 1) / 2;
+T shamirRecoverD(const math::Vector<T>& shares, std::size_t t) {
   const std::size_t n = 2 * t + 1;
-  return ShamirRecoverD(shares, math::Vec<T>::Range(1, n + 1), T::Zero());
+  return shamirRecoverD(shares, math::Vector<T>::range(1, n + 1), t, t, T{});
 }
 
 /**
@@ -205,14 +200,14 @@ struct ErrorCorrectedSecret {
  * <p>This function can correct up to \f$t\f$ errors in the supplied shares.
  */
 template <typename T>
-ErrorCorrectedSecret<T> ShamirRecoverC(const math::Vec<T>& shares,
-                                       const math::Vec<T>& alphas) {
-  const std::size_t t = (shares.Size() - 1) / 3;
+ErrorCorrectedSecret<T> shamirRecoverC(const math::Vector<T>& shares,
+                                       const math::Vector<T>& alphas) {
+  const std::size_t t = (shares.size() - 1) / 3;
   const std::size_t n = 3 * t + 1;
 
-  math::Mat<T> A(n);
-  math::Vec<T> b(n);
-  math::Vec<T> x(n);
+  math::Matrix<T> A(n);
+  math::Vector<T> b(n);
+  math::Vector<T> x(n);
   int e;
   for (std::size_t k = 0; k <= t; ++k) {
     e = t - k;  // NOLINT
@@ -231,19 +226,19 @@ ErrorCorrectedSecret<T> ShamirRecoverC(const math::Vec<T>& shares,
       }
     }
 
-    if (SolveLinearSystem(x, A, b)) {
+    if (solveLinearSystem(x, A, b)) {
       break;
     }
   }
 
-  math::Vec<T> cE{x.begin(), x.begin() + e + 1};
+  math::Vector<T> cE{x.begin(), x.begin() + e + 1};
   cE[e] = T(1);
 
-  auto E = math::Polynomial<T>::Create(cE);
-  auto Q = math::Polynomial<T>::Create(math::Vec<T>{x.begin() + e, x.end()});
-  auto qr = Q.Divide(E);
+  auto E = math::Polynomial<T>::create(cE);
+  auto Q = math::Polynomial<T>::create(math::Vector<T>{x.begin() + e, x.end()});
+  auto qr = Q.divide(E);
 
-  if (!qr[1].IsZero()) {
+  if (!qr[1].isZero()) {
     throw std::logic_error("could not correct shares");
   }
 
@@ -259,8 +254,8 @@ ErrorCorrectedSecret<T> ShamirRecoverC(const math::Vec<T>& shares,
  * \f$\mathtt{alphas}=(1,\dots,\mathtt{shares.size()}+1)\f$.
  */
 template <typename T>
-ErrorCorrectedSecret<T> ShamirRecoverC(const math::Vec<T>& shares) {
-  return ShamirRecoverC(shares, math::Vec<T>::Range(1, shares.Size() + 1));
+ErrorCorrectedSecret<T> shamirRecoverC(const math::Vector<T>& shares) {
+  return shamirRecoverC(shares, math::Vector<T>::range(1, shares.size() + 1));
 }
 
 }  // namespace scl::ss

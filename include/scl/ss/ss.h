@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,14 +20,14 @@
 
 #include "scl/ss/additive.h"
 #include "scl/ss/feldman.h"
+#include "scl/ss/pedersen.h"
 #include "scl/ss/shamir.h"
 
 /**
  * @brief Secret sharing utilities.
  *
- * <p>The scl::ss namespace contains a small collection of functionalities
- * related to secret-sharing. Currently, SCL only provides support for Shamir,
- * Feldman and Additive secret-sharing.
+ * The scl::ss namespace contains a small collection of functionalities
+ * related to secret-sharing.
  */
 namespace scl::ss {}  // namespace scl::ss
 

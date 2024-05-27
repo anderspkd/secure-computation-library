@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,17 +25,20 @@
 #include <string>
 #include <vector>
 
-#include "scl/serialization/serializers.h"
+#include "scl/serialization/serializer.h"
 
 namespace scl::util {
 
 /**
- * @brief IUF interface for hash functions.
- * @tparam HashImpl hash implementation
+ * @brief IUF (Init-Update-Finalize) interface for hash functions.
+ * @tparam HASH hash implementation.
+ *
+ * IUFHash provides a CRTP style interface for a hash function implementation
+ *
  * @see Sha3
  * @see Sha256
  */
-template <typename HashImpl>
+template <typename HASH>
 struct IUFHash {
   /**
    * @brief Update the hash function with a set of bytes.
@@ -43,8 +46,8 @@ struct IUFHash {
    * @param n the number of bytes.
    * @return the updated Hash object.
    */
-  IUFHash<HashImpl>& Update(const unsigned char* bytes, std::size_t n) {
-    static_cast<HashImpl*>(this)->Hash(bytes, n);
+  IUFHash<HASH>& update(const unsigned char* bytes, std::size_t n) {
+    static_cast<HASH*>(this)->hash(bytes, n);
     return *this;
   };
 
@@ -53,8 +56,8 @@ struct IUFHash {
    * @param data a vector of bytes.
    * @return the updated Hash object.
    */
-  IUFHash<HashImpl>& Update(const std::vector<unsigned char>& data) {
-    return Update(data.data(), data.size());
+  IUFHash<HASH>& update(const std::vector<unsigned char>& data) {
+    return update(data.data(), data.size());
   };
 
   /**
@@ -63,8 +66,8 @@ struct IUFHash {
    * @return the updated Hash object.
    */
   template <std::size_t N>
-  IUFHash<HashImpl>& Update(const std::array<unsigned char, N>& data) {
-    return Update(data.data(), N);
+  IUFHash<HASH>& update(const std::array<unsigned char, N>& data) {
+    return update(data.data(), N);
   }
 
   /**
@@ -72,8 +75,8 @@ struct IUFHash {
    * @param string the string.
    * @return the updated Hash object.
    */
-  IUFHash<HashImpl>& Update(std::string_view string) {
-    return Update(reinterpret_cast<const unsigned char*>(string.data()),
+  IUFHash<HASH>& update(std::string_view string) {
+    return update(reinterpret_cast<const unsigned char*>(string.data()),
                   string.size());
   }
 
@@ -83,20 +86,20 @@ struct IUFHash {
    * @return the updated Hash object.
    */
   template <typename T>
-  IUFHash<HashImpl>& Update(const T& data) {
+  IUFHash<HASH>& update(const T& data) {
     using Sr = seri::Serializer<T>;
-    const auto size = Sr::SizeOf(data);
+    const auto size = Sr::sizeOf(data);
     const auto buf = std::make_unique<unsigned char[]>(size);
-    Sr::Write(data, buf.get());
-    return Update(buf.get(), size);
+    Sr::write(data, buf.get());
+    return update(buf.get(), size);
   }
 
   /**
    * @brief Finalize and return the digest.
    * @return a digest.
    */
-  auto Finalize() {
-    auto digest = static_cast<HashImpl*>(this)->Write();
+  auto finalize() {
+    auto digest = static_cast<HASH*>(this)->write();
     return digest;
   };
 };

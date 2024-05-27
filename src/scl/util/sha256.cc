@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,8 +17,8 @@
 
 #include "scl/util/sha256.h"
 
+#include <algorithm>
 #include <cstdint>
-#include <cstring>
 
 /**
  * SHA-256 implementation based on https://github.com/System-Glitch/SHA256.
@@ -26,19 +26,19 @@
 
 namespace {
 
-auto RotR(uint32_t x, unsigned n) {
+auto rotR(uint32_t x, unsigned n) {
   return (x >> n) | (x << (32 - n));
 }
 
-auto Sig0(uint32_t x) {
-  return RotR(x, 7) ^ RotR(x, 18) ^ (x >> 3);
+auto sig0(uint32_t x) {
+  return rotR(x, 7) ^ rotR(x, 18) ^ (x >> 3);
 }
 
-auto Sig1(uint32_t x) {
-  return RotR(x, 17) ^ RotR(x, 19) ^ (x >> 10);
+auto sig1(uint32_t x) {
+  return rotR(x, 17) ^ rotR(x, 19) ^ (x >> 10);
 }
 
-auto Split(std::array<unsigned char, 64>& chunk) {
+auto split(std::array<unsigned char, 64>& chunk) {
   std::array<uint32_t, 64> split;
   for (std::size_t i = 0, j = 0; i < 16; ++i, j += 4) {
     split[i] = (chunk[j] << 24)        //
@@ -48,24 +48,24 @@ auto Split(std::array<unsigned char, 64>& chunk) {
   }
 
   for (std::size_t i = 16; i < 64; ++i) {
-    split[i] = Sig1(split[i - 2]) + Sig0(split[i - 15]);
+    split[i] = sig1(split[i - 2]) + sig0(split[i - 15]);
     split[i] += split[i - 7] + split[i - 16];
   }
 
   return split;
 }
 
-auto Majority(uint32_t x, uint32_t y, uint32_t z) {
+auto majority(uint32_t x, uint32_t y, uint32_t z) {
   return (x & (y | z)) | (y & z);
 }
 
-auto Choose(uint32_t x, uint32_t y, uint32_t z) {
+auto choose(uint32_t x, uint32_t y, uint32_t z) {
   return (x & y) ^ (~x & z);
 }
 
 }  // namespace
 
-void scl::util::Sha256::Transform() {
+void scl::util::Sha256::transform() {
   // round constants.
   static constexpr std::array<uint32_t, 64> k = {
       0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
@@ -80,15 +80,15 @@ void scl::util::Sha256::Transform() {
       0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
       0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
-  const auto m = Split(m_chunk);
+  const auto m = split(m_chunk);
   auto s = m_state;
 
   for (std::size_t i = 0; i < 64; ++i) {
-    const auto maj = Majority(s[0], s[1], s[2]);
-    const auto chs = Choose(s[4], s[5], s[6]);
+    const auto maj = majority(s[0], s[1], s[2]);
+    const auto chs = choose(s[4], s[5], s[6]);
 
-    const auto xor_a = RotR(s[0], 2) ^ RotR(s[0], 13) ^ RotR(s[0], 22);
-    const auto xor_e = RotR(s[4], 6) ^ RotR(s[4], 11) ^ RotR(s[4], 25);
+    const auto xor_a = rotR(s[0], 2) ^ rotR(s[0], 13) ^ rotR(s[0], 22);
+    const auto xor_e = rotR(s[4], 6) ^ rotR(s[4], 11) ^ rotR(s[4], 25);
 
     const auto sum = m[i] + k[i] + s[7] + chs + xor_e;
 
@@ -110,7 +110,7 @@ void scl::util::Sha256::Transform() {
   }
 }
 
-void scl::util::Sha256::Pad() {
+void scl::util::Sha256::pad() {
   auto i = m_chunk_pos;
   const auto end = m_chunk_pos < 56U ? 56U : 64U;
 
@@ -120,7 +120,7 @@ void scl::util::Sha256::Pad() {
   }
 
   if (m_chunk_pos >= 56) {
-    Transform();
+    transform();
     std::fill(m_chunk.begin(), m_chunk.begin() + 56, 0);
   }
 
@@ -135,10 +135,10 @@ void scl::util::Sha256::Pad() {
   m_chunk[57] = m_total_len >> 48;
   m_chunk[56] = m_total_len >> 56;
 
-  Transform();
+  transform();
 }
 
-scl::util::Sha256::DigestType scl::util::Sha256::WriteDigest() {
+scl::util::Sha256::DigestType scl::util::Sha256::writeDigest() {
   Sha256::DigestType digest;
 
   for (std::size_t i = 0; i < 4; ++i) {
@@ -150,18 +150,18 @@ scl::util::Sha256::DigestType scl::util::Sha256::WriteDigest() {
   return digest;
 }
 
-void scl::util::Sha256::Hash(const unsigned char* bytes, std::size_t nbytes) {
+void scl::util::Sha256::hash(const unsigned char* bytes, std::size_t nbytes) {
   for (std::size_t i = 0; i < nbytes; ++i) {
     m_chunk[m_chunk_pos++] = bytes[i];
     if (m_chunk_pos == 64) {
-      Transform();
+      transform();
       m_total_len += 512;
       m_chunk_pos = 0;
     }
   }
 }
 
-scl::util::Sha256::DigestType scl::util::Sha256::Write() {
-  Pad();
-  return WriteDigest();
+scl::util::Sha256::DigestType scl::util::Sha256::write() {
+  pad();
+  return writeDigest();
 }

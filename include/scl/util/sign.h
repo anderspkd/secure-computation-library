@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,15 +21,16 @@
 #include <memory>
 
 #include "scl/math/curves/secp256k1.h"
+#include "scl/math/ec.h"
 #include "scl/math/ff.h"
 
 namespace scl::util {
 
 /**
  * @brief A signature for some signature scheme.
- * @tparam SignatureScheme the signature scheme.
+ * @tparam SIGNATURE_SCHEME the signature scheme.
  */
-template <typename SignatureScheme>
+template <typename SIGNATURE_SCHEME>
 struct Signature;
 
 class ECDSA;
@@ -40,14 +41,14 @@ class ECDSA;
 template <>
 struct Signature<ECDSA> {
  private:
-  using ElementType = math::FF<math::Secp256k1::Scalar>;
+  using ElementType = math::FF<math::ec::Secp256k1::Scalar>;
 
  public:
   /**
    * @brief The size of an ECDSA signature in bytes.
    */
-  constexpr static std::size_t ByteSize() {
-    return ElementType::ByteSize() * 2;
+  constexpr static std::size_t byteSize() {
+    return ElementType::byteSize() * 2;
   }
 
   /**
@@ -55,18 +56,18 @@ struct Signature<ECDSA> {
    * @param buf the buffer.
    * @return an ECDSA signature.
    */
-  static Signature<ECDSA> Read(const unsigned char* buf) {
-    return {ElementType::Read(buf),
-            ElementType::Read(buf + ElementType::ByteSize())};
+  static Signature<ECDSA> read(const unsigned char* buf) {
+    return {ElementType::read(buf),
+            ElementType::read(buf + ElementType::byteSize())};
   }
 
   /**
    * @brief Write an ECDSA signature to a stream.
    * @param buf the buffer.
    */
-  void Write(unsigned char* buf) const {
-    r.Write(buf);
-    s.Write(buf + ElementType::ByteSize());
+  void write(unsigned char* buf) const {
+    r.write(buf);
+    s.write(buf + ElementType::byteSize());
   }
 
   /**
@@ -88,7 +89,7 @@ class ECDSA {
   /**
    * @brief Public key type. A curve point.
    */
-  using PublicKey = math::EC<math::Secp256k1>;
+  using PublicKey = math::EC<math::ec::Secp256k1>;
 
   /**
    * @brief Secret key type. An element modulo the order of the curve.
@@ -100,28 +101,28 @@ class ECDSA {
    * @param secret_key the secret key.
    * @return A public key.
    */
-  static PublicKey Derive(const SecretKey& secret_key) {
-    return secret_key * PublicKey::Generator();
+  static PublicKey derive(const SecretKey& secret_key) {
+    return secret_key * PublicKey::generator();
   }
 
   /**
    * @brief Sign a message.
-   * @tparam D a digest type.
+   * @tparam DIGEST a digest type.
    * @param secret_key the secret key for signing.
    * @param digest the digest to sign.
    * @param prg a PRG used to select the nonce in the signature.
    * @return an ECDSA signature.
    */
-  template <typename D>
+  template <typename DIGEST>
   static Signature<ECDSA> Sign(const SecretKey& secret_key,
-                               const D& digest,
+                               const DIGEST& digest,
                                PRG& prg) {
-    const auto k = SecretKey::Random(prg);
-    const auto R = k * PublicKey::Generator();
-    const auto rx = ConversionFunc(R);
-    const auto h = DigestToElement(digest);
+    const auto k = SecretKey::random(prg);
+    const auto R = k * PublicKey::generator();
+    const auto rx = conversionFunc(R);
+    const auto h = digestToElement(digest);
 
-    return {rx, k.Inverse() * (h + secret_key * rx)};
+    return {rx, k.inverse() * (h + secret_key * rx)};
   }
 
   /**
@@ -131,17 +132,17 @@ class ECDSA {
    * @param digest the digest that was signed.
    * @return true if the signature is valid and false otherwise.
    */
-  template <typename D>
-  static bool Verify(const PublicKey& public_key,
+  template <typename DIGEST>
+  static bool verify(const PublicKey& public_key,
                      const Signature<ECDSA>& signature,
-                     const D& digest) {
-    const auto h = DigestToElement(digest);
+                     const DIGEST& digest) {
+    const auto h = digestToElement(digest);
     const auto [r, s] = signature;
-    const auto si = s.Inverse();
-    const auto R1 = (h * si) * PublicKey::Generator();
+    const auto si = s.inverse();
+    const auto R1 = (h * si) * PublicKey::generator();
     const auto R2 = (r * si) * public_key;
     const auto R = R1 + R2;
-    return !R.PointAtInfinity() && ConversionFunc(R) == r;
+    return !R.isPointAtInfinity() && conversionFunc(R) == r;
   }
 
   /**
@@ -153,11 +154,11 @@ class ECDSA {
    * \f$R=(r_x, r_y)\f$ and outputs a scalar as \f$r_x \mod p\f$ where \f$p\f$
    * is order of a subgroup.
    */
-  static SecretKey ConversionFunc(const PublicKey& R) {
-    const auto rx_f = R.ToAffine()[0];
-    unsigned char rx_bytes[SecretKey::ByteSize()];
-    rx_f.Write(rx_bytes);
-    return SecretKey::Read(rx_bytes);
+  static SecretKey conversionFunc(const PublicKey& R) {
+    const auto rx_f = R.toAffine()[0];
+    unsigned char rx_bytes[SecretKey::byteSize()];
+    rx_f.write(rx_bytes);
+    return SecretKey::read(rx_bytes);
   }
 
   /**
@@ -165,14 +166,14 @@ class ECDSA {
    * @param digest the digest.
    * @return a scalar.
    */
-  template <typename D>
-  static SecretKey DigestToElement(const D& digest) {
-    if (digest.size() < SecretKey::ByteSize()) {
-      unsigned char buf[SecretKey::ByteSize()] = {0};
+  template <typename DIGEST>
+  static SecretKey digestToElement(const DIGEST& digest) {
+    if (digest.size() < SecretKey::byteSize()) {
+      unsigned char buf[SecretKey::byteSize()] = {0};
       std::copy(digest.begin(), digest.end(), buf);
-      return SecretKey::Read(buf);
+      return SecretKey::read(buf);
     }
-    return SecretKey::Read(digest.data());
+    return SecretKey::read(digest.data());
   }
 };
 

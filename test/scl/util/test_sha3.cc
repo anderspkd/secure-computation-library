@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "scl/math/fp.h"
 #include "scl/util/digest.h"
@@ -30,7 +30,7 @@ TEST_CASE("Sha3 empty hash", "[misc]") {
       0x49, 0xfa, 0x82, 0xd8, 0x0a, 0x4b, 0x80, 0xf8, 0x43, 0x4a};
 
   util::Hash<256> hash;
-  auto digest = hash.Finalize();
+  auto digest = hash.finalize();
   REQUIRE(digest == SHA3_256_empty);
 }
 
@@ -42,7 +42,7 @@ TEST_CASE("Sha3 abc hash", "[misc]") {
 
   util::Hash<256> hash;
   unsigned char abc[] = "abc";
-  auto digest = hash.Update(abc, 3).Finalize();
+  auto digest = hash.update(abc, 3).finalize();
   REQUIRE(digest == SHA3_256_abc);
 }
 
@@ -59,14 +59,14 @@ TEST_CASE("Sha3-256 reference", "[misc]") {
   }
 
   util::Hash<256> hash0;
-  auto digest = hash0.Update(buf, 200).Finalize();
+  auto digest = hash0.update(buf, 200).finalize();
   REQUIRE(digest == SHA3_256_0xa3_200_times);
 
   util::Hash<256> hash1;
   for (std::size_t i = 0; i < 200; ++i) {
-    hash1.Update(&byte, 1);
+    hash1.update(&byte, 1);
   }
-  REQUIRE(hash1.Finalize() == SHA3_256_0xa3_200_times);
+  REQUIRE(hash1.finalize() == SHA3_256_0xa3_200_times);
 }
 
 TEST_CASE("Sha3-384 reference", "[misc]") {
@@ -83,15 +83,15 @@ TEST_CASE("Sha3-384 reference", "[misc]") {
   }
 
   util::Hash<384> hash0;
-  auto digest = hash0.Update(buf, 200).Finalize();
+  auto digest = hash0.update(buf, 200).finalize();
   REQUIRE(digest.size() == 48);
   REQUIRE(digest == SHA3_384_0xa3_200_times);
 
   util::Hash<384> hash1;
   for (std::size_t i = 0; i < 200; ++i) {
-    hash1.Update(&byte, 1);
+    hash1.update(&byte, 1);
   }
-  REQUIRE(hash1.Finalize() == SHA3_384_0xa3_200_times);
+  REQUIRE(hash1.finalize() == SHA3_384_0xa3_200_times);
 }
 
 TEST_CASE("Sha3-512 reference", "[misc]") {
@@ -110,34 +110,34 @@ TEST_CASE("Sha3-512 reference", "[misc]") {
   }
 
   util::Hash<512> hash0;
-  auto digest = hash0.Update(buf, 200).Finalize();
+  auto digest = hash0.update(buf, 200).finalize();
   REQUIRE(digest.size() == 64);
   REQUIRE(digest == SHA3_512_0xa3_200_times);
 
   util::Hash<512> hash1;
   for (std::size_t i = 0; i < 200; ++i) {
-    hash1.Update(&byte, 1);
+    hash1.update(&byte, 1);
   }
-  REQUIRE(hash1.Finalize() == SHA3_512_0xa3_200_times);
+  REQUIRE(hash1.finalize() == SHA3_512_0xa3_200_times);
 }
 
 TEST_CASE("Sha3 hash vector", "[misc]") {
   unsigned char ref_buf[] = "hello, world";
   util::Hash<256> hash_ref;
-  auto ref = hash_ref.Update(ref_buf, 12).Finalize();
+  auto ref = hash_ref.update(ref_buf, 12).finalize();
 
   util::Hash<256> hash1;
   std::vector<unsigned char> v =
       {'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd'};
-  auto from_vec = hash1.Update(v).Finalize();
+  auto from_vec = hash1.update(v).finalize();
   REQUIRE(ref == from_vec);
 }
 
 TEST_CASE("Sha3 hash array", "[misc]") {
   unsigned char abc[] = "abc";
   std::array<unsigned char, 3> abc_arr = {'a', 'b', 'c'};
-  auto ref = util::Hash<256>{}.Update(abc, 3).Finalize();
-  auto act = util::Hash<256>{}.Update(abc_arr).Finalize();
+  auto ref = util::Hash<256>{}.update(abc, 3).finalize();
+  auto act = util::Hash<256>{}.update(abc_arr).finalize();
   REQUIRE(ref == act);
 }
 
@@ -145,7 +145,7 @@ TEST_CASE("Sha3 field elements", "[misc]") {
   math::Fp<61> x(123);
   math::Fp<61> y(555);
 
-  auto hx = util::Hash<256>{}.Update(x).Finalize();
-  auto hy = util::Hash<256>{}.Update(y).Finalize();
+  auto hx = util::Hash<256>{}.update(x).finalize();
+  auto hy = util::Hash<256>{}.update(y).finalize();
   REQUIRE(hx != hy);
 }

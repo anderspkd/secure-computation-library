@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,8 +22,10 @@
 #include <memory>
 #include <ratio>
 #include <thread>
+#include <utility>
 
 #include "scl/net/network.h"
+#include "scl/protocol/clock.h"
 #include "scl/util/time.h"
 
 namespace scl::proto {
@@ -37,100 +39,28 @@ namespace scl::proto {
  */
 struct Env {
   /**
-   * @brief Interface for the environment's threading context.
-   *
-   * At the moment, the only threading related functionality that the
-   * environment supports is the ability to sleep the current thread for a
-   * provided amount of time.
-   */
-  struct Thread {
-    virtual ~Thread(){};
-
-    /**
-     * @brief Put this thread to sleep.
-     * @param ms the time to sleep this thread for, in milliseconds
-     */
-    virtual void Sleep(std::size_t ms) = 0;
-  };
-
-  /**
-   * @brief Interface for the environment's clock context.
-   *
-   * This interface essentially models a "stopwatch" of sorts. The idea is that
-   * it will start ticking when a protocol starts. The protocol can check the
-   * current elapsed time at any point, and mark checkpoints.
-   */
-  struct Clock {
-    virtual ~Clock(){};
-
-    /**
-     * @brief Read the current value of the clock.
-     */
-    virtual util::Time::Duration Read() const = 0;
-
-    /**
-     * @brief Record a checkpoint with an associated message.
-     */
-    virtual void Checkpoint(const std::string& message) = 0;
-  };
-
-  /**
    * @brief The network.
    */
   net::Network network;
 
   /**
-   * @brief Clock.
+   * @brief Clock used to tell for how long the protocol has been running.
    */
   std::unique_ptr<Clock> clock;
-
-  /**
-   * @brief Threading context.
-   */
-  std::unique_ptr<Thread> thread_ctx;
 };
 
 /**
- * @brief A protocol clock which operates with real time.
+ * @brief Create an environment from a network.
+ * @param network the network.
+ * @return an Env object.
+ *
+ * The returned environemnt uses the RealTimeClock and StlThreadContext for the
+ * environment's clock and thread context, respectively.
  */
-class RealTimeClock final : public Env::Clock {
- public:
-  RealTimeClock() : m_init_time(util::Time::Now()) {}
-  ~RealTimeClock() {}
-
-  /**
-   * @brief Get the current time.
-   */
-  util::Time::Duration Read() const {
-    return util::Time::Now() - m_init_time;
-  }
-
-  /**
-   * @brief Print the current time to stdout.
-   */
-  void Checkpoint(const std::string& message) {
-    auto ms = std::chrono::duration<double, std::milli>(Read()).count();
-    std::cout << message << " @ " << ms << " ms\n";
-  }
-
- private:
-  util::Time::TimePoint m_init_time;
-};
-
-/**
- * @brief A protocol thread context which uses STL thread.
- */
-class StlThreadContext final : public Env::Thread {
- public:
-  ~StlThreadContext() {}
-
-  /**
-   * @brief Sleep the current thread using std::this_thread::sleep_for.
-   */
-  void Sleep(std::size_t ms) override {
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-  }
-};
+inline Env createDefaultEnv(net::Network network) {
+  return Env{.network = std::move(network),
+             .clock = std::make_unique<RealtimeClock>()};
+}
 
 }  // namespace scl::proto
 

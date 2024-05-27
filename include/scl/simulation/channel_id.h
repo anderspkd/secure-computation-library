@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -37,14 +37,6 @@ namespace scl::sim {
  */
 struct ChannelId {
   /**
-   * @brief Construct a new channel ID.
-   * @param local ID of the this (i.e., the local) party
-   * @param remote ID of the remote party
-   */
-  ChannelId(std::size_t local, std::size_t remote)
-      : local(local), remote(remote){};
-
-  /**
    * @brief ID of this party.
    */
   std::size_t local;
@@ -55,14 +47,10 @@ struct ChannelId {
   std::size_t remote;
 
   /**
-   * @brief Flip the direction of the channel.
-   *
-   * Flip turns a channel ID <code>{i, j}</code> into a channel ID <code>{j,
-   * i}</code>. This is used when a party <code>i</code> needs the ID of the
-   * channel it should read from when receving data from <code>j</code>.
+   * @brief Flips the view of the this ID.
    */
-  ChannelId Flip() const {
-    return ChannelId{remote, local};
+  ChannelId flip() const {
+    return {remote, local};
   }
 
   /**
@@ -84,7 +72,7 @@ struct ChannelId {
    * @brief Print operator for ChannelId.
    */
   friend std::ostream& operator<<(std::ostream& os, const ChannelId& cid) {
-    return os << "ChannelId{" << cid.local << ", " << cid.remote << "}";
+    return os << "{local=" << cid.local << ", remote=" << cid.remote << "}";
   }
 };
 

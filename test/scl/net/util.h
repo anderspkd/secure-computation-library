@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,7 +31,7 @@ namespace scl::test {
  * @brief Get a fresh port for use in tests that require ports.
  * @note Not thread safe.
  */
-int GetPort();
+int getPort();
 
 /**
  * @brief Test if two buffers are equal.
@@ -40,7 +40,7 @@ int GetPort();
  * @param n the number of bytes to check
  * @param true if \p a and \p b coincide on the first \p n bytes.
  */
-bool BufferEquals(const unsigned char* a, const unsigned char* b, int n);
+bool bufferEquals(const unsigned char* a, const unsigned char* b, int n);
 
 }  // namespace scl::test
 

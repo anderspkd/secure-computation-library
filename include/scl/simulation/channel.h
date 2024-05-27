@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,132 +20,71 @@
 
 #include <memory>
 
+#include "scl/coro/task.h"
 #include "scl/net/channel.h"
 #include "scl/simulation/channel_id.h"
 #include "scl/simulation/context.h"
+#include "scl/simulation/transport.h"
 
-namespace scl::sim {
-
-/**
- * @brief Simulate a net::Channel::Close call on a channel.
- * @param ctx a simulation context.
- * @param id the ID of the channel making the call.
- * @return the event generated.
- *
- * This function simply generates a <code>CLOSE</code> event for the current
- * time of the running party.
- */
-std::shared_ptr<Event> SimulateClose(std::shared_ptr<Context> ctx,
-                                     ChannelId id);
+namespace scl::sim::details {
 
 /**
- * @brief Simulate a net::Channel::Send call on a channel.
- * @param ctx a simulation context.
- * @param id the ID of the channel making the call.
- * @param src a pointer to the data being sent.
- * @param n the number of bytes being sent.
- * @return the event generated.
- *
- * This function aims to simulate Sending data over a network, under the
- * assumption that this operation is instant. This involves generating a
- * <code>SEND</code> event with the current time of the party, minus the time it
- * took to write the data in \p src unto the underlying ChannelBuffer. In order
- * to determine when the \p n bytes are going to be received, this function also
- * records a write operation on the context with the time in the
- * <code>SEND</code> event for the number \p n of bytes sent.
+ * @brief Channel implementation used during simulations.
  */
-std::shared_ptr<Event> SimulateSend(std::shared_ptr<Context> ctx,
-                                    ChannelId id,
-                                    const unsigned char* src,
-                                    std::size_t n);
-
-/**
- * @brief Simulate a net::Channel::Recv call on a channel.
- * @param ctx a simulation context.
- * @param id the ID of the channel making the call.
- * @param dst destination for the received data.
- * @param n the number of bytes to receive.
- * @return the event generated.
- * @throws scl::SimulationFailure in case the call could not be simulated
- *
- * <p>This function fails in the case when less than \p n bytes are available on
- * the underlying ChannelBuffer. Otherwise, the function reads the requested
- * number of bytes, and computes the time this data would be received. Finally,
- * the function creates a <code>RECV</code> event with the adjusted time.
- *
- * <p>The time in the <code>RECV</code> event is adjusted by going through the
- * recorded write operations for the sending channel
- */
-std::shared_ptr<Event> SimulateRecv(std::shared_ptr<Context> ctx,
-                                    ChannelId id,
-                                    unsigned char* dst,
-                                    std::size_t n);
-
-/**
- * @brief Simulate a net::Channel::HasData call on a channel.
- * @param ctx a simulation context
- * @param id the ID of the channel making the call
- * @return the event generated and the whether there was data available.
- * @throws scl::SimulationFailure in case the call could not be simulated
- *
- * <p>This function simulates the case where <code>id.local</code> checks if
- * <code>id.remote</code> sent it data. This is done by checking if there are
- * unhandled write operations by the remote party that took place before this
- * function was called.
- *
- * <p>This function may fail if the last time recorded by the remote party is
- * earlier than the time when this function was called. In this case, it is not
- * possible to determine if there are data available.
- */
-std::pair<bool, std::shared_ptr<Event>> SimulateHasData(
-    std::shared_ptr<Context> ctx,
-    ChannelId id);
-
-/**
- * @brief Channel implementation used in simulations.
- *
- * SimulatedChannel wraps a SimulationContext and a ChannelId and calls out to
- * sim::SimulateClose, sim::SimulateSend, sim::SimulateRecv or
- * sim::SimulateHasData, which performs the actual simulation of the methods in
- * the Channel interface.
- */
-class Channel final : public net::Channel {
+class SimulatedChannel final : public net::Channel {
  public:
   /**
-   * @brief Construct a new Channel for simulations.
-   * @param id the ID of the channel
-   * @param ctx a simulation context object
+   * @brief Construct a SimulatedChannel.
+   * @param cid the ID of this channel.
+   * @param context a context object for this channel.
+   * @param transport the transport to use for moving data.
    */
-  Channel(ChannelId id, std::shared_ptr<Context> ctx) : m_id(id), m_ctx(ctx){};
+  SimulatedChannel(ChannelId cid,
+                   GlobalContext::LocalContext context,
+                   std::shared_ptr<Transport> transport)
+      : m_cid(cid), m_context(context), m_transport(transport) {}
 
-  void Close() override {
-    m_ctx->AddEvent(m_id.local, SimulateClose(m_ctx, m_id));
-  }
+  /**
+   * @brief Closes the channel.
+   *
+   * Creates a EventType::CLOSE event.
+   */
+  void close() override;
 
-  void Send(const unsigned char* src, std::size_t n) override {
-    m_ctx->AddEvent(m_id.local, SimulateSend(m_ctx, m_id, src, n));
-  }
+  /**
+   * @brief Sends data on the channel.
+   *
+   * Creates a EventType::SEND event.
+   */
+  coro::Task<void> send(net::Packet&& packet) override;
 
-  std::size_t Recv(unsigned char* dst, std::size_t n) override {
-    m_ctx->AddEvent(m_id.local, SimulateRecv(m_ctx, m_id, dst, n));
-    return n;
-  }
+  /**
+   * @brief Sends data on the channel.
+   *
+   * Creates a EventType::SEND event.
+   */
+  coro::Task<void> send(const net::Packet& packet) override;
 
-  bool HasData() override {
-    const auto r = SimulateHasData(m_ctx, m_id);
-    m_ctx->AddEvent(m_id.local, std::get<1>(r));
-    return std::get<0>(r);
-  }
+  /**
+   * @brief Receives data on the channel.
+   *
+   * Creates a EventType::RECV event.
+   */
+  coro::Task<net::Packet> recv() override;
 
-  void Send(const net::Packet& packet) override;
-
-  std::optional<net::Packet> Recv(bool block = true) override;
+  /**
+   * @brief Checks if there is data available on this channel.
+   *
+   * Creates a EventType::HAS_DATA event.
+   */
+  coro::Task<bool> hasData() override;
 
  private:
-  ChannelId m_id;
-  std::shared_ptr<Context> m_ctx;
+  ChannelId m_cid;
+  GlobalContext::LocalContext m_context;
+  std::shared_ptr<Transport> m_transport;
 };
 
-}  // namespace scl::sim
+}  // namespace scl::sim::details
 
 #endif  // SCL_SIMULATION_CHANNEL_H

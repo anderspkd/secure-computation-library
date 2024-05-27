@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,141 +17,215 @@
 
 #include "scl/simulation/context.h"
 
+#include <chrono>
+#include <cmath>
+#include <ratio>
+
 #include "scl/simulation/config.h"
 #include "scl/simulation/event.h"
-#include "scl/simulation/mem_channel_buffer.h"
-#include "scl/simulation/simulator.h"
+#include "scl/simulation/hook.h"
+#include "scl/util/bitmap.h"
 
 using namespace scl;
-
-template <>
-std::shared_ptr<sim::Context>
-sim::Context::Create<sim::MemoryBackedChannelBuffer>(
-    std::size_t number_of_parties,
-    std::shared_ptr<sim::NetworkConfig> config) {
-  auto ctx = std::make_shared<Context>(config);
-
-  ctx->m_nparties = number_of_parties;
-  ctx->m_traces.resize(number_of_parties);
-
-  for (std::size_t i = 0; i < number_of_parties; ++i) {
-    ctx->m_buffers[ChannelId(i, i)] =
-        MemoryBackedChannelBuffer::CreateLoopback();
-    for (std::size_t j = i + 1; j < number_of_parties; ++j) {
-      ChannelId cid(i, j);
-      auto cp = MemoryBackedChannelBuffer::CreatePaired();
-      ctx->m_buffers[cid] = cp[0];
-      ctx->m_buffers[cid.Flip()] = cp[1];
-    }
-  }
-
-  return ctx;
-}  // LCOV_EXCL_LINE
+// makes things a bit nicer to read.
+using GlobalCtx = sim::details::GlobalContext;
 
 namespace {
 
-std::size_t Next(std::size_t id, std::size_t n) {
-  return (id + 1) % n;
+std::vector<util::Bitmap> initBitmaps(std::size_t number_of_parties) {
+  std::vector<util::Bitmap> bms;
+  bms.reserve(number_of_parties);
+  for (std::size_t i = 0; i < number_of_parties; i++) {
+    bms.emplace_back(number_of_parties);
+  }
+  return bms;
 }
 
 }  // namespace
 
-std::optional<std::size_t> sim::Context::NextToRun(
-    std::optional<std::size_t> current) {
-  // party 0 is always the party to go first.
-  if (!current.has_value()) {
-    return 0;
+GlobalCtx GlobalCtx::create(std::size_t number_of_parties,
+                            std::unique_ptr<NetworkConfig> network_config,
+                            std::vector<TriggerAndHook> hooks) {
+  std::vector<sim::SimulationTrace> traces(number_of_parties);
+
+  for (std::size_t i = 0; i < number_of_parties; i++) {
+    traces.reserve(1024);
   }
 
-  // we end here current throw a SimulationFailure. This only happens when it
-  // fails to either call Recv or HasData.
-  if (m_state == State::ROLLBACK) {
-    // the last party in m_next_party_cand is assumed to be the party for
-    // which current tried to Recv or HasData from.
-    const auto next = m_next_party_cand.back();
+  std::unordered_map<sim::ChannelId, std::deque<util::Time::Duration>> sends;
+  std::vector<util::Time::TimePoint> clocks(number_of_parties);
+  std::vector<util::Bitmap> recv_map = initBitmaps(number_of_parties);
 
-    // if this party has already finished, then current will never be able to
-    // finish, so we crash the simulation here.
-    if (HasTerminated(next)) {
-      throw SimulationFailure(
-          "party tried to receive data from terminated party");
-    }
-
-    // if the party is the same as current, then we are performing a rollback
-    // because we did not send enough data to ourselves. That data is never
-    // going to arrive, so there's no hope of saving the simulation.
-    if (next == current) {
-      throw SimulationFailure("infinite loop detected");
-    }
-
-    return next;
-  }
-
-  std::size_t next = Next(current.value(), m_nparties);
-  std::size_t terminated = 0;
-  while (terminated < m_nparties) {
-    if (!HasTerminated(next)) {
-      return next;
-    }
-    terminated++;
-    next = Next(next, m_nparties);
-  }
-
-  return {};
+  return {number_of_parties,
+          std::move(network_config),
+          traces,
+          sends,
+          clocks,
+          recv_map,
+          util::Bitmap(number_of_parties),
+          std::move(hooks)};
 }
 
-util::Time::Duration sim::Context::Checkpoint(std::size_t id) {
-  const auto latest = LatestTimestamp(id);
-  const auto last_checkpoint = m_checkpoint;
-  UpdateCheckpoint();
-  return latest + (m_checkpoint - last_checkpoint);
+util::Time::Duration GlobalCtx::LocalContext::lastEventTimestamp() const {
+  if (!m_gctx.traces[m_id].empty()) {
+    return m_gctx.traces[m_id].back()->timestamp;
+  }
+  return util::Time::Duration::zero();
 }
 
-void sim::Context::Prepare(std::size_t id) {
-  if (m_state == State::COMMIT || m_state == State::ROLLBACK) {
-    // Save the current head of m_traces so we can discard new events if this
-    // party has to rollback.
-    m_trace_index = m_traces[id].size();
-    m_next_party_cand.clear();
-
-    // Save the current m_writes map. Recv operations will change writes made by
-    // other parties, so this is the easiest way to make sure Rollback does the
-    // right thing.
-    m_writes_backup = m_writes;
-    for (std::size_t i = 0; i < m_nparties; ++i) {
-      auto cid = ChannelId(id, i);
-      m_buffers[cid]->Prepare();
-    }
-  } else {
-    throw std::logic_error("cannot prepare ctx");
-  }
-  m_state = State::PREPARE;
+util::Time::Duration GlobalCtx::LocalContext::elapsedTime() const {
+  const util::Time::Duration most_recent = lastEventTimestamp();
+  return most_recent + (util::Time::now() - m_gctx.clocks[m_id]);
 }
 
-void sim::Context::Commit(std::size_t id) {
-  if (m_state == State::PREPARE) {
-    m_writes_backup.clear();
-    for (std::size_t i = 0; i < m_nparties; ++i) {
-      ChannelId cid(id, i);
-      m_buffers[cid]->Commit();
-    }
-
-  } else {
-    throw std::logic_error("cannot commit");
-  }
-  m_state = State::COMMIT;
+void GlobalCtx::LocalContext::startClock() {
+  m_gctx.clocks[m_id] = util::Time::now();
 }
 
-void sim::Context::Rollback(std::size_t id) {
-  if (m_state == State::PREPARE) {
-    m_traces[id].resize(m_trace_index);
-    m_writes = m_writes_backup;
-    for (std::size_t i = 0; i < m_nparties; ++i) {
-      ChannelId cid(id, i);
-      m_buffers[cid]->Rollback();
-    }
-  } else {
-    throw std::logic_error("cannot rollback");
+namespace {
+
+// Computes total size in bits that nbytes of data would occupy provided some
+// maximum segment size
+long double sizeWithHeadersInBits(std::size_t nbytes,
+                                  std::size_t mss) noexcept {
+  static constexpr std::size_t TCP_IP_HEADER = 40;
+  const std::size_t num_packets = std::ceil((double)nbytes / (double)mss);
+  return 8 * (nbytes + num_packets * TCP_IP_HEADER);
+}
+
+// Converts the RTT in a config, assumed to be in ms, to seconds.
+long double rttSeconds(const sim::ChannelConfig& config) noexcept {
+  using namespace std::chrono_literals;
+  const auto d = std::chrono::milliseconds(config.RTT());
+  return d / 1.0s;
+}
+
+// Computes the throughput of a channel assuming a package loss of 0%.
+long double throughputNoLoss(const sim::ChannelConfig& config) noexcept {
+  // Simple throughput formula:
+  // https://tetcos.com/pdf/v13/Experiments/Mathematical-Modelling-of-TCP-Throughput-Performance.pdf
+  const long double rtt = rttSeconds(config);
+  const long double wndz = 8 * (long double)config.windowSize();
+  const long double max_throughput = wndz / rtt;
+
+  // actual throughput obviously cannot exceed the capacity of the link.
+  const long double bw = (long double)config.bandwidth();
+  const long double actual_throughput = std::min(max_throughput, bw);
+
+  return actual_throughput;
+}
+
+// Computes the throughput of a channel assuming a package loss of > 0%. This
+// uses the Mathis formula:
+// https://cseweb.ucsd.edu/classes/wi01/cse222/papers/mathis-tcpmodel-ccr97.pdf
+long double throughputLoss(const sim::ChannelConfig& config) noexcept {
+  const long double mss = config.MSS();
+  const long double loss_term = std::sqrt(3.0 / (2.0 * config.packetLoss()));
+  const long double rtt = rttSeconds(config);
+
+  return loss_term * (8 * mss / rtt);
+}
+
+// Computes the receive time of some amount of data on a TCP channel.
+util::Time::Duration recvTimeTCP(const sim::ChannelConfig& config,
+                                 std::size_t n) {
+  const long double total_size_bits = sizeWithHeadersInBits(n, config.MSS());
+  long double actual_tp = throughputNoLoss(config);
+
+  if (config.packetLoss() > 0) {
+    const long double tp = throughputLoss(config);
+    actual_tp = std::min(tp, actual_tp);
   }
-  m_state = State::ROLLBACK;
+
+  const long double t = total_size_bits / actual_tp + rttSeconds(config);
+  const auto t_sec = std::chrono::duration<double>(t);
+  return std::chrono::duration_cast<util::Time::Duration>(t_sec);
+}
+
+// Computes the delay that sending an amount of bytes would incur.
+util::Time::Duration adjustSendTime(const sim::ChannelConfig& config,
+                                    util::Time::Duration send_time,
+                                    std::size_t n) {
+  if (config.type() == sim::ChannelConfig::NetworkType::TCP) {
+    return send_time + recvTimeTCP(config, n);
+  }
+  return send_time;
+}
+
+}  // namespace
+
+void GlobalCtx::LocalContext::recordEvent(std::shared_ptr<Event> event) {
+  m_gctx.traces[m_id].emplace_back(event);
+
+  const auto event_type = event->type;
+  for (const auto& [trigger, hook] : m_gctx.hooks) {
+    if (trigger.has_value()) {
+      if (trigger.value() == event_type) {
+        hook->run(m_id, getContext());
+      }
+    } else {
+      hook->run(m_id, getContext());
+    }
+  }
+}
+
+util::Time::Duration GlobalCtx::LocalContext::recv(
+    std::size_t sender,
+    std::size_t nbytes,
+    util::Time::Duration timestamp) {
+  // Channel ID corresponding to the channel that the remote party writes to.
+  const ChannelId id{.local = sender, .remote = m_id};
+  const util::Time::Duration send_time = m_gctx.sends[id].front();
+  m_gctx.sends[id].pop_front();
+
+  const ChannelConfig cconf = m_gctx.network_config->get(id);
+  return std::max(timestamp, adjustSendTime(cconf, send_time, nbytes));
+}
+
+void GlobalCtx::LocalContext::recvStart(std::size_t id) {
+  m_gctx.recv_map[m_id].set(id, true);
+}
+
+void GlobalCtx::LocalContext::recvDone(std::size_t id) {
+  m_gctx.recv_map[m_id].set(id, false);
+}
+
+bool GlobalCtx::LocalContext::receiving(std::size_t receiver) const {
+  return m_gctx.recv_map[receiver].at(m_id);
+}
+
+bool GlobalCtx::LocalContext::dead(std::size_t id) const {
+  if (m_gctx.traces[id].empty()) {
+    return false;
+  }
+
+  const auto last_event_type = m_gctx.traces[id].back()->type;
+  return last_event_type == EventType::STOP ||
+         last_event_type == EventType::KILLED ||
+         last_event_type == EventType::CANCELLED;
+}
+
+util::Time::Duration GlobalCtx::LocalContext::currentTimeOf(
+    std::size_t other_party) const {
+  if (m_gctx.traces[other_party].empty()) {
+    return util::Time::Duration::zero();
+  }
+  return m_gctx.traces[other_party].back()->timestamp;
+}
+
+std::ostream& sim::details::operator<<(
+    std::ostream& os,
+    const sim::details::GlobalContext& global_ctx) {
+  os << "GLOBAL_CTX{";
+  os << " number_of_parties=" << global_ctx.number_of_parties << "\n";
+  os << " network_config=<omitted>\n";
+  os << " traces=<omitted>\n";
+  os << " sends=<omitted>\n";
+  os << " clocks=<omitted>\n";
+  os << " recv_map=<omitted>\n";
+  os << " cancellation_map=" << global_ctx.cancellation_map << "\n";
+  os << " hooks=<omitted>\n";
+  os << "}\n";
+
+  return os;
 }

@@ -1,5 +1,5 @@
 # SCL --- Secure Computation Library
-# Copyright (C) 2022 Anders Dalskov
+# Copyright (C) 2024 Anders Dalskov
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -14,72 +14,117 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-cmake_minimum_required( VERSION 3.14 )
+cmake_minimum_required(VERSION 3.5)
 
-project( scl VERSION 0.7.0 DESCRIPTION "Secure Computation Library" )
+project(scl VERSION 0.1.0 DESCRIPTION "Secure Computation Library" LANGUAGES CXX)
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+option(SCL_BUILD_TESTS
+  "Build tests for SCL"
+  ON)
+
+option(
+  SCL_BUILD_TEST_WITH_COVERAGE
+  "Build test with coverage. Implies SCL_BUILD_TESTS=ON"
+  OFF)
+
+option(
+  SCL_BUILD_WITH_ADDRESS_SANITIZATION
+  "Buid SCL with -fsanitize=address. Implies SCL_BUILD_TESTS=ON"
+  OFF)
+
+option(
+  SCL_BUILD_DOCUMENTATION
+  "Build documentation for SCL"
+  ON)
+
+# This option is a only really here because of a github action. It might be
+# better to remove it and fix the action.
+option(
+  SCL_DOXYGEN_BIN
+  "Optional location of doxygen binary"
+  "")
+
+option(
+  SCL_EXPORT_COMPILE_COMMANDS
+  "Generate compile_commands.json"
+  ON)
+
+if(SCL_BUILD_TEST_WITH_COVERAGE)
+  set(SCL_BUILD_TESTS ON)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
-option(WITH_EC "Include support for elliptic curves (requires GMP)" ON)
+find_library(GMP gmp libgmp REQUIRED)
 
-message(STATUS "CMAKE_BUILD_TYPE=" ${CMAKE_BUILD_TYPE})
-message(STATUS "WITH_EC=" ${WITH_EC})
-
-if(WITH_EC MATCHES ON)
-  find_library(GMP gmp libgmp REQUIRED)
-endif()
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native -Wall -Wextra -pedantic -Werror -std=gnu++17")
-
+set(SCL_HEADERS "${CMAKE_SOURCE_DIR}/include")
 set(SCL_SOURCE_FILES
   src/scl/util/str.cc
   src/scl/util/prg.cc
   src/scl/util/sha3.cc
   src/scl/util/sha256.cc
   src/scl/util/cmdline.cc
+  src/scl/util/measurement.cc
 
-  src/scl/math/mersenne61.cc
-  src/scl/math/mersenne127.cc
+  src/scl/math/fields/ff_ops_gmp.cc
+  src/scl/math/fields/mersenne61.cc
+  src/scl/math/fields/mersenne127.cc
+  src/scl/math/fields/secp256k1_field.cc
+  src/scl/math/fields/secp256k1_scalar.cc
+  src/scl/math/curves/secp256k1_curve.cc
+  src/scl/math/number.cc
+
+  src/scl/coro/runtime.cc
 
   src/scl/net/config.cc
-  src/scl/net/channel.cc
-  src/scl/net/mem_channel.cc
-  src/scl/net/threaded_sender.cc
   src/scl/net/network.cc
 
-  src/scl/simulation/simulator.cc
-  src/scl/simulation/simulate_recv_time.cc
-  src/scl/simulation/config.cc
   src/scl/simulation/event.cc
-  src/scl/simulation/measurement.cc
-  src/scl/simulation/result.cc
+  src/scl/simulation/context.cc
+  src/scl/simulation/config.cc
+  src/scl/simulation/transport.cc
   src/scl/simulation/channel.cc
-  src/scl/simulation/context.cc)
+  src/scl/simulation/simulator.cc
+  src/scl/simulation/runtime.cc
+)
 
-if(WITH_EC MATCHES ON)
-  set(SCL_SOURCE_FILES ${SCL_SOURCE_FILES}
-    src/scl/math/ops_gmp_ff.cc
-    src/scl/math/secp256k1_field.cc
-    src/scl/math/secp256k1_curve.cc
-    src/scl/math/secp256k1_scalar.cc
-    src/scl/math/number.cc)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ${SCL_EXPORT_COMPILE_COMMANDS})
+
+set(CMAKE_CXX_STANDARD 20)
+set(CXX_STANDARD 20)
+
+add_library(scl STATIC ${SCL_SOURCE_FILES})
+target_include_directories(scl PUBLIC "${SCL_HEADERS}")
+target_compile_options(scl PUBLIC "-march=native")
+target_compile_options(scl PUBLIC "-Wall")
+target_compile_options(scl PUBLIC "-Wextra")
+target_compile_options(scl PUBLIC "-pedantic")
+
+## indicates that SCL is being built with some extra flags that will
+## produce a non-optimal build.
+set(SCL_SPECIAL_BUILD OFF)
+
+if(SCL_BUILD_WITH_ADDRESS_SANITIZATION)
+  target_compile_options(scl PUBLIC "-fsanitize=address")
+  target_link_libraries(scl PUBLIC "-fsanitize=address")
+  set(SCL_SPECIAL_BUILD ON)
 endif()
 
-set(SCL_HEADERS "${CMAKE_SOURCE_DIR}/include")
+if(SCL_BUILD_TEST_WITH_COVERAGE)
+  target_compile_options(scl PUBLIC "-O0")
+  target_compile_options(scl PUBLIC "-g")
+  target_compile_options(scl PUBLIC "--coverage")
+  target_compile_options(scl PUBLIC "-fno-inline")
+  target_link_libraries(scl PUBLIC gcov)
+  set(SCL_SPECIAL_BUILD ON)
+endif()
 
-include_directories(${SCL_HEADERS})
+if (SCL_SPECIAL_BUILD MATCHES OFF)
+  target_compile_options(scl PRIVATE "-O3")
 
-if(CMAKE_BUILD_TYPE MATCHES "Release")
-  set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O2")
-  add_library(scl SHARED ${SCL_SOURCE_FILES})
+  set_target_properties(scl
+    PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 
-  set_target_properties(scl PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
-
-  message(STATUS "CMAKE_INSTALL_PREFIX=" ${CMAKE_INSTALL_PREFIX})
-  
+  ## only make installation possible if build is not special.
   install(TARGETS scl
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib)
@@ -90,94 +135,11 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
 
 endif()
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-
+if(SCL_BUILD_TESTS)
   enable_testing()
-
-  set(SCL_TEST_SOURCE_FILES
-    test/scl/main.cc
-
-    test/scl/util/test_prg.cc
-    test/scl/util/test_sha3.cc
-    test/scl/util/test_sha256.cc
-    test/scl/util/test_ecdsa.cc
-    test/scl/util/test_cmdline.cc
-    test/scl/util/test_merkle.cc
-
-    test/scl/gf7.cc
-    test/scl/math/test_mersenne61.cc
-    test/scl/math/test_mersenne127.cc
-    test/scl/math/test_vec.cc
-    test/scl/math/test_mat.cc
-    test/scl/math/test_la.cc
-    test/scl/math/test_ff.cc
-    test/scl/math/test_z2k.cc
-    test/scl/math/test_poly.cc
-
-    test/scl/ss/test_additive.cc
-    test/scl/ss/test_shamir.cc
-    test/scl/ss/test_feldman.cc
-
-    test/scl/net/util.cc
-    test/scl/net/test_config.cc
-    test/scl/net/test_mem_channel.cc
-    test/scl/net/test_tcp.cc
-    test/scl/net/test_tcp_channel.cc
-    test/scl/net/test_threaded_sender.cc
-    test/scl/net/test_network.cc
-    test/scl/net/test_shared_deque.cc
-    test/scl/net/test_channel.cc
-    test/scl/net/test_packet.cc
-
-    test/scl/protocol/test_protocol.cc
-
-    test/scl/simulation/test_simulator.cc
-    test/scl/simulation/test_config.cc
-    test/scl/simulation/test_event.cc
-    test/scl/simulation/test_context.cc
-    test/scl/simulation/test_result.cc
-    test/scl/simulation/test_measurement.cc
-    test/scl/simulation/test_mem_channel_buffer.cc
-    test/scl/simulation/test_channel.cc
-    test/scl/simulation/test_env.cc
-    test/scl/simulation/test_manager.cc
-
-    test/scl/serialization/test_serializer.cc)
-
-  if(WITH_EC MATCHES ON)
-    set(SCL_TEST_SOURCE_FILES ${SCL_TEST_SOURCE_FILES}
-      test/scl/math/test_secp256k1.cc
-      test/scl/math/test_number.cc)
-    add_compile_definitions(SCL_ENABLE_EC_TESTS)
-  endif()
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fsanitize=address")
-  find_package(Catch2 REQUIRED)
-  include(CTest)
-  include(Catch)
-  include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
-
-  add_compile_definitions(SCL_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test/data/")
-  add_compile_definitions(SCL_UTIL_NO_EXIT_ON_ERROR)
-
-  add_executable(scl_test ${SCL_SOURCE_FILES} ${SCL_TEST_SOURCE_FILES})
-  target_link_libraries(scl_test Catch2::Catch2 pthread)
-
-  if(WITH_EC MATCHES ON)
-    target_link_libraries(scl_test ${GMP})
-  endif()
-
-  catch_discover_tests(scl_test)
-
-  append_coverage_compiler_flags()
-
-  # Tell lcov to ignore system STL headers in order to make the coverage
-  # output more precise.
-  setup_target_for_coverage_lcov(
-    NAME coverage
-    EXECUTABLE scl_test
-    EXCLUDE "/usr/include/*" "test/*" "/usr/lib/*" "/usr/local/*")
-
+  add_subdirectory(test)
 endif()
 
-message(STATUS "CXX_FLAGS=" ${CMAKE_CXX_FLAGS})
+if(SCL_BUILD_DOCUMENTATION)
+  add_subdirectory(doc)
+endif()

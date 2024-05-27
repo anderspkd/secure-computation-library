@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <sstream>
 #include <stdexcept>
 
@@ -33,43 +34,43 @@ using Number = math::Number;
 #define REPEAT for (std::size_t i = 0; i < SCl_NUMBER_TEST_REPETITIONS; ++i)
 
 TEST_CASE("Number create", "[math]") {
-  auto prg = util::PRG::Create();
+  auto prg = util::PRG::create();
   Number n0(27);
-  REQUIRE(n0.ToString() == "Number{1b}");
+  REQUIRE(n0.toString() == "Number{1b}");
   Number n1(-42);
-  REQUIRE(n1.ToString() == "Number{-2a}");
+  REQUIRE(n1.toString() == "Number{-2a}");
   Number zero;
-  REQUIRE(zero.ToString() == "Number{0}");
+  REQUIRE(zero.toString() == "Number{0}");
   Number zero_alt(0);
-  REQUIRE(zero_alt.ToString() == "Number{0}");
-  Number r0 = Number::Random(127, prg);
-  REQUIRE(r0.ToString() == "Number{-27a8004ea0c9708441893d2808ca9457}");
+  REQUIRE(zero_alt.toString() == "Number{0}");
+  Number r0 = Number::random(127, prg);
+  REQUIRE(r0.toString() == "Number{-27a8004ea0c9708441893d2808ca9457}");
   // the above is only 126 bits, but it's close enough
-  REQUIRE(r0.BitSize() == 126);
-  Number r1 = Number::Random(65, prg);
-  REQUIRE(r1.ToString() == "Number{10584d2a1c30fa50d}");
-  REQUIRE(r1.BitSize() == 65);
+  REQUIRE(r0.bitSize() == 126);
+  Number r1 = Number::random(65, prg);
+  REQUIRE(r1.toString() == "Number{10584d2a1c30fa50d}");
+  REQUIRE(r1.bitSize() == 65);
 
-  Number p = Number::RandomPrime(10, prg);
-  REQUIRE(p.ToString() == "Number{133}");  // 307
+  Number p = Number::randomPrime(10, prg);
+  REQUIRE(p.toString() == "Number{133}");  // 307
 
   std::stringstream ss;
   ss << r1;
-  REQUIRE(ss.str() == r1.ToString());
+  REQUIRE(ss.str() == r1.toString());
 
   Number r2(std::move(n0));
   REQUIRE(r2 == Number(27));
 }
 
 TEST_CASE("Number from string", "[math]") {
-  auto x = Number::FromString("7b");
+  auto x = Number::fromString("7b");
   REQUIRE(x == Number(0x7b));
 }
 
 TEST_CASE("Number assignment", "[math]") {
-  auto prg = util::PRG::Create("Number assignment");
-  auto x = Number::Random(100, prg);
-  auto y = Number::Random(100, prg);
+  auto prg = util::PRG::create("Number assignment");
+  auto x = Number::random(100, prg);
+  auto y = Number::random(100, prg);
   REQUIRE(x != y);
 
   Number t;
@@ -101,10 +102,10 @@ TEST_CASE("Number addition", "[math]") {
   REQUIRE(a + b == Number(55 + 32));
 
   Number zero(0);
-  auto prg = util::PRG::Create("Number addition");
+  auto prg = util::PRG::create("Number addition");
   REPEAT {
-    auto x = Number::Random(100, prg);
-    auto y = Number::Random(100, prg);
+    auto x = Number::random(100, prg);
+    auto y = Number::random(100, prg);
     auto z = x + y;
 
     REQUIRE(z != x);
@@ -124,10 +125,10 @@ TEST_CASE("Number subtraction", "[math]") {
   REQUIRE(a - b == Number(123 - 555));
 
   Number zero;
-  auto prg = util::PRG::Create("Number subtraction");
+  auto prg = util::PRG::create("Number subtraction");
   REPEAT {
-    auto x = Number::Random(100, prg);
-    auto y = Number::Random(100, prg);
+    auto x = Number::random(100, prg);
+    auto y = Number::random(100, prg);
     auto z = x - y;
 
     REQUIRE(z != x);
@@ -154,17 +155,17 @@ TEST_CASE("Number multiplication", "[math]") {
 
   Number one(1);
   Number zero;
-  auto prg = util::PRG::Create("Number multiplication");
+  auto prg = util::PRG::create("Number multiplication");
   REPEAT {
-    auto x = Number::Random(100, prg);
-    auto y = Number::Random(100, prg);
+    auto x = Number::random(100, prg);
+    auto y = Number::random(100, prg);
     auto z = x * y;
 
     REQUIRE(z != x);
     REQUIRE(z != y);
     REQUIRE(z == y * x);
 
-    auto w = Number::Random(100, prg);
+    auto w = Number::random(100, prg);
     REQUIRE(w * (x + y) == w * x + w * y);
 
     x *= y;
@@ -184,10 +185,10 @@ TEST_CASE("Number division", "[math]") {
   REQUIRE(a / b == Number(123 / 43));
 
   Number one(1);
-  auto prg = util::PRG::Create("Number division");
+  auto prg = util::PRG::create("Number division");
   REPEAT {
-    auto x = Number::Random(100, prg);
-    auto y = Number::Random(85, prg);
+    auto x = Number::random(100, prg);
+    auto y = Number::random(85, prg);
     auto z = x / y;
 
     REQUIRE(z != x);
@@ -234,10 +235,10 @@ TEST_CASE("Number xor", "[math]") {
   Number b(5545);
   REQUIRE((a ^ b) == Number(2231 ^ 5545));
 
-  auto prg = util::PRG::Create("Number xor");
+  auto prg = util::PRG::create("Number xor");
   REPEAT {
-    auto x = Number::Random(100, prg);
-    auto y = Number::Random(100, prg);
+    auto x = Number::random(100, prg);
+    auto y = Number::random(100, prg);
     auto z = x ^ y;
 
     REQUIRE(z != x);
@@ -255,10 +256,10 @@ TEST_CASE("Number or", "[math]") {
   Number b(5545);
   REQUIRE((a | b) == Number(2231 | 5545));
 
-  auto prg = util::PRG::Create("Number or");
+  auto prg = util::PRG::create("Number or");
   REPEAT {
-    auto x = Number::Random(100, prg);
-    auto y = Number::Random(100, prg);
+    auto x = Number::random(100, prg);
+    auto y = Number::random(100, prg);
     auto z = x | y;
 
     REQUIRE(z != x);
@@ -276,10 +277,10 @@ TEST_CASE("Number and", "[math]") {
   Number b(5545);
   REQUIRE((a & b) == Number(2231 & 5545));
 
-  auto prg = util::PRG::Create("Number and");
+  auto prg = util::PRG::create("Number and");
   REPEAT {
-    auto x = Number::Random(100, prg);
-    auto y = Number::Random(100, prg);
+    auto x = Number::random(100, prg);
+    auto y = Number::random(100, prg);
     auto z = x & y;
 
     REQUIRE(z != x);
@@ -301,23 +302,23 @@ TEST_CASE("Number complement", "[math]") {
 TEST_CASE("Number test bit", "[math]") {
   Number a(49);
   // out-of-range returns false
-  REQUIRE_FALSE(a.TestBit(100));
+  REQUIRE_FALSE(a.testBit(100));
 
-  REQUIRE(a.TestBit(0));
-  REQUIRE_FALSE(a.TestBit(1));
-  REQUIRE_FALSE(a.TestBit(2));
-  REQUIRE_FALSE(a.TestBit(3));
-  REQUIRE(a.TestBit(4));
-  REQUIRE(a.TestBit(5));
+  REQUIRE(a.testBit(0));
+  REQUIRE_FALSE(a.testBit(1));
+  REQUIRE_FALSE(a.testBit(2));
+  REQUIRE_FALSE(a.testBit(3));
+  REQUIRE(a.testBit(4));
+  REQUIRE(a.testBit(5));
 }
 
 TEST_CASE("Number mod inverse invalid", "[math]") {
   Number a(10);
-  REQUIRE_THROWS_MATCHES(math::ModInverse(a, Number(0)),
+  REQUIRE_THROWS_MATCHES(math::modInverse(a, Number(0)),
                          std::invalid_argument,
                          Catch::Matchers::Message("modulus cannot be 0"));
 
-  REQUIRE_THROWS_MATCHES(math::ModInverse(a, Number(2)),
+  REQUIRE_THROWS_MATCHES(math::modInverse(a, Number(2)),
                          std::logic_error,
                          Catch::Matchers::Message("number not invertible"));
 }
@@ -325,44 +326,44 @@ TEST_CASE("Number mod inverse invalid", "[math]") {
 TEST_CASE("Number read/write", "[math]") {
   Number a(1234);
 
-  REQUIRE(a.BitSize() == 11);
-  REQUIRE(a.ByteSize() == 2);
+  REQUIRE(a.bitSize() == 11);
+  REQUIRE(a.byteSize() == 2);
 
   auto buf =
-      std::make_unique<unsigned char[]>(a.ByteSize() + sizeof(std::uint32_t));
+      std::make_unique<unsigned char[]>(a.byteSize() + sizeof(std::uint32_t));
 
-  a.Write(buf.get());
-  REQUIRE(a == Number::Read(buf.get()));
+  a.write(buf.get());
+  REQUIRE(a == Number::read(buf.get()));
 
-  auto prg = util::PRG::Create("rw");
+  auto prg = util::PRG::create("rw");
   REPEAT {
-    const auto x = Number::Random(100, prg);
+    const auto x = Number::random(100, prg);
     auto bufx =
-        std::make_unique<unsigned char[]>(x.ByteSize() + sizeof(std::uint32_t));
-    x.Write(bufx.get());
-    REQUIRE(x == Number::Read(bufx.get()));
+        std::make_unique<unsigned char[]>(x.byteSize() + sizeof(std::uint32_t));
+    x.write(bufx.get());
+    REQUIRE(x == Number::read(bufx.get()));
   }
 }
 
 TEST_CASE("Number RSA example", "[math]") {
-  auto prg = util::PRG::Create("rsa");
-  const auto p = Number::RandomPrime(512, prg);
-  const auto q = Number::RandomPrime(512, prg);
+  auto prg = util::PRG::create("rsa");
+  const auto p = Number::randomPrime(512, prg);
+  const auto q = Number::randomPrime(512, prg);
   REQUIRE(p != q);
   const auto n = p * q;
-  const auto lm = math::LCM(p - Number(1), q - Number(1));
+  const auto lm = math::lcm(p - Number(1), q - Number(1));
 
   const auto e = Number(0x10001);
-  REQUIRE(math::GCD(e, lm) == Number(1));
+  REQUIRE(math::gcd(e, lm) == Number(1));
 
-  const auto d = math::ModInverse(e, lm);
+  const auto d = math::modInverse(e, lm);
   REQUIRE((d * e) % lm == Number(1));
 
   Number msg(1234);
 
-  const auto ctxt = math::ModExp(msg, e, n);
+  const auto ctxt = math::modExp(msg, e, n);
   REQUIRE(ctxt != msg);
 
-  const auto ptxt = math::ModExp(ctxt, d, n);
+  const auto ptxt = math::modExp(ctxt, d, n);
   REQUIRE(ptxt == msg);
 }

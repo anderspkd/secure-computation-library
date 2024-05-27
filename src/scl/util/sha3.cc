@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -43,7 +43,7 @@ uint64_t RotLeft64(uint64_t x, uint64_t y) {
 
 }  // namespace
 
-void scl::util::Keccakf(uint64_t state[25]) {
+void scl::util::keccakf(uint64_t state[25]) {
   uint64_t t;
   uint64_t bc[5];
 

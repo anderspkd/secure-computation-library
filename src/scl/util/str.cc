@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,7 @@
 #include <cstdint>
 
 template <>
-std::string scl::util::ToHexString(const __uint128_t& v) {
+std::string scl::util::toHexString(const __uint128_t& v) {
   std::string str;
   if (v == 0) {
     str = "0";

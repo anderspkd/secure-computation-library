@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,15 +17,15 @@
 
 #include "util.h"
 
+using namespace scl;
+
 int test_port = SCL_DEFAULT_TEST_PORT;
 
-int scl::test::GetPort() {
+int test::getPort() {
   return test_port++;
 }
 
-bool scl::test::BufferEquals(const unsigned char* a,
-                             const unsigned char* b,
-                             int n) {
+bool test::bufferEquals(const unsigned char* a, const unsigned char* b, int n) {
   while (n-- > 0 && *a++ == *b++) {
     ;
   }

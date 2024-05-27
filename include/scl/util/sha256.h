@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 #include "scl/util/digest.h"
 #include "scl/util/iuf_hash.h"
@@ -43,12 +42,12 @@ class Sha256 final : public IUFHash<Sha256> {
    * @param bytes a pointer to a number of bytes.
    * @param nbytes the number of bytes.
    */
-  void Hash(const unsigned char* bytes, std::size_t nbytes);
+  void hash(const unsigned char* bytes, std::size_t nbytes);
 
   /**
    * @brief Finalize and return the digest.
    */
-  DigestType Write();
+  DigestType write();
 
  private:
   std::array<unsigned char, 64> m_chunk;
@@ -63,9 +62,9 @@ class Sha256 final : public IUFHash<Sha256> {
                                      0x1f83d9ab,
                                      0x5be0cd19};
 
-  void Transform();
-  void Pad();
-  DigestType WriteDigest();
+  void transform();
+  void pad();
+  DigestType writeDigest();
 };
 
 }  // namespace scl::util

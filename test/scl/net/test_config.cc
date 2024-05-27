@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <iostream>
 #include <stdexcept>
 
@@ -25,11 +26,11 @@ using namespace scl;
 
 TEST_CASE("Config read from file", "[net]") {
   const auto* filename = SCL_TEST_DATA_DIR "3_parties.txt";
-  auto cfg = net::NetworkConfig::Load(0, filename);
+  auto cfg = net::NetworkConfig::load(0, filename);
 
-  REQUIRE(cfg.NetworkSize() == 3);
-  REQUIRE(cfg.Id() == 0);
-  auto parties = cfg.Parties();
+  REQUIRE(cfg.networkSize() == 3);
+  REQUIRE(cfg.id() == 0);
+  auto parties = cfg.parties();
   REQUIRE(parties[0].hostname == "1.2.3.4");
   REQUIRE(parties[0].port == 8000);
   REQUIRE(parties[1].hostname == "2.3.4.5");
@@ -38,42 +39,36 @@ TEST_CASE("Config read from file", "[net]") {
   REQUIRE(parties[2].port == 3000);
 
   std::string invalid_empty = SCL_TEST_DATA_DIR "invalid_no_entries.txt";
-  REQUIRE_THROWS_MATCHES(net::NetworkConfig::Load(0, invalid_empty),
+  REQUIRE_THROWS_MATCHES(net::NetworkConfig::load(0, invalid_empty),
                          std::invalid_argument,
                          Catch::Matchers::Message("n cannot be zero"));
 
   std::string valid = SCL_TEST_DATA_DIR "3_parties.txt";
-  REQUIRE_THROWS_MATCHES(net::NetworkConfig::Load(4, valid),
+  REQUIRE_THROWS_MATCHES(net::NetworkConfig::load(4, valid),
                          std::invalid_argument,
                          Catch::Matchers::Message("invalid id"));
 
   std::string invalid_entry = SCL_TEST_DATA_DIR "invalid_entry.txt";
   REQUIRE_THROWS_MATCHES(
-      net::NetworkConfig::Load(0, invalid_entry),
+      net::NetworkConfig::load(0, invalid_entry),
       std::invalid_argument,
       Catch::Matchers::Message("invalid entry in config file"));
 
   std::string invalid_non_existing_file;
-  REQUIRE_THROWS_MATCHES(net::NetworkConfig::Load(0, invalid_non_existing_file),
+  REQUIRE_THROWS_MATCHES(net::NetworkConfig::load(0, invalid_non_existing_file),
                          std::invalid_argument,
                          Catch::Matchers::Message("could not open file"));
 }
 
 TEST_CASE("Config configure all parties local", "[net]") {
-  auto cfg = net::NetworkConfig::Localhost(0, 5);
-  REQUIRE(cfg.Id() == 0);
-  REQUIRE(cfg.NetworkSize() == 5);
+  auto cfg = net::NetworkConfig::localhost(0, 5);
+  REQUIRE(cfg.id() == 0);
+  REQUIRE(cfg.networkSize() == 5);
   std::size_t i = 0;
-  for (const auto& ci : cfg.Parties()) {
+  for (const auto& ci : cfg.parties()) {
     REQUIRE(ci.port == DEFAULT_PORT_OFFSET + i++);
     REQUIRE(ci.hostname == "127.0.0.1");
   }
-}
-
-TEST_CASE("Config to string", "[net]") {
-  net::NetworkConfig cfg(1, {{0, "1.2.3.4", 123}, {1, "4.4.4.4", 444}});
-  std::string expected = "[id=1, {0, 1.2.3.4, 123}, {1, 4.4.4.4, 444}]";
-  REQUIRE(cfg.ToString() == expected);
 }
 
 TEST_CASE("Config validation", "[net]") {

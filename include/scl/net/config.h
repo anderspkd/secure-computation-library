@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -48,7 +48,7 @@ struct Party {
   std::string hostname;
 
   /**
-   * @brief The base port.
+   * @brief The port.
    */
   std::size_t port;
 };
@@ -66,7 +66,7 @@ class NetworkConfig {
    * @param id the identity of this party
    * @param filename the filename
    */
-  static NetworkConfig Load(std::size_t id, const std::string& filename);
+  static NetworkConfig load(std::size_t id, const std::string& filename);
 
   /**
    * @brief Create a network config where all parties are running locally.
@@ -80,7 +80,7 @@ class NetworkConfig {
    * @param size the size of the network
    * @param port_base the base port
    */
-  static NetworkConfig Localhost(std::size_t id,
+  static NetworkConfig localhost(std::size_t id,
                                  std::size_t size,
                                  std::size_t port_base);
 
@@ -89,8 +89,8 @@ class NetworkConfig {
    * @param id the identity of this party
    * @param size the size of the network
    */
-  static NetworkConfig Localhost(std::size_t id, std::size_t size) {
-    return NetworkConfig::Localhost(id, size, DEFAULT_PORT_OFFSET);
+  static NetworkConfig localhost(std::size_t id, std::size_t size) {
+    return NetworkConfig::localhost(id, size, DEFAULT_PORT_OFFSET);
   };
 
   /**
@@ -100,7 +100,7 @@ class NetworkConfig {
    */
   NetworkConfig(std::size_t id, const std::vector<Party>& parties)
       : m_id(id), m_parties(parties) {
-    Validate();
+    validate();
   };
 
   /**
@@ -112,41 +112,36 @@ class NetworkConfig {
   /**
    * @brief Gets the identity of this party.
    */
-  std::size_t Id() const {
+  std::size_t id() const {
     return m_id;
   };
 
   /**
    * @brief Gets the size of the network.
    */
-  std::size_t NetworkSize() const {
+  std::size_t networkSize() const {
     return m_parties.size();
   };
 
   /**
    * @brief Get a list of connection information for parties in this network.
    */
-  std::vector<Party> Parties() const {
+  std::vector<Party> parties() const {
     return m_parties;
   };
 
   /**
    * @brief Get information about a party.
    */
-  Party GetParty(unsigned id) const {
+  Party party(unsigned id) const {
     return m_parties[id];
   };
 
-  /**
-   * @brief Return a string representation of this network config.
-   */
-  std::string ToString() const;
-
  private:
-  void Validate();
-
   std::size_t m_id;
   std::vector<Party> m_parties;
+
+  void validate();
 };
 
 }  // namespace scl::net

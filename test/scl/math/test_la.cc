@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,49 +15,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include "../gf7.h"
 #include "scl/math/fp.h"
-#include "scl/math/la.h"
-#include "scl/math/mat.h"
+#include "scl/math/matrix.h"
 
 using namespace scl;
 
 using FF = math::FF<test::GaloisField7>;
-using Mat = math::Mat<FF>;
-using Vec = math::Vec<FF>;
+using Matrix = math::Matrix<FF>;
+using Vector = math::Vector<FF>;
 
-const auto zero = FF::Zero();
-const auto one = FF::One();
+const auto zero = FF::zero();
+const auto one = FF::one();
 
 TEST_CASE("LinAlg GetPivot", "[math][la]") {
   // [1 0 1]
   // [0 1 0]
   // [0 0 0]
   // clang-format off
-  Mat A = Mat::FromVector(3, 3,
-                          {one, zero, one,
-                           zero, one, zero,
-                           zero, zero, zero});
+  Matrix A = Matrix::fromVector(3, 3,
+                                {one, zero, one,
+                                 zero, one, zero,
+                                 zero, zero, zero});
   // clang-format on
-  REQUIRE(math::GetPivotInColumn(A, 2) == -1);
-  REQUIRE(math::GetPivotInColumn(A, 1) == 1);
-  REQUIRE(math::GetPivotInColumn(A, 0) == 0);
+  REQUIRE(math::getPivotInColumn(A, 2) == -1);
+  REQUIRE(math::getPivotInColumn(A, 1) == 1);
+  REQUIRE(math::getPivotInColumn(A, 0) == 0);
   A(2, 2) = one;
-  REQUIRE(math::GetPivotInColumn(A, 2) == 2);
+  REQUIRE(math::getPivotInColumn(A, 2) == 2);
 
-  Mat B(2, 2);
-  REQUIRE(math::GetPivotInColumn(B, 0) == -1);
+  Matrix B(2, 2);
+  REQUIRE(math::getPivotInColumn(B, 0) == -1);
 }
 
 TEST_CASE("LinAlg FindFirstNonZeroRow", "[math][la]") {
-  Mat A = Mat::FromVector(3,
-                          3,
-                          {one, zero, one, zero, one, zero, zero, zero, zero});
-  REQUIRE(math::FindFirstNonZeroRow(A) == 1);
+  Matrix A =
+      Matrix::fromVector(3,
+                         3,
+                         {one, zero, one, zero, one, zero, zero, zero, zero});
+  REQUIRE(math::findFirstNonZeroRow(A) == 1);
   A(2, 1) = one;
-  REQUIRE(math::FindFirstNonZeroRow(A) == 2);
+  REQUIRE(math::findFirstNonZeroRow(A) == 2);
 }
 
 TEST_CASE("LinAlg ExtractSolution", "[math][la]") {
@@ -65,88 +66,65 @@ TEST_CASE("LinAlg ExtractSolution", "[math][la]") {
   // [0 1 0 5]
   // [0 0 1 2]
   // clang-format off
-  Mat A = Mat::FromVector(3, 4,
-                          {one, zero, zero, FF(3),
-                           zero, one, zero, FF(5),
-                           zero, zero, one, FF(2)}
+  Matrix A = Matrix::fromVector(3, 4,
+                               {one, zero, zero, FF(3),
+                                zero, one, zero, FF(5),
+                                zero, zero, one, FF(2)}
     );
   // clang-format-on
-  auto x = math::ExtractSolution(A);
-  REQUIRE(x.Equals(Vec{FF(3), FF(5), FF(2)}));
+  auto x = math::extractSolution(A);
+  REQUIRE(x.equals(Vector{FF(3), FF(5), FF(2)}));
 
   // [1 3 1 2]
   // [0 0 1 4]
   // [0 0 0 0]
   // clang-format off
-  Mat B = Mat::FromVector(3, 4,
-                          {FF(1), FF(3), FF(1), FF(2),
-                           FF(0), FF(0), FF(1), FF(4),
-                           FF(0), FF(0), FF(0), FF(0)});
+  Matrix B = Matrix::fromVector(3, 4,
+                                {FF(1), FF(3), FF(1), FF(2),
+                                 FF(0), FF(0), FF(1), FF(4),
+                                 FF(0), FF(0), FF(0), FF(0)});
   // clang-format on
-  auto y = math::ExtractSolution(B);
-  REQUIRE(y.Equals(Vec{FF(4), FF(4), FF(0)}));
+  auto y = math::extractSolution(B);
+  REQUIRE(y.equals(Vector{FF(4), FF(4), FF(0)}));
 
   // [0 0 0 0]
   // [2 0 0 0]
   // [0 0 0 0]
-  Mat C(3, 4);
+  Matrix C(3, 4);
   C(1, 0) = FF(2);
-  auto z = math::ExtractSolution(C);
-  REQUIRE(z.Equals(Vec{zero, one, zero}));
+  auto z = math::extractSolution(C);
+  REQUIRE(z.equals(Vector{zero, one, zero}));
 }
 
 TEST_CASE("LinAlg Solve random", "[math][la]") {
   auto n = 10;
-  auto prg = util::PRG::Create();
+  auto prg = util::PRG::create();
 
-  Mat A = Mat::Random(n, n, prg);
-  Vec b = Vec::Random(n, prg);
-  Vec x(n);
-  math::SolveLinearSystem(x, A, b);
+  Matrix A = Matrix::random(n, n, prg);
+  Vector b = Vector::random(n, prg);
+  Vector x(n);
+  math::solveLinearSystem(x, A, b);
 
-  REQUIRE(A.Multiply(x.ToColumnMatrix()).Equals(b.ToColumnMatrix()));
+  REQUIRE(A.multiply(x.toColumnMatrix()).equals(b.toColumnMatrix()));
 }
 
 TEST_CASE("LinAlg malformed systems", "[math][la]") {
-  Vec x;
-  Mat A(2, 2);
-  Vec b(3);
+  Vector x;
+  Matrix A(2, 2);
+  Vector b(3);
   REQUIRE_THROWS_MATCHES(
-      math::SolveLinearSystem(x, A, b),
+      math::solveLinearSystem(x, A, b),
       std::invalid_argument,
       Catch::Matchers::Message("malformed system of equations"));
 }
 
 TEST_CASE("LinAlg HasSolution", "[math][la]") {
-  Mat A(2, 3);
+  Matrix A(2, 3);
   // Has an all zero row, so no unique solution is possible
-  REQUIRE_FALSE(math::HasSolution(A, true));
+  REQUIRE_FALSE(math::hasSolution(A, true));
   // An all zero row implies a free variable, so many solutions exist
-  REQUIRE(math::HasSolution(A, false));
+  REQUIRE(math::hasSolution(A, false));
 
   A(0, 2) = FF(1);
-  REQUIRE_FALSE(math::HasSolution(A, false));
-}
-
-TEST_CASE("LinAlg compute inverse", "[math][la]") {
-  // TODO: This could/should be placed as a helper in the mat class, I think.
-
-  std::size_t n = 10;
-  auto prg = util::PRG::Create();
-  Mat A = Mat::Random(n, n, prg);
-  Mat I = Mat::Identity(n);
-
-  auto aug = math::CreateAugmentedMatrix(A, I);
-  REQUIRE_FALSE(aug.IsIdentity());
-  math::RowReduceInPlace(aug);
-
-  Mat Ainv(n, n);
-  for (std::size_t i = 0; i < n; ++i) {
-    for (std::size_t j = 0; j < n; ++j) {
-      Ainv(i, j) = aug(i, n + j);
-    }
-  }
-
-  REQUIRE_FALSE(A.IsIdentity());
-  REQUIRE(A.Multiply(Ainv).IsIdentity());
+  REQUIRE_FALSE(math::hasSolution(A, false));
 }

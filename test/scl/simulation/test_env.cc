@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <thread>
 
 #include "scl/simulation/config.h"
@@ -103,9 +103,9 @@ TEST_CASE("Simulation env thread", "[sim]") {
   sim::Clock clock(ctx, 0);
 
   ctx->AddEvent(0, SomeEvent(util::Time::Duration(1000ms)));
-  thread.Sleep(1000000);
+  thread.Sleep(util::Time::Duration(400h));
 
   auto t0 = clock.Read();
-  REQUIRE(t0 > 1000ms + 1000000ms);
-  REQUIRE(t0 < 1050ms + 1000000ms);
+  REQUIRE(t0 > 1000ms + 400h);
+  REQUIRE(t0 < 1050ms + 400h);
 }

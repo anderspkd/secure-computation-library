@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,321 +18,276 @@
 #ifndef SCL_SIMULATION_CONTEXT_H
 #define SCL_SIMULATION_CONTEXT_H
 
+#include <deque>
 #include <memory>
 #include <optional>
-#include <queue>
 #include <stdexcept>
 #include <unordered_map>
 
-#include "scl/simulation/buffer.h"
+#include "scl/simulation/cancellation.h"
 #include "scl/simulation/channel_id.h"
 #include "scl/simulation/config.h"
 #include "scl/simulation/event.h"
-#include "scl/simulation/mem_channel_buffer.h"
+#include "scl/simulation/hook.h"
+#include "scl/util/bitmap.h"
 
 namespace scl::sim {
 
-/**
- * @brief Context for simulations.
- */
-class Context {
- private:
-  enum class State { PREPARE, COMMIT, ROLLBACK };
+class SimulationContext;
 
- public:
-  /**
-   * @brief Provides a read-only view of a Context.
-   */
-  class View;
-
-  /**
-   * @brief A write operation on the channel.
-   */
-  struct WriteOp {
-    /**
-     * @brief Construct a new WriteOp.
-     * @param amount the amount of data in the write operation.
-     * @param time the time of the write operation.
-     */
-    WriteOp(std::size_t amount, util::Time::Duration time)
-        : amount(amount), time(time) {}
-    /**
-     * @brief The amount of data written.
-     */
-    std::size_t amount;
-
-    /**
-     * @brief When the data was written.
-     */
-    util::Time::Duration time;
-  };
-
-  /**
-   * @brief Create a new SimulationContext.
-   * @tparam ChannelBufferT the type of the channel buffer to use
-   * @param number_of_parties the number of parties in the simulation
-   * @param config config for the simulated network
-   * @return a pointer to a SimulationConfig.
-   *
-   * This factory method handles the non-trivial setup related to the network
-   * buffers. A specialization exists for each of the ChannelBuffer
-   * implementations that currently exist in SCL.
-   */
-  template <typename ChannelBufferT>
-  static std::shared_ptr<Context> Create(std::size_t number_of_parties,
-                                         std::shared_ptr<NetworkConfig> config);
-
-  /**
-   * @brief Construct a new simulation context.
-   * @param config a config describing the simulated network
-   *
-   * This constructor simply sets the network config for the context but
-   * otherwise performs no initialization whatsoever. Use Create instead.
-   */
-  Context(std::shared_ptr<NetworkConfig> config)
-      : m_network_config(config), m_nparties(0) {}
-
-  /**
-   * @brief Get the config for a channel.
-   * @param channel_id the ID of the channel
-   * @return a SimulatedNetworkConfig for the channel.
-   */
-  ChannelConfig ChannelConfiguration(ChannelId channel_id) const {
-    return m_network_config->Get(channel_id);
-  }
-
-  /**
-   * @brief Get the number of parties in the simulation.
-   */
-  std::size_t NumberOfParties() const {
-    return m_nparties;
-  }
-
-  /**
-   * @brief Get the channel buffer for a particular channel.
-   * @param id the ID of the channel
-   * @return the channel buffer.
-   */
-  std::shared_ptr<ChannelBuffer> Buffer(ChannelId id) {
-    return m_buffers[id];
-  }
-
-  /**
-   * @brief Add a write operation.
-   * @param id the identifier of the channel that the write occured on.
-   * @param n the number of bytes written.
-   * @param time the time the write happened.
-   */
-  void AddWrite(ChannelId id, std::size_t n, util::Time::Duration time) {
-    m_writes[id].emplace(n, time);
-  }
-
-  /**
-   * @brief Check if a channel has any unprocessed writes on it.
-   * @param id the identifier for the channel.
-   * @return true if the channel has unprocessed writes. False otherwise.
-   */
-  bool HasWrite(ChannelId id) const {
-    return !(m_writes.find(id) == m_writes.end() || m_writes.at(id).empty());
-  }
-
-  /**
-   * @brief Get the next write on a channel.
-   * @param id the identifier of the channel.
-   * @return a write operation.
-   *
-   * This method does not check if there are any writes.
-   */
-  WriteOp& NextWrite(ChannelId id) {
-    return m_writes[id].front();
-  }
-
-  /**
-   * @brief Delete a write operation.
-   * @param id the identifier of the channel.
-   *
-   * This method is meant to be called after a write operation has had all its
-   * data processed. In a nutshell, when <code>op.amount == 0</code>.
-   */
-  void DeleteWrite(ChannelId id) {
-    m_writes[id].pop();
-  }
-
-  /**
-   * @brief Add an event.
-   * @param id the ID of the party adding the event
-   * @param event the event
-   */
-  void AddEvent(std::size_t id, std::shared_ptr<Event> event) {
-    m_traces[id].emplace_back(event);
-  }
-
-  /**
-   * @brief Get all simulation traces.
-   */
-  std::vector<SimulationTrace> Trace() const {
-    return m_traces;
-  }
-
-  /**
-   * @brief Get the simulation trace of a particular party.
-   */
-  SimulationTrace Trace(std::size_t id) const {
-    return m_traces[id];
-  }
-
-  /**
-   * @brief Check if a party has terminated.
-   * @param id the ID of the party.
-   * @return true if the party has terminated, and otherwise false.
-   */
-  bool HasTerminated(std::size_t id) const {
-    if (Trace(id).empty()) {
-      return false;
-    }
-    const auto t = Trace(id).back()->EventType();
-    return t == sim::Event::Type::STOP || t == sim::Event::Type::KILLED;
-  }
-
-  /**
-   * @brief Remove and return the last event added by a party.
-   */
-  std::shared_ptr<Event> PopLastEvent(std::size_t id) {
-    auto evt = m_traces[id].back();
-    m_traces[id].pop_back();
-    return evt;
-  }
-
-  /**
-   * @brief Get the latest timestamp of a particular party.
-   */
-  util::Time::Duration LatestTimestamp(std::size_t id) const {
-    return Trace(id).back()->Timestamp();
-  }
-
-  /**
-   * @brief Find the ID of a suitable next party to run in the simulation.
-   * @param current the last party to run
-   * @return the ID of the next party to run, or none if the simulation is done.
-   */
-  std::optional<std::size_t> NextToRun(std::optional<std::size_t> current = {});
-
-  /**
-   * @brief Add a candidate party to run next.
-   */
-  void AddCandidateToRun(std::size_t id) {
-    m_next_party_cand.emplace_back(id);
-  };
-
-  /**
-   * @brief Update the checkpoint value to the current time.
-   */
-  void UpdateCheckpoint() {
-    m_checkpoint = util::Time::Now();
-  }
-
-  /**
-   * @brief Compute the time since the last time Checkpoint was called.
-   */
-  util::Time::Duration Checkpoint(std::size_t id);
-
-  /**
-   * @brief Get the value of the current checkpoint.
-   */
-  util::Time::TimePoint ReadCurrentCheckpoint() const {
-    return m_checkpoint;
-  }
-
-  /**
-   * @brief Prepare a party for running.
-   */
-  void Prepare(std::size_t id);
-
-  /**
-   * @brief Commit all the events and network data that a party generated.
-   */
-  void Commit(std::size_t id);
-
-  /**
-   * @brief Rollback changes that a party made.
-   */
-  void Rollback(std::size_t id);
-
-  /**
-   * @brief Obtain a View of this context.
-   */
-  View GetView();
-
- private:
-  std::shared_ptr<NetworkConfig> m_network_config;
-
-  std::size_t m_nparties;
-
-  std::vector<SimulationTrace> m_traces;
-  std::size_t m_trace_index;
-
-  std::unordered_map<ChannelId, std::shared_ptr<ChannelBuffer>> m_buffers;
-
-  State m_state = State::COMMIT;
-
-  std::unordered_map<ChannelId, std::queue<WriteOp>> m_writes;
-  std::unordered_map<ChannelId, std::queue<WriteOp>> m_writes_backup;
-
-  util::Time::TimePoint m_checkpoint;
-
-  std::vector<std::size_t> m_next_party_cand;
-};
+namespace details {
 
 /**
- * @brief Create a simulation context with in-memory channels.
- */
-template <>
-std::shared_ptr<Context> Context::Create<MemoryBackedChannelBuffer>(
-    std::size_t number_of_parties,
-    std::shared_ptr<NetworkConfig> config);
-
-/**
- * @brief View of a context.
+ * @brief Global context object for a simulation.
  *
- * View provides a read-only view of certain parts of the current Context.
+ * GlobalContext keeps track of the events that the parties in the simulation
+ * generates, the timestamps of when a party sends data on a channel, and the
+ * local clocks of each party.
  */
-class Context::View {
+struct GlobalContext {
+  /**
+   * @brief Create a new global context for a simulation.
+   * @param number_of_parties the number of parties in the simulation.
+   * @param network_config the network configuration to use.
+   * @param hooks the hooks that should be run when an event is created.
+   */
+  static GlobalContext create(std::size_t number_of_parties,
+                              std::unique_ptr<NetworkConfig> network_config,
+                              std::vector<TriggerAndHook> hooks);
+
+  /**
+   * @brief The number of parties.
+   */
+  std::size_t number_of_parties;
+
+  /**
+   * @brief The network configuration for the simulation.
+   */
+  std::unique_ptr<NetworkConfig> network_config;
+
+  /**
+   * @brief The simulation traces.
+   */
+  std::vector<SimulationTrace> traces;
+
+  /**
+   * @brief Current unhandled packets in the network.
+   *
+   * This is a mapping from a channel to timestamps of calls to send on the
+   * channel that have not yet been received.
+   */
+  std::unordered_map<ChannelId, std::deque<util::Time::Duration>> sends;
+
+  /**
+   * @brief The local clocks for each party.
+   */
+  std::vector<util::Time::TimePoint> clocks;
+
+  /**
+   * @brief Map of parties currently in the process of receiving data.
+   */
+  std::vector<util::Bitmap> recv_map;
+
+  /**
+   * @brief Map used to indicate which parties have been stopped.
+   */
+  mutable util::Bitmap cancellation_map;
+
+  /**
+   * @brief Hooks.
+   */
+  std::vector<TriggerAndHook> hooks;
+
+  /**
+   * @brief A local version of a GlobalContext.
+   *
+   * LocalContext provides a local mutable "view" of the GlobalContext for a
+   * particular party.
+   */
+  class LocalContext {
+   public:
+    /**
+     * @brief Add an event to this party's simulation trace.
+     * @param event the event.
+     */
+    void recordEvent(std::shared_ptr<Event> event);
+
+    /**
+     * @brief Indicate that this party is sending data to another party.
+     * @param receiver the ID of the receiving party.
+     * @param timestamp when the data was sent.
+     */
+    void send(std::size_t receiver, util::Time::Duration timestamp) {
+      const ChannelId id{.local = m_id, .remote = receiver};
+      m_gctx.sends[id].push_back(timestamp);
+    }
+
+    /**
+     * @brief Receives an amount of bytes.
+     * @param sender the ID of sending party.
+     * @param nbytes the amount of bytes that this party wishes to receive.
+     * @param timestamp the local time of the receiving party.
+     * @return \p timestamp adjusted with an appropriate delay.
+     *
+     * <p>The return value is \p timestamp adjusted to account for any delay
+     * that this party would incur in receiving \p nbytes.
+     */
+    util::Time::Duration recv(std::size_t sender,
+                              std::size_t nbytes,
+                              util::Time::Duration timestamp);
+
+    /**
+     * @brief Indicate that this party has started receiving data.
+     */
+    void recvStart(std::size_t id);
+
+    /**
+     * @brief Indicate that this party has stopped receiving data.
+     */
+    void recvDone(std::size_t id);
+
+    /**
+     * @brief Check of a party is in the process of receiving from us.
+     */
+    bool receiving(std::size_t receiver) const;
+
+    /**
+     * @brief Check if a party has terminated.
+     */
+    bool dead(std::size_t id) const;
+
+    /**
+     * @brief Returns the amount of elapsed so far.
+     *
+     * The amount of elapsed time is defined as the current running time
+     * (defined as the timestamp on the last event produced by this party) plus
+     * the time elapsed since the startClock was called.
+     */
+    util::Time::Duration elapsedTime() const;
+
+    /**
+     * @brief Get the current time of some other party in the protocol.
+     * @param other_party the ID of the other party.
+     */
+    util::Time::Duration currentTimeOf(std::size_t other_party) const;
+
+    /**
+     * @brief Start the clock for this party.
+     *
+     * This internally sets the timestamp used to compute the elapsed time.
+     * Thus, this function should be called whenever the party starts doing
+     * "real work". E.g., just before a send or receive call on a simulated
+     * channel returns.
+     */
+    void startClock();
+
+    /**
+     * @brief Get the timestamp of the most recent event.
+     *
+     * Does not check if an event exists.
+     */
+    util::Time::Duration lastEventTimestamp() const;
+
+    /**
+     * @brief Get a limited version of this context object.
+     */
+    SimulationContext getContext() const;
+
+   private:
+    friend struct GlobalContext;
+
+    std::size_t m_id;
+    GlobalContext& m_gctx;
+
+    LocalContext(std::size_t id, GlobalContext& global)
+        : m_id(id), m_gctx(global) {}
+  };
+
+  /**
+   * @brief Get a local party's view of this context.
+   * @param party_id the ID of the party.
+   * @return a view of this context for party \p party_id.
+   */
+  LocalContext view(std::size_t party_id) {
+    return LocalContext(party_id, *this);
+  }
+};
+
+/**
+ * @brief Output a global context object to a stream.
+ */
+std::ostream& operator<<(std::ostream& os, const GlobalContext& global_ctx);
+
+}  // namespace details
+
+/**
+ * @brief A view of the current context object of the simulation.
+ *
+ * SimulationContext provides a view of the current simulation context with
+ * minor options for mutability. This object is passed to a hook and allows
+ * reacting when different events are produced.
+ */
+class SimulationContext {
  public:
   /**
-   * @brief Get the trace of a party.
-   * @param id the ID of the party.
+   * @brief Get the trace of a particular party.
    */
-  SimulationTrace Trace(std::size_t id) const {
-    return m_ctx.Trace(id);
+  SimulationTrace trace(std::size_t party_id) const {
+    return m_gctx.traces[party_id];
   }
 
   /**
-   * @brief Check if a party has terminated.
-   * @param id the ID of the party.
-   * @return true if the party has terminated, and otherwise false.
+   * @brief Get the running time of a party.
    */
-  bool HasTerminated(std::size_t id) const {
-    return m_ctx.HasTerminated(id);
+  util::Time::Duration currentTimeOf(std::size_t party_id) const {
+    return m_gctx.view(m_id).currentTimeOf(party_id);
   }
 
   /**
-   * @brief Get the total number of parties in the simulation.
+   * @brief Check if a party is still running, or if it is dead.
    */
-  std::size_t NumberOfParties() const {
-    return m_ctx.NumberOfParties();
+  bool dead(std::size_t party_id) const {
+    return m_gctx.view(m_id).dead(party_id);
+  }
+
+  /**
+   * @brief Stop a party.
+   */
+  void cancel(std::size_t party_id) const {
+    if (party_id != m_id) {
+      m_gctx.cancellation_map.set(party_id, true);
+    } else {
+      throw details::CancellationException();
+    }
+  }
+
+  /**
+   * @brief Stop the simulation.
+   */
+  void cancelSimulation() const {
+    for (std::size_t i = 0; i < m_gctx.number_of_parties; i++) {
+      m_gctx.cancellation_map.set(i, true);
+    }
+    cancel(m_id);
   }
 
  private:
-  friend Context;
+  friend class details::GlobalContext::LocalContext;
 
-  View(const Context& ctx) : m_ctx(ctx) {}
+  std::size_t m_id;
+  details::GlobalContext& m_gctx;
 
-  const Context& m_ctx;
+  SimulationContext(std::size_t id, details::GlobalContext& context)
+      : m_id(id), m_gctx(context) {}
 };
 
-inline Context::View Context::GetView() {
-  return Context::View(*this);
+namespace details {
+
+inline SimulationContext GlobalContext::LocalContext::getContext() const {
+  return SimulationContext(m_id, m_gctx);
 }
+
+}  // namespace details
 
 }  // namespace scl::sim
 

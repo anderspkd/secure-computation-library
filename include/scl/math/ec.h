@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,93 +18,100 @@
 #ifndef SCL_MATH_EC_H
 #define SCL_MATH_EC_H
 
+#include <array>
+#include <cstdint>
 #include <ostream>
+#include <string>
 
-#include "scl/math/ec_ops.h"
+#include "scl/math/array.h"
+#include "scl/math/curves/ec_ops.h"
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
-#include "scl/math/ops.h"
 
-namespace scl::math {
+namespace scl {
+namespace math {
 
 /**
  * @brief Elliptic Curve interface.
- * @tparam Curve elliptic curve definition
+ * @tparam CURVE elliptic curve definition
  *
- * TODO.
- *
- * @see FF
- * @see Secp256k1
+ * EC defines a point \f$P\f$ on some Elliptic Curve \f$E(K)\f$. The
+ * curve parameters is defined through the \p CURVE template parameter and
+ * appropriate overloads of the functions in the \ref ec namespace.
  */
-template <typename Curve>
-class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
+template <typename CURVE>
+class EC final {
  public:
   /**
-   * @brief The field that this curve is defined over.
+   * @brief Field that this curve is defined over.
    */
-  using Field = FF<typename Curve::Field>;
+  using Field = FF<typename CURVE::Field>;
 
   /**
-   * @brief A large sub-group of this curve.
+   * @brief Large subgroup of this curve.
    */
-  using ScalarField = FF<typename Curve::Scalar>;
+  using ScalarField = FF<typename CURVE::Scalar>;
 
   /**
-   * @brief The size of a curve point in bytes.
-   * @param compressed
+   * @brief Size of a curve point in bytes.
    */
-  constexpr static std::size_t ByteSize(bool compressed = true) {
-    return 1 + (compressed ? 0 : Field::ByteSize()) + Field::ByteSize();
+  constexpr static std::size_t byteSize(bool compressed) {
+    return 1 + (compressed ? 0 : Field::byteSize()) + Field::byteSize();
   }
 
   /**
-   * @brief The size of a curve point in bits.
+   * @brief Size of a curve point in bits.
    */
-  constexpr static std::size_t BitSize(bool compressed = true) {
-    return ByteSize(compressed) * 8;
+  constexpr static std::size_t bitSize(bool compressed) {
+    return byteSize(compressed) * 8;
   }
 
   /**
-   * @brief A string indicating which curve this is.
+   * @brief String indicating which curve this is.
    */
-  constexpr static const char* Name() {
-    return Curve::NAME;
+  constexpr static const char* name() {
+    return CURVE::NAME;
   }
 
   /**
-   * @brief Get the generator of this curve.
+   * @brief A generator of this curve.
    */
-  constexpr static EC Generator() {
+  constexpr static EC generator() {
     EC g;
-    CurveSetGenerator<Curve>(g.m_value);
+    ec::setGenerator<CURVE>(g.m_value);
     return g;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
-   * @brief Read an elliptic curve point from bytes.
-   * @param src the bytes
-   * @return an elliptic curve point.
+   * @brief Reads an elliptic curve point from bytes.
    */
-  static EC Read(const unsigned char* src) {
+  static EC read(const unsigned char* src) {
     EC e;
-    CurveFromBytes<Curve>(e.m_value, src);
+    ec::fromBytes<CURVE>(e.m_value, src);
     return e;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
-   * @brief Create a point from an pair of affine coordinates.
+   * @brief Creates a point from a pair of affine coordinates.
    */
-  static EC FromAffine(const Field& x, const Field& y) {
+  static EC fromAffine(const Field& x, const Field& y) {
     EC e;
-    CurveSetAffine<Curve>(e.m_value, x, y);
+    ec::setAffine<CURVE>(e.m_value, x, y);
     return e;
+  }
+
+  /**
+   * @brief Get the additive identity of this curve.
+   */
+  static EC zero() {
+    return EC{};
   }
 
   /**
    * @brief Create a new point equal to the point at infinity.
    */
-  explicit constexpr EC() {
-    CurveSetPointAtInfinity<Curve>(m_value);
+  EC() {
+    ec::setPointAtInfinity<CURVE>(m_value);
   }
 
   /**
@@ -114,67 +121,70 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
 
   /**
    * @brief Add another EC point to this.
-   * @param other the other point
-   * @return this
    */
   EC& operator+=(const EC& other) {
-    CurveAdd<Curve>(m_value, other.m_value);
+    ec::add<CURVE>(m_value, other.m_value);
+    return *this;
+  }
+
+  /**
+   * @brief Add two curve points.
+   */
+  friend EC operator+(const EC& lhs, const EC& rhs) {
+    EC tmp(lhs);
+    return tmp += rhs;
+  }
+
+  /**
+   * @brief Double this point.
+   */
+  EC& doublePointInPlace() {
+    ec::dbl<CURVE>(m_value);
     return *this;
   }
 
   /**
    * @brief Double this point.
-   * @return this after doubling.
    */
-  EC& DoubleInPlace() {
-    CurveDouble<Curve>(m_value);
-    return *this;
-  }
-
-  /**
-   * @brief Double this point.
-   * @return \p this + \p this.
-   */
-  EC Double() const {
+  EC doublePoint() const {
     EC copy(*this);
-    return copy.DoubleInPlace();
+    return copy.doublePointInPlace();
   }
 
   /**
    * @brief Subtract another point from this.
-   * @param other the other point
-   * @return this.
    */
   EC& operator-=(const EC& other) {
-    CurveSubtract<Curve>(m_value, other.m_value);
+    ec::subtract<CURVE>(m_value, other.m_value);
     return *this;
   }
 
   /**
+   * @brief Subtract two curve points.
+   */
+  friend EC operator-(const EC& lhs, const EC& rhs) {
+    EC tmp(lhs);
+    return tmp -= rhs;
+  }
+
+  /**
    * @brief Perform a scalar multiplication.
-   * @param scalar the scalar
-   * @return this.
    */
   EC& operator*=(const Number& scalar) {
-    CurveScalarMultiply<Curve>(m_value, scalar);
+    ec::scalarMultiply<CURVE>(m_value, scalar);
     return *this;
   }
 
   /**
    * @brief Perform a scalar multiplication.
-   * @param scalar the scalar
-   * @return this.
    */
   EC& operator*=(const ScalarField& scalar) {
-    CurveScalarMultiply<Curve>(m_value, scalar);
+    ec::scalarMultiply<CURVE>(m_value, scalar);
     return *this;
   }
 
   /**
    * @brief Multiply a point with a scalar from the right.
-   * @param point the point
-   * @param scalar the scalar
-   * @return the point multiplied with the scalar.
    */
   friend EC operator*(const EC& point, const Number& scalar) {
     EC copy(point);
@@ -183,9 +193,6 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
 
   /**
    * @brief Multiply a point with a scalar from the right.
-   * @param point the point
-   * @param scalar the scalar
-   * @return the point multiplied with the scalar.
    */
   friend EC operator*(const EC& point, const ScalarField& scalar) {
     EC copy(point);
@@ -194,9 +201,6 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
 
   /**
    * @brief Multiply a point with a scalar from the left.
-   * @param point the point
-   * @param scalar the scalar
-   * @return the point multiplied with the scalar.
    */
   friend EC operator*(const Number& scalar, const EC& point) {
     return point * scalar;
@@ -204,9 +208,6 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
 
   /**
    * @brief Multiply a point with a scalar from the left.
-   * @param point the point
-   * @param scalar the scalar
-   * @return the point multiplied with the scalar.
    */
   friend EC operator*(const ScalarField& scalar, const EC& point) {
     return point * scalar;
@@ -214,68 +215,131 @@ class EC final : Add<EC<Curve>>, Eq<EC<Curve>>, Print<EC<Curve>> {
 
   /**
    * @brief Negate this point.
-   * @return this.
    */
-  EC& Negate() {
-    CurveNegate<Curve>(m_value);
+  EC& negate() {
+    ec::negate<CURVE>(m_value);
     return *this;
   }
 
   /**
-   * @brief Check if this EC point is equal to another EC point.
-   * @param other the other EC point
-   * @return true if the two points are equal and false otherwise.
+   * @brief Negate a curve point.
    */
-  bool Equal(const EC& other) const {
-    return CurveEqual<Curve>(m_value, other.m_value);
+  friend EC operator-(const EC& point) {
+    EC tmp(point);
+    return tmp.negate();
+  }
+
+  /**
+   * @brief Check if this EC point is equal to another EC point.
+   */
+  bool equal(const EC& other) const {
+    return ec::equal<CURVE>(m_value, other.m_value);
   }  // LCOV_EXCL_LINE
 
   /**
-   * @brief Check if this point is equal to the point at inifity.
-   * @return true if this point is equal to the point at inifity.
+   * @brief Operator == for curve points.
    */
-  bool PointAtInfinity() const {
-    return CurveIsPointAtInfinity<Curve>(m_value);
+  friend bool operator==(const EC& lhs, const EC& rhs) {
+    return lhs.equal(rhs);
+  }
+
+  /**
+   * @brief Operator != for curve points.
+   */
+  friend bool operator!=(const EC& lhs, const EC& rhs) {
+    return !(lhs == rhs);
+  }
+
+  /**
+   * @brief Check if this point is equal to the point at inifity.
+   */
+  bool isPointAtInfinity() const {
+    return ec::isPointAtInfinity<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
    * @brief Return this point as a pair of affine coordinates.
-   * @return this point as a pair of affine coordinates.
+   *
+   * Only well-defined if the point is not the point at infinity.
    */
-  std::array<Field, 2> ToAffine() const {
-    return CurveToAffine<Curve>(m_value);
+  std::array<Field, 2> toAffine() const {
+    return ec::toAffine<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
+
+  /**
+   * @brief Normalize this point.
+   */
+  void normalize() {
+    if (isPointAtInfinity()) {
+      ec::setPointAtInfinity<CURVE>(m_value);
+    } else {
+      const auto afp = toAffine();
+      ec::setAffine<CURVE>(m_value, afp[0], afp[1]);
+    }
+  }
 
   /**
    * @brief Output this point as a string.
    */
-  std::string ToString() const {
-    return CurveToString<Curve>(m_value);
+  std::string toString() const {
+    return ec::toString<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
-   * @brief Write this point to a buffer.
-   * @param dest the destination
-   * @param compress whether to compress the point
+   * @brief Operator << for printing a curve point.
    */
-  void Write(unsigned char* dest, bool compress = true) const {
-    CurveToBytes<Curve>(dest, m_value, compress);
+  friend std::ostream& operator<<(std::ostream& os, const EC& e) {
+    return os << e.toString();
+  }
+
+  /**
+   * @brief Write this point to a buffer.
+   */
+  void write(unsigned char* dest, bool compress) const {
+    ec::toBytes<CURVE>(dest, m_value, compress);
   }  // LCOV_EXCL_LINE
 
  private:
-  typename Curve::ValueType m_value;
+  typename CURVE::ValueType m_value;
 };
 
-/**
- * @brief Helper class for working with finite field elements.
- *
- * This class is a private friend of FF. Specialization of this class therefore
- * allows direct access to the internal representation of a finite field
- * element.
- */
-template <typename T>
-class FFAccess {};
+}  // namespace math
 
-}  // namespace scl::math
+namespace seri {
+
+/**
+ * @brief Serializer for EC types.
+ *
+ * Elliptic curve points are serialized uncompressed and in affine form.
+ */
+template <typename CURVE>
+struct Serializer<math::EC<CURVE>> {
+  /**
+   * @brief Get the size of a serialized EC point.
+   */
+  static constexpr std::size_t sizeOf(const math::EC<CURVE>& /* ignored */) {
+    return math::EC<CURVE>::byteSize(false);
+  }
+
+  /**
+   * @brief Write an EC point to a buffer.
+   */
+  static std::size_t write(const math::EC<CURVE>& point, unsigned char* buf) {
+    point.write(buf, false);
+    return sizeOf(point);
+  }
+
+  /**
+   * @brief Read an EC point from a buffer.
+   */
+  static std::size_t read(math::EC<CURVE>& point, const unsigned char* buf) {
+    point = math::EC<CURVE>::read(buf);
+    return sizeOf(point);
+  }
+};
+
+}  // namespace seri
+
+}  // namespace scl
 
 #endif  // SCL_MATH_EC_H
