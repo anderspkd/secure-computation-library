@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,52 +23,44 @@
 
 #include <gmp.h>
 
-#include "scl/math/ops.h"
+#include "scl/serialization/serializer.h"
 #include "scl/util/prg.h"
 
-namespace scl::math {
+namespace scl {
+namespace math {
 
 class Number;
 
 /**
  * @brief Compute the least common multiple of two numbers.
- * @param a the first number.
- * @param b the second number.
  * @return \f$lcm(a, b)\f$.
  */
-Number LCM(const Number& a, const Number& b);
+Number lcm(const Number& a, const Number& b);
 
 /**
  * @brief Compute the greatest common divisor of two numbers.
- * @param a the first number.
- * @param b the second number.
  * @return \f$gcd(a, b)\f$.
  */
-Number GCD(const Number& a, const Number& b);
+Number gcd(const Number& a, const Number& b);
 
 /**
  * @brief Compute the modular inverse of a number.
- * @param val the value to invert.
- * @param mod the modulus.
  * @return \f$val^{-1} \mod mod \f$.
  * @throws std::logic_error if \p val is not invertible.
  * @throws std::invalid_argument if \p mod is 0.
  */
-Number ModInverse(const Number& val, const Number& mod);
+Number modInverse(const Number& val, const Number& mod);
 
 /**
  * @brief Compute a modular exponentiation.
- * @param base the base.
- * @param exp the exponent.
- * @param mod the modulus.
  * @return \f$base^{exp} \mod mod\f$.
  */
-Number ModExp(const Number& base, const Number& exp, const Number& mod);
+Number modExp(const Number& base, const Number& exp, const Number& mod);
 
 /**
  * @brief Arbitrary precision integer.
  */
-class Number final : Print<Number> {
+class Number final {
  public:
   /**
    * @brief Generate a random Number.
@@ -76,7 +68,7 @@ class Number final : Print<Number> {
    * @param prg a prg for generating the random number.
    * @return a random Number.
    */
-  static Number Random(std::size_t bits, util::PRG& prg);
+  static Number random(std::size_t bits, util::PRG& prg);
 
   /**
    * @brief Generate a random prime.
@@ -84,21 +76,21 @@ class Number final : Print<Number> {
    * @param prg a prg for generating the random prime.
    * @return a random prime.
    */
-  static Number RandomPrime(std::size_t bits, util::PRG& prg);
+  static Number randomPrime(std::size_t bits, util::PRG& prg);
 
   /**
    * @brief Read a Number from a string
    * @param str the string
    * @return a Number.
    */
-  static Number FromString(const std::string& str);
+  static Number fromString(const std::string& str);
 
   /**
    * @brief Read a number from a buffer.
    * @param buf the buffer.
    * @return a Number.
    */
-  static Number Read(const unsigned char* buf);
+  static Number read(const unsigned char* buf);
 
   /**
    * @brief Construct a Number from an int.
@@ -292,9 +284,9 @@ class Number final : Print<Number> {
   Number operator^(const Number& number) const;
 
   /**
-   * @brief operator |=
-   * @param number
-   * @return
+   * @brief operator |= for Number.
+   * @param number the other number.
+   * @return this OR'ed with \p number.
    */
   Number& operator|=(const Number& number) {
     *this = *this | number;
@@ -302,16 +294,16 @@ class Number final : Print<Number> {
   }
 
   /**
-   * @brief operator |
-   * @param number
-   * @return
+   * @brief operator | for Number.
+   * @param number the other Number.
+   * @return a number equal to *this OR'ed with \p number.
    */
   Number operator|(const Number& number) const;
 
   /**
-   * @brief operator &=
-   * @param number
-   * @return
+   * @brief operator &= for Number.
+   * @param number the other Number.
+   * @return this AND'ed with \p number.
    */
   Number& operator&=(const Number& number) {
     *this = *this & number;
@@ -319,15 +311,15 @@ class Number final : Print<Number> {
   }
 
   /**
-   * @brief operator &
-   * @param number
-   * @return
+   * @brief operator & for Number.
+   * @param number the other Number.
+   * @return a number equal to this AND'ed with \p number.
    */
   Number operator&(const Number& number) const;
 
   /**
-   * @brief operator ~
-   * @return
+   * @brief operator ~ for Number
+   * @return the bitwise negation of this Number.
    */
   Number operator~() const;
 
@@ -342,59 +334,59 @@ class Number final : Print<Number> {
    * @param number the other number
    * @return a int indicating the relationship between this and \p number.
    */
-  int Compare(const Number& number) const;
+  int compare(const Number& number) const;
 
   /**
    * @brief Equality of two numbers.
    */
   friend bool operator==(const Number& lhs, const Number& rhs) {
-    return lhs.Compare(rhs) == 0;
+    return lhs.compare(rhs) == 0;
   }
 
   /**
    * @brief In-equality of two numbers.
    */
   friend bool operator!=(const Number& lhs, const Number& rhs) {
-    return lhs.Compare(rhs) != 0;
+    return lhs.compare(rhs) != 0;
   }
 
   /**
    * @brief Strictly less-than of two numbers.
    */
   friend bool operator<(const Number& lhs, const Number& rhs) {
-    return lhs.Compare(rhs) < 0;
+    return lhs.compare(rhs) < 0;
   }
 
   /**
    * @brief Less-than-or-equal of two numbers.
    */
   friend bool operator<=(const Number& lhs, const Number& rhs) {
-    return lhs.Compare(rhs) <= 0;
+    return lhs.compare(rhs) <= 0;
   }
 
   /**
    * @brief Strictly greater-than of two numbers.
    */
   friend bool operator>(const Number& lhs, const Number& rhs) {
-    return lhs.Compare(rhs) > 0;
+    return lhs.compare(rhs) > 0;
   }
 
   /**
    * @brief Greater-than-or-equal of two numbers.
    */
   friend bool operator>=(const Number& lhs, const Number& rhs) {
-    return lhs.Compare(rhs) >= 0;
+    return lhs.compare(rhs) >= 0;
   }
 
   /**
    * @brief Get the size of this number in bytes.
    */
-  std::size_t ByteSize() const;
+  std::size_t byteSize() const;
 
   /**
    * @brief Get the size of this Number in bits.
    */
-  std::size_t BitSize() const;
+  std::size_t bitSize() const;
 
   /**
    * @brief Test whether a particular bit of this Number is set.
@@ -406,35 +398,42 @@ class Number final : Print<Number> {
    * @param index the index of the bit
    * @return true if the bit at \p index is set and false otherwise.
    */
-  bool TestBit(std::size_t index) const;
+  bool testBit(std::size_t index) const;
 
   /**
    * @brief Test if this Number is odd.
    * @return true if this Number is odd.
    */
-  bool Odd() const {
-    return TestBit(0);
+  bool odd() const {
+    return testBit(0);
   }
 
   /**
    * @brief Test if this Number is even.
    * @return true if this Number is even.
    */
-  bool Even() const {
-    return !Odd();
+  bool even() const {
+    return !odd();
   }
 
   /**
    * @brief Write this number to a buffer.
    * @param buf the buffer.
    */
-  void Write(unsigned char* buf) const;
+  void write(unsigned char* buf) const;
 
   /**
    * @brief Return a string representation of this Number.
    * @return a string.
    */
-  std::string ToString() const;
+  std::string toString() const;
+
+  /**
+   * @brief Write a string representation of this Number to a stream.
+   */
+  friend std::ostream& operator<<(std::ostream& os, const Number& number) {
+    return os << number.toString();
+  }
 
   /**
    * @brief STL swap implementation for Number.
@@ -447,14 +446,60 @@ class Number final : Print<Number> {
  private:
   mpz_t m_value;
 
-  friend Number LCM(const Number& a, const Number& b);
-  friend Number GCD(const Number& a, const Number& b);
-  friend Number ModInverse(const Number& val, const Number& mod);
-  friend Number ModExp(const Number& base,
+  friend Number lcm(const Number& a, const Number& b);
+  friend Number gcd(const Number& a, const Number& b);
+  friend Number modInverse(const Number& val, const Number& mod);
+  friend Number modExp(const Number& base,
                        const Number& exp,
                        const Number& mod);
 };
 
-}  // namespace scl::math
+}  // namespace math
+
+namespace seri {
+
+/**
+ * @brief Serializer specialization for math::Number.
+ */
+template <>
+struct Serializer<math::Number> {
+  /**
+   * @brief Get the serialized size of a math::Number.
+   * @param number the number.
+   * @return the serialized size of a math::Number.
+   *
+   * A math::Number is writte as <code>size_and_sign | number</code> where
+   * <code>size_and_sign</code> is a 4 byte value containing the byte size of
+   * the number and its sign.
+   */
+  static std::size_t sizeOf(const math::Number& number) {
+    return number.byteSize() + sizeof(std::uint32_t);
+  }
+
+  /**
+   * @brief Write a number to a buffer.
+   * @param number the number.
+   * @param buf the buffer.
+   * @return the number of bytes written.
+   */
+  static std::size_t write(const math::Number& number, unsigned char* buf) {
+    number.write(buf);
+    return sizeOf(number);
+  }
+
+  /**
+   * @brief Read a math::Number from a buffer.
+   * @param number the number.
+   * @param buf the buffer.
+   * @return the number of bytes read.
+   */
+  static std::size_t read(math::Number& number, const unsigned char* buf) {
+    number = math::Number::read(buf);
+    return sizeOf(number);
+  }
+};
+
+}  // namespace seri
+}  // namespace scl
 
 #endif  // SCL_MATH_NUMBER_H

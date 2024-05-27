@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,7 @@
 #ifndef SCL_UTIL_UTIL_H
 #define SCL_UTIL_UTIL_H
 
+#include "scl/util/cmdline.h"
 #include "scl/util/hash.h"
 #include "scl/util/prg.h"
 

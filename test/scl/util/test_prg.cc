@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,9 @@
  */
 
 #include <algorithm>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -27,7 +29,7 @@ using namespace scl;
 
 namespace {
 
-bool LooksUniform(const unsigned char* p, std::size_t len) {
+bool looksUniform(const unsigned char* p, std::size_t len) {
   std::vector<unsigned int> buckets(256, 0);
   for (std::size_t i = 0; i < len; ++i) {
     buckets[p[i]]++;
@@ -45,42 +47,42 @@ bool LooksUniform(const unsigned char* p, std::size_t len) {
 }  // namespace
 
 TEST_CASE("PRG construction", "[misc]") {
-  REQUIRE(util::PRG::SeedSize() == 16);
+  REQUIRE(util::PRG::seedSize() == 16);
 
-  auto zprg = util::PRG::Create();
+  auto zprg = util::PRG::create();
 
   // Number arrived at somewhat by trial-and-error
   const auto n = 300000;
   unsigned char buffer[n] = {0};
-  REQUIRE_FALSE(LooksUniform(buffer, n));
+  REQUIRE_FALSE(looksUniform(buffer, n));
 
-  zprg.Next(buffer, n);
+  zprg.next(buffer, n);
 
-  REQUIRE(LooksUniform(buffer, n));
+  REQUIRE(looksUniform(buffer, n));
 }
 
 TEST_CASE("PRG predictable", "[misc]") {
   unsigned char seed[] = "1234567890abcde";
-  auto prg0 = util::PRG::Create(seed, 15);
-  auto prg1 = util::PRG::Create(seed, 15);
+  auto prg0 = util::PRG::create(seed, 15);
+  auto prg1 = util::PRG::create(seed, 15);
 
   REQUIRE(prg0.Seed() == prg1.Seed());
 
-  auto bytes0 = prg0.Next(100);
-  auto bytes1 = prg1.Next(100);
+  auto bytes0 = prg0.next(100);
+  auto bytes1 = prg1.next(100);
 
   REQUIRE(bytes0 == bytes1);
 
-  prg0.Reset();
-  auto bytes00 = prg0.Next(100);
+  prg0.reset();
+  auto bytes00 = prg0.next(100);
   REQUIRE(bytes00 == bytes0);
 }
 
 TEST_CASE("PRG generate random bytes", "[misc]") {
-  auto prg = util::PRG::Create();
+  auto prg = util::PRG::create();
 
   std::vector<unsigned char> buffer(100, 0);
-  prg.Next(buffer, 50);
+  prg.next(buffer, 50);
 
   bool zero = true;
   for (std::size_t i = 50; i < 100; ++i) {
@@ -97,15 +99,15 @@ TEST_CASE("PRG generate random bytes", "[misc]") {
 
   std::vector<unsigned char> buf = {'c', 'a', 't'};
 
-  prg.Next(buf, 0);
+  prg.next(buf, 0);
   REQUIRE(buf == std::vector<unsigned char>{'c', 'a', 't'});
 }
 
 TEST_CASE("PRG invalid calls", "[misc]") {
-  auto prg = util::PRG::Create();
+  auto prg = util::PRG::create();
   std::vector<unsigned char> buf(10);
 
-  REQUIRE_THROWS_MATCHES(prg.Next(buf, 11),
+  REQUIRE_THROWS_MATCHES(prg.next(buf, 11),
                          std::invalid_argument,
                          Catch::Matchers::Message("n exceeds buffer.size()"));
 }
@@ -113,11 +115,11 @@ TEST_CASE("PRG invalid calls", "[misc]") {
 TEST_CASE("PRG truncate seed on create", "[misc]") {
   // Seeds are truncated if they exceed PRG::SeedSize() length.
 
-  auto prg0 = util::PRG::Create("0123456789abcdef_bar");
-  auto prg1 = util::PRG::Create("0123456789abcdef_foo");
+  auto prg0 = util::PRG::create("0123456789abcdef_bar");
+  auto prg1 = util::PRG::create("0123456789abcdef_foo");
 
-  auto bytes0 = prg0.Next(100);
-  auto bytes1 = prg1.Next(100);
+  auto bytes0 = prg0.next(100);
+  auto bytes1 = prg1.next(100);
 
   REQUIRE(bytes0 == bytes1);
 }

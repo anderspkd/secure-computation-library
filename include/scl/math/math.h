@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,14 +21,26 @@
 #include "scl/math/ec.h"
 #include "scl/math/ff.h"
 #include "scl/math/fp.h"
-#include "scl/math/mat.h"
+#include "scl/math/matrix.h"
 #include "scl/math/number.h"
-#include "scl/math/vec.h"
+#include "scl/math/vector.h"
 #include "scl/math/z2k.h"
 
 /**
- * @brief Utilities related to math.
+ * @brief Maths!
  */
-namespace scl::math {}  // namespace scl::math
+namespace scl::math {
+
+/**
+ * @brief Functionality related to finite fields.
+ */
+namespace ff {}
+
+/**
+ * @brief Functionality related to elliptic curves.
+ */
+namespace ec {}
+
+}  // namespace scl::math
 
 #endif  // SCL_MATH_MATH_H

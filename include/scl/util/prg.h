@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,13 +19,14 @@
 #define SCL_UTIL_PRG_H
 
 #include <array>
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
-#include <type_traits>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include <emmintrin.h>
-#include <wmmintrin.h>
 
 /**
  * @brief 64 bit nonce which is prepended to the counter in the PRG.
@@ -69,41 +70,41 @@ class PRG {
   /**
    * @brief Size of the seed.
    */
-  static constexpr std::size_t SeedSize() {
+  static constexpr std::size_t seedSize() {
     return BLOCK_SIZE;
-  };
+  }
 
   /**
    * @brief Create a new PRG with seed 0.
    */
-  static PRG Create();
+  static PRG create();
 
   /**
    * @brief Create a new PRG with a provided seed.
    * @param seed the seed.
    * @param seed_len length of the seed
    */
-  static PRG Create(const unsigned char* seed, std::size_t seed_len);
+  static PRG create(const unsigned char* seed, std::size_t seed_len);
 
   /**
    * @brief Create a new PRG from a provided seed.
    * @param seed the seed.
    */
-  static PRG Create(const std::string& seed);
+  static PRG create(const std::string& seed);
 
   /**
    * @brief Reset the PRG.
    *
    * This method allows resetting a PRG object to its initial state.
    */
-  void Reset();
+  void reset();
 
   /**
    * @brief Generate random data and store it in a supplied buffer.
    * @param buffer the buffer
    * @param n how many bytes of random data to generate
    */
-  void Next(unsigned char* buffer, std::size_t n);
+  void next(unsigned char* buffer, std::size_t n);
 
   /**
    * @brief Generate random data and store it in a supplied buffer.
@@ -112,9 +113,18 @@ class PRG {
    * How many bytes of random data to generate is decided based on the output of
    * <code>buffer.size()</code>.
    */
-  void Next(std::vector<unsigned char>& buffer) {
-    Next(buffer.data(), buffer.size());
-  };
+  void next(std::vector<unsigned char>& buffer) {
+    next(buffer.data(), buffer.size());
+  }
+
+  /**
+   * @brief Generate random data and store it in a supplied buffer.
+   * @param buffer the buffer.
+   */
+  template <std::size_t N>
+  void next(std::array<unsigned char, N>& buffer) {
+    Next(buffer.data(), N);
+  }
 
   /**
    * @brief Generate random data and store in in a supplied buffer.
@@ -126,30 +136,30 @@ class PRG {
    * The capacity of \p buffer is not affected in any way by this method and it
    * requires that it has room for at least \p n elements.
    */
-  void Next(std::vector<unsigned char>& buffer, std::size_t n) {
+  void next(std::vector<unsigned char>& buffer, std::size_t n) {
     if (buffer.size() < n) {
       throw std::invalid_argument("n exceeds buffer.size()");
     }
-    Next(buffer.data(), n);
-  };
+    next(buffer.data(), n);
+  }
 
   /**
    * @brief Generate and return random data.
    * @param n the number of random bytes to generate
    * @return the random bytes.
    */
-  std::vector<unsigned char> Next(std::size_t n) {
+  std::vector<unsigned char> next(std::size_t n) {
     auto buffer = std::make_unique<unsigned char[]>(n);
-    Next(buffer.get(), n);
+    next(buffer.get(), n);
     return std::vector<unsigned char>(buffer.get(), buffer.get() + n);
-  };
+  }
 
   /**
    * @brief The seed.
    */
   std::array<unsigned char, BLOCK_SIZE> Seed() const {
     return m_seed;
-  };
+  }
 
  private:
   PRG(std::array<unsigned char, BLOCK_SIZE> seed) : m_seed(seed){};
@@ -158,8 +168,8 @@ class PRG {
   long m_counter = PRG_INITIAL_COUNTER;
   BlockType m_state[11];
 
-  void Update();
-  void Init();
+  void update();
+  void init();
 };
 
 }  // namespace scl::util

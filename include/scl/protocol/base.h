@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,108 +25,122 @@
 
 #include "scl/net/network.h"
 #include "scl/protocol/env.h"
+#include "scl/protocol/result.h"
 
 namespace scl::proto {
 
 /**
- * @brief Base class for protocols.
+ * @brief Interface for protocols.
  *
- * Protocol provides a simple interface for any protocol that produce
- * output. Protocol defines only two methods.
+ * A class implementing this interface defines the code that a party runs in an
+ * interactive protocol. An example is given below, showing how we might
+ * implement a classical secure multiplication protocol using a multiplication
+ * triple.
  *
- * <p>Protocol::Run, which takes a Network (so that the protocol can
- * communicate). The output of Protocol::Run is either another protocol or
- * <code>nullptr</code>. in the former case, the return value represents the
- * next logical step of the protocol, while the latter case indicates that the
- * protocol has terminated.
+ * @code
+ * template <typename SHARE>
+ * class BeaverMul final : public proto::Protocol {
+ *  public:
+ *   BeaverMul(SHARE x, SHARE y, Triple<SHARE> triple)
+ *       : m_x(x), m_y(y), m_triple(triple) {}
  *
- * <p>Protocol::Output which returns the output of the protocol. The output is
- * something of type <code>std::any</code> and so can essentially be any
- * object. It is the user's job to know what the concrete type of the output is.
+ *   coro::Task<proto::ProtocolResult> run(proto::Env& env) const override {
+ *     net::Packet packet;
+ *
+ *     packet << m_x - m_triple.a;  // [e] = [x] - [a]
+ *     packet << m_y - m_triple.b;  // [d] = [y] - [b]
+ *
+ *     co_await env.network.party(0)->send(packet);
+ *     co_await env.network.party(1)->send(packet);
+ *
+ *     net::Packet packet0 = co_await env.network.party(0)->recv();
+ *     net::Packet packet1 = co_await env.network.party(1)->recv();
+ *
+ *     const SHARE e0 = packet0.read<SHARE>();
+ *     const SHARE d0 = packet0.read<SHARE>();
+ *     const SHARE e1 = packet1.read<SHARE>();
+ *     const SHARE d1 = packet1.read<SHARE>();
+ *
+ *     const SHARE e = e0 + e1;
+ *     const SHARE d = d0 + d1;
+ *
+ *     // [z] = ed + e[b] + d[a] + [c]. Only party 0 adds constants.
+ *     SHARE z = e * m_triple.b + d * m_triple.a + m_triple.c;
+ *     if (env.network.myId() == 0) {
+ *       z += e * d;
+ *     }
+ *
+ *     co_return proto::ProtocolResult::done(z);
+ *   }
+ *
+ *  private:
+ *   SHARE m_x;
+ *   SHARE m_y;
+ *   Triple<SHARE> m_triple;
+ * };
+ * @endcode
+ *
+ * It is possible to chain multiple protocols together by returning a pointer to
+ * the next protocol. It is also possible to compose protocol objects, e.g., as
+ * shown below. However, care has to be taken in handling cases where two
+ * protocols both attempt to read from the same channel.
+ *
+ * @code
+ * struct SimpleProtocol final : public proto::Protocol {
+ *   coro::Task<proto::ProtocolResult> run(proto::Env& env) const override {
+ *     // ... do stuff
+ *     co_return proto::ProtocolResult::done(some_value);
+ *   }
+ * };
+ *
+ * class Composed final : public proto::Protocol {
+ *  public:
+ *   Composed(SimpleProtocol&& protocol1, SimpleProtocol&& protocol2)
+ *     : m_protocol1(std::move(protocol1)), m_protocol2(std::move(protocol2)) {}
+ *
+ *   coro::Task<proto::ProtocolResult> run(proto::Env& env) const override {
+ *     // batch the two protocols.
+ *     std::vector<coro::Task<proto::ProtocolResult>> protocols;
+ *     protocols.emplace_back(m_protocol1.run());
+ *     protocols.emplace_back(m_protocol2.run());
+ *
+ *     // ask the coroutine runtime to run them in any random order.
+ *     std::vector<proto::ProtocolResult> results =
+ *       co_await coro::batch(std::move(protocols));
+ *
+ *     co_return results;
+ *   }
+ *
+ *  private:
+ *   SimpleProtocol m_protocol1;
+ *   SimpleProtocol m_protocol2;
+ * };
+ * @endcode
+ *
+ * Each Protocol is associated with a name, defaulting to the value of
+ * Protocol::DEFAULT_NAME. The name is used only in the simulator to group
+ * measurements when generating a result.
  */
 struct Protocol {
+  virtual ~Protocol() {}
+
   /**
    * @brief Default protocol name.
    */
   constexpr static const char* DEFAULT_NAME = "UNNAMED";
 
-  virtual ~Protocol(){};
   /**
    * @brief Run the protocol.
-   * @param env the protocol environment.
-   * @return next protocol to run, or <code>nullptr</code> if we're done.
    */
-  virtual std::unique_ptr<Protocol> Run(Env& env) = 0;
+  virtual coro::Task<ProtocolResult> run(Env& env) const = 0;
 
   /**
-   * @brief A name for this protocol.
-   * @return the protocol name.
-   *
-   * Override this method to provide a unique name for a protocol. The name
-   * serves as a way to distinguish two Protocol implementations from each
-   * other. The default value is Protocol::kDefaultName.
+   * @brief The protocol's name.
    */
-  virtual std::string Name() const {
+  virtual std::string name() const {
     return Protocol::DEFAULT_NAME;
   }
-
-  /**
-   * @brief Output produced by running the protocol.
-   * @return the output.
-   */
-  virtual std::any Output() const {
-    return {};
-  }
 };
-
-/**
- * @brief Evaluate a protocol.
- * @param protocol the protocol.
- * @param output_cb a callback for consuming protocol output.
- * @param env the protocol environment.
- */
-template <typename Callback>
-void Evaluate(std::unique_ptr<Protocol> protocol,
-              Callback output_cb,
-              Env& env) {
-  std::shared_ptr<Protocol> next = std::move(protocol);
-  std::shared_ptr<Protocol> prev = next;
-
-  while (next != nullptr) {
-    next = next->Run(env);
-    if (prev->Output().has_value()) {
-      output_cb(prev->Output());
-    }
-    prev = next;
-  }
-}
-
-/**
- * @brief Evaluate a protocol.
- * @param protocol the protocol.
- * @param network the network to evaluate the protocol with.
- * @param output_cb a callback for consuming protocol output.
- */
-template <typename Callback>
-void Evaluate(std::unique_ptr<Protocol> protocol,
-              net::Network& network,
-              Callback output_cb) {
-  Env ctx{network,
-          std::make_unique<RealTimeClock>(),
-          std::make_unique<StlThreadContext>()};
-  Evaluate(std::move(protocol), output_cb, ctx);
-}
-
-/**
- * @brief Evalate a protocol, discarding all outputs generated.
- * @param protocol the protocol to evaluate.
- * @param network the network to use.
- */
-inline void Evaluate(std::unique_ptr<Protocol> protocol,
-                     net::Network& network) {
-  const auto sink = [](auto output) { (void)output; };
-  Evaluate(std::move(protocol), network, sink);
-}
 
 }  // namespace scl::proto
 

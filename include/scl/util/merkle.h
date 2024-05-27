@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,9 @@
 
 #include <vector>
 
+#include "scl/util/bitmap.h"
 #include "scl/util/digest.h"
+#include "scl/util/merkle_proof.h"
 
 namespace scl::util {
 
@@ -29,66 +31,55 @@ namespace scl::util {
  * @tparam H a hash function.
  * @tparam T the leaf data type.
  */
-template <typename H, typename T>
+template <typename HASH, typename LEAF>
 struct MerkleTree {
   /**
    * @brief The digest type nodes.
    */
-  using DigestType = typename H::DigestType;
+  using DigestType = typename HASH::DigestType;
+
+  /**
+   * @brief The proof type.
+   */
+  using Proof = MerkleProof<DigestType>;
 
   /**
    * @brief Compute a Merkle tree hash.
    * @param data the date to hash.
    * @return the root hash.
    */
-  static DigestType Hash(const std::vector<T>& data);
-
-  /**
-   * @brief A Merkle tree proof.
-   */
-  struct Proof {
-    /**
-     * @brief The path from a particular leaf to the root.
-     */
-    std::vector<DigestType> path;
-
-    /**
-     * @brief A vector describing whether at the left or right element for each
-     * element in a path.
-     */
-    std::vector<bool> direction;
-  };
+  static DigestType hash(const std::vector<LEAF>& data);
 
   /**
    * @brief Create a proof that a particular index is part of a Merkle tree.
    */
-  static Proof Prove(const std::vector<T>& data, std::size_t index);
+  static Proof prove(const std::vector<LEAF>& data, std::size_t index);
 
   /**
    * @brief Verify a Merkle tree proof.
-   * @param value the statement.
+   * @param leaf the statement.
    * @param root the tree root.
    * @param proof the proof
    * @return true if the
    */
-  static bool Verify(const T& value,
+  static bool verify(const LEAF& leaf,
                      const DigestType& root,
                      const Proof& proof);
 
  private:
-  static std::vector<DigestType> HashLeafs(const std::vector<T>& data);
+  static std::vector<DigestType> hashLeafs(const std::vector<LEAF>& data);
 };
 
-template <typename H, typename T>
-auto MerkleTree<H, T>::HashLeafs(const std::vector<T>& data)
+template <typename HASH, typename LEAF>
+auto MerkleTree<HASH, LEAF>::hashLeafs(const std::vector<LEAF>& data)
     -> std::vector<DigestType> {
   std::vector<DigestType> digests;
   auto sz = data.size();
   digests.reserve(sz);
 
   for (const auto& d : data) {
-    H hash;
-    digests.emplace_back(hash.Update(d).Finalize());
+    HASH hash;
+    digests.emplace_back(hash.update(d).finalize());
   }
 
   // duplicate the last hash in case there's an odd number of leafs.
@@ -100,9 +91,9 @@ auto MerkleTree<H, T>::HashLeafs(const std::vector<T>& data)
   return digests;
 }  // LCOV_EXCL_LINE
 
-template <typename H, typename T>
-auto MerkleTree<H, T>::Hash(const std::vector<T>& data) -> DigestType {
-  std::vector<DigestType> digests = HashLeafs(data);
+template <typename HASH, typename LEAF>
+auto MerkleTree<HASH, LEAF>::hash(const std::vector<LEAF>& data) -> DigestType {
+  std::vector<DigestType> digests = hashLeafs(data);
 
   auto sz = digests.size();
 
@@ -111,8 +102,8 @@ auto MerkleTree<H, T>::Hash(const std::vector<T>& data) -> DigestType {
     for (std::size_t i = 0; i < sz; i += 2) {
       const auto left = digests[i];
       const auto right = digests[i + 1];
-      H hash;
-      digests[j] = hash.Update(left).Update(right).Finalize();
+      HASH hash;
+      digests[j] = hash.update(left).update(right).finalize();
       j++;
     }
 
@@ -128,10 +119,10 @@ auto MerkleTree<H, T>::Hash(const std::vector<T>& data) -> DigestType {
   return digests[0];
 }
 
-template <typename H, typename T>
-auto MerkleTree<H, T>::Prove(const std::vector<T>& data, std::size_t index)
-    -> Proof {
-  std::vector<DigestType> digests = HashLeafs(data);
+template <typename HASH, typename LEAF>
+auto MerkleTree<HASH, LEAF>::prove(const std::vector<LEAF>& data,
+                                   std::size_t index) -> Proof {
+  std::vector<DigestType> digests = hashLeafs(data);
   std::vector<DigestType> path;
   std::vector<bool> direction;
 
@@ -143,8 +134,8 @@ auto MerkleTree<H, T>::Prove(const std::vector<T>& data, std::size_t index)
       const auto left = digests[i];
       const auto right = digests[i + 1];
 
-      H hash;
-      digests[j] = hash.Update(left).Update(right).Finalize();
+      HASH hash;
+      digests[j] = hash.update(left).update(right).finalize();
 
       if (i == index) {
         path.emplace_back(right);
@@ -167,22 +158,22 @@ auto MerkleTree<H, T>::Prove(const std::vector<T>& data, std::size_t index)
     }
   }
 
-  return {path, direction};
+  return {path, Bitmap::fromStdVecBool(direction)};
 }
 
-template <typename H, typename T>
-bool MerkleTree<H, T>::Verify(const T& value,
-                              const DigestType& root,
-                              const Proof& proof) {
+template <typename HASH, typename LEAF>
+bool MerkleTree<HASH, LEAF>::verify(const LEAF& leaf,
+                                    const DigestType& root,
+                                    const Proof& proof) {
   const auto [h, d] = proof;
 
-  auto digest = H{}.Update(value).Finalize();
+  auto digest = HASH{}.update(leaf).finalize();
   for (std::size_t i = 0; i < h.size(); ++i) {
-    H hash;
-    if (d[i]) {
-      digest = hash.Update(h[i]).Update(digest).Finalize();
+    HASH hash;
+    if (d.at(i)) {
+      digest = hash.update(h[i]).update(digest).finalize();
     } else {
-      digest = hash.Update(digest).Update(h[i]).Finalize();
+      digest = hash.update(digest).update(h[i]).finalize();
     }
   }
 

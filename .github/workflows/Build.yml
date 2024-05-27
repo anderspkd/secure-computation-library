@@ -7,9 +7,9 @@ on:
       - '!master'
 
 jobs:
-  build:
-    name: Release
-    runs-on: ubuntu-latest
+  release:
+    name: release
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v2
@@ -17,6 +17,9 @@ jobs:
     - name: Build
       shell: bash
       run: |
-        cmake . -B build
+        cmake . -B build -DSCL_BUILD_DOCUMENTATION=OFF
         cmake --build build
 
+    - name: Test
+      shell: bash
+      run: cmake --build build --target test

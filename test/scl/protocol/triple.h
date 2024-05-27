@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,30 +25,30 @@
 
 namespace scl::test {
 
-template <typename FF>
+template <typename FIELD>
 struct Triple {
-  Triple(FF a, FF b, FF c) : a(a), b(b), c(c){};
+  Triple(FIELD a, FIELD b, FIELD c) : a(a), b(b), c(c){};
 
-  FF a;
-  FF b;
-  FF c;
+  FIELD a;
+  FIELD b;
+  FIELD c;
 };
 
-template <typename FF>
-std::vector<Triple<FF>> RandomTriple(util::PRG& prg) {
-  auto a = FF::Random(prg);
-  auto b = FF::Random(prg);
+template <typename FIELD>
+std::vector<Triple<FIELD>> randomTriple2(util::PRG& prg) {
+  auto a = FIELD::random(prg);
+  auto b = FIELD::random(prg);
   auto c = a * b;
 
-  auto as = ss::AdditiveShare(a, 2, prg);
-  auto bs = ss::AdditiveShare(b, 2, prg);
-  auto cs = ss::AdditiveShare(c, 2, prg);
+  auto as = ss::additiveShare(a, 2, prg);
+  auto bs = ss::additiveShare(b, 2, prg);
+  auto cs = ss::additiveShare(c, 2, prg);
 
   return {{as[0], bs[0], cs[0]}, {as[1], bs[1], cs[1]}};
 }
 
-template <typename FF>
-std::ostream& operator<<(std::ostream& os, const Triple<FF>& triple) {
+template <typename FIELD>
+std::ostream& operator<<(std::ostream& os, const Triple<FIELD>& triple) {
   return os << triple.a << " " << triple.b << " " << triple.c;
 }
 

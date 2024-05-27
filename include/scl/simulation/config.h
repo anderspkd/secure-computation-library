@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -86,24 +86,24 @@ class ChannelConfig {
   /**
    * @brief Create a simulation config with default values.
    */
-  static ChannelConfig Default();
+  static ChannelConfig defaultConfig();
 
   /**
    * @brief Create a simulation config for a loopback connection.
    */
-  static ChannelConfig Loopback();
+  static ChannelConfig loopback();
 
   /**
    * @brief The network type of the channel.
    */
-  NetworkType Type() const {
+  NetworkType type() const {
     return m_type;
   }
 
   /**
    * @brief Bandwidth in Bits/s.
    */
-  std::size_t Bandwidth() const {
+  std::size_t bandwidth() const {
     return m_bandwidth;
   }
 
@@ -124,14 +124,14 @@ class ChannelConfig {
   /**
    * @brief Package loss in percentage.
    */
-  double PackageLoss() const {
+  double packetLoss() const {
     return m_package_loss;
   }
 
   /**
    * @brief TCP window size.
    */
-  std::size_t WindowSize() const {
+  std::size_t windowSize() const {
     return m_window_size;
   };
 
@@ -175,8 +175,8 @@ class ChannelConfig::Builder {
   /**
    * @brief Build the simulation config.
    */
-  ChannelConfig Build() const {
-    Validate();
+  ChannelConfig build() const {
+    validate();
     return ChannelConfig{
         m_type.value_or(ChannelConfig::DEFAULT_NETWORK_TYPE),
         m_bandwidth.value_or(ChannelConfig::DEFAULT_BANDWIDTH),
@@ -191,7 +191,7 @@ class ChannelConfig::Builder {
    * @param type the network type.
    * @return the builder.
    */
-  Builder& Type(NetworkType type) {
+  Builder& type(NetworkType type) {
     m_type = type;
     return *this;
   }
@@ -201,7 +201,7 @@ class ChannelConfig::Builder {
    * @param bandwidth bandwidth in bits/s.
    * @return the builder.
    */
-  Builder& Bandwidth(std::size_t bandwidth) {
+  Builder& bandwidth(std::size_t bandwidth) {
     m_bandwidth = bandwidth;
     return *this;
   }
@@ -231,7 +231,7 @@ class ChannelConfig::Builder {
    * @param percentage the percent of packages being lost
    * @return the builder.
    */
-  Builder& PackageLoss(double percentage) {
+  Builder& packetLoss(double percentage) {
     m_package_loss = percentage;
     return *this;
   }
@@ -241,7 +241,7 @@ class ChannelConfig::Builder {
    * @param window_size of the TCP window in bytes
    * @return the builder.
    */
-  Builder& WindowSize(std::size_t window_size) {
+  Builder& windowSize(std::size_t window_size) {
     m_window_size = window_size;
     return *this;
   }
@@ -255,7 +255,7 @@ class ChannelConfig::Builder {
   std::optional<std::size_t> m_window_size;
 
   // Validate the config settings before creating the actual SimulationConfig.
-  void Validate() const;
+  void validate() const;
 };
 
 /**
@@ -270,7 +270,7 @@ struct NetworkConfig {
   /**
    * @brief Returns the configuration of a particular channel.
    */
-  virtual ChannelConfig Get(ChannelId channel_id) = 0;
+  virtual ChannelConfig get(ChannelId channel_id) = 0;
 };
 
 /**
@@ -282,9 +282,9 @@ struct NetworkConfig {
  * channels are configured according to ChannelConfig::Loopback.
  */
 struct SimpleNetworkConfig final : public NetworkConfig {
-  ChannelConfig Get(ChannelId channel_id) override {
-    static auto config = ChannelConfig::Default();
-    static auto lo = ChannelConfig::Loopback();
+  ChannelConfig get(ChannelId channel_id) override {
+    static auto config = ChannelConfig::defaultConfig();
+    static auto lo = ChannelConfig::loopback();
 
     return (channel_id.local == channel_id.remote) ? lo : config;
   }

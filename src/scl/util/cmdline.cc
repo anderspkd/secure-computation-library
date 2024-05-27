@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,23 +19,23 @@
 
 #include <vector>
 
-namespace {}  // namespace
+using namespace scl;
 
-bool scl::util::ProgramOptions::Parser::IsArg(std::string_view name) const {
-  return std::any_of(mArgs.begin(), mArgs.end(), [&](auto a) {
+bool util::ProgramOptions::Parser::isArg(std::string_view name) const {
+  return std::any_of(m_args.begin(), m_args.end(), [&](auto a) {
     return a.name == name;
   });
 }
 
-bool scl::util::ProgramOptions::Parser::IsFlag(std::string_view name) const {
-  return std::any_of(mFlags.begin(), mFlags.end(), [&](auto f) {
+bool util::ProgramOptions::Parser::isFlag(std::string_view name) const {
+  return std::any_of(m_flags.begin(), m_flags.end(), [&](auto f) {
     return f.name == name;
   });
 }
 
 namespace {
 
-bool Name(std::string_view opt_name, std::string_view& name) {
+bool name(std::string_view opt_name, std::string_view& name) {
   if (opt_name[0] != '-') {
     return false;
   }
@@ -43,23 +43,45 @@ bool Name(std::string_view opt_name, std::string_view& name) {
   return true;
 }
 
+template <typename ARG_OR_FLAG>
+bool hasDuplicates(const std::vector<ARG_OR_FLAG>& opts) {
+  for (std::size_t i = 0; i < opts.size(); i++) {
+    const std::string_view n = opts[i].name;
+    for (std::size_t j = i + 1; j < opts.size(); j++) {
+      if (n == opts[j].name) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 }  // namespace
 
-scl::util::ProgramOptions scl::util::ProgramOptions::Parser::Parse(
-    int argc,
-    char** argv) {
-  mProgramName = argv[0];
+using ParseRet = std::variant<util::ProgramOptions, std::string_view>;
+
+ParseRet util::ProgramOptions::Parser::parseArguments(int argc, char** argv) {
+  if (hasDuplicates(m_args)) {
+    return "duplicate argument definition";
+  }
+
+  if (hasDuplicates(m_flags)) {
+    return "duplicate flag definition";
+  }
+
+  m_program_name = argv[0];
   std::vector<std::string_view> cmd_args(argv + 1, argv + argc);
 
   const auto help_needed = std::any_of(cmd_args.begin(),
                                        cmd_args.end(),
                                        [](auto e) { return e == "-help"; });
   if (help_needed) {
-    PrintHelp();
+    return "";
   }
 
   std::unordered_map<std::string_view, std::string_view> args;
-  std::for_each(mArgs.begin(), mArgs.end(), [&args](const auto arg) {
+  std::for_each(m_args.begin(), m_args.end(), [&args](const auto arg) {
     if (arg.default_value.has_value()) {
       args[arg.name] = arg.default_value.value();
     }
@@ -68,56 +90,60 @@ scl::util::ProgramOptions scl::util::ProgramOptions::Parser::Parse(
   std::unordered_map<std::string_view, bool> flags;
   std::size_t i = 0;
   while (i < cmd_args.size()) {
-    std::string_view name;
-    if (!Name(cmd_args[i++], name)) {
-      PrintHelp("argument must begin with '-'");
+    std::string_view arg_name;
+    if (!name(cmd_args[i++], arg_name)) {
+      return "argument must begin with '-'";
     }
 
-    if (IsArg(name)) {
+    if (isArg(arg_name)) {
       if (i == cmd_args.size()) {
-        PrintHelp("invalid argument");
+        return "invalid argument";
       }
-      args[name] = cmd_args[i++];
-    } else if (IsFlag(name)) {
-      flags[name] = true;
+      args[arg_name] = cmd_args[i++];
+    } else if (isFlag(arg_name)) {
+      flags[arg_name] = true;
     } else {
-      PrintHelp("encountered unknown argument");
+      return "encountered unknown argument";
     }
   }
 
   // check if we got everything
-  ForEachRequired(mArgs, [&](const auto arg) {
+  std::string_view error_msg;
+  forEachRequired(m_args, [&](const auto arg) {
     if (args.find(arg.name) == args.end()) {
-      PrintHelp("missing required argument");
+      error_msg = "missing required argument";
     }
   });
 
-  return ProgramOptions(args, flags);
+  if (error_msg.empty()) {
+    return ProgramOptions(args, flags);
+  }
+  return error_msg;
 }
 
-void scl::util::ProgramOptions::Parser::ArgListShort(
+void util::ProgramOptions::Parser::argListShort(
     std::ostream& stream,
     std::string_view program_name) const {
   stream << "Usage: " << program_name << " ";
-  ForEachRequired(mArgs, [&stream](const auto arg) {
+  forEachRequired(m_args, [&stream](const auto arg) {
     stream << "-" << arg.name << " " << arg.type_hint << " ";
   });
 
   stream << "[options ...]" << std::endl;
 }
 
-std::string GetPadding(std::size_t lead) {
+std::string getPadding(std::size_t lead) {
   const static std::size_t padding = 20;
   const static std::size_t min_padding = 5;
   const auto psz = lead >= padding + min_padding ? min_padding : padding - lead;
   return std::string(psz, ' ');
 }
 
-void WriteArg(std::ostream& stream, const scl::util::ProgramArg& arg) {
+void writeArg(std::ostream& stream, const util::ProgramArg& arg) {
   stream << " -" << arg.name << " '" << arg.type_hint << "'";
   if (!arg.description.empty()) {
-    const auto pad_str = GetPadding(arg.name.size() + arg.type_hint.size() + 5);
-    stream << pad_str << arg.description << ". ";
+    const auto pad_str = getPadding(arg.name.size() + arg.type_hint.size() + 5);
+    stream << pad_str << arg.description << ".";
   }
   if (arg.default_value.has_value()) {
     stream << " [default=" << arg.default_value.value() << "]";
@@ -125,75 +151,64 @@ void WriteArg(std::ostream& stream, const scl::util::ProgramArg& arg) {
   stream << std::endl;
 }
 
-void WriteFlag(std::ostream& stream, const scl::util::ProgramFlag& flag) {
+void writeFlag(std::ostream& stream, const util::ProgramFlag& flag) {
   stream << " -" << flag.name;
   if (!flag.description.empty()) {
-    const auto pad_str = GetPadding(flag.name.size() + 2);
-    stream << pad_str << flag.description << ". ";
+    const auto pad_str = getPadding(flag.name.size() + 2);
+    stream << pad_str << flag.description << ".";
   }
   stream << std::endl;
 }
 
-template <typename It>
-bool HasRequired(It begin, It end) {
-  return std::any_of(begin, end, [](const auto a) { return a.required; });
+template <typename IT>
+bool hasRequired(IT begin, IT end) {
+  return std::any_of(begin, end, [](const auto a) { return a.is_required; });
 }
 
-template <typename It>
-bool HasOptional(It begin, It end) {
-  return std::any_of(begin, end, [](const auto a) { return !a.required; });
+template <typename IT>
+bool hasOptional(IT begin, IT end) {
+  return std::any_of(begin, end, [](const auto a) { return !a.is_required; });
 }
 
-void scl::util::ProgramOptions::Parser::ArgListLong(
-    std::ostream& stream) const {
-  if (!mDescription.empty()) {
-    stream << std::endl << mDescription << std::endl;
+void util::ProgramOptions::Parser::argListLong(std::ostream& stream) const {
+  if (!m_description.empty()) {
+    stream << std::endl << m_description << std::endl;
   }
   stream << std::endl;
 
-  const auto has_req_arg = HasRequired(mArgs.begin(), mArgs.end());
+  const auto has_req_arg = hasRequired(m_args.begin(), m_args.end());
 
   if (has_req_arg) {
     stream << "Required arguments" << std::endl;
-    ForEachRequired(mArgs, [&stream](const auto a) { WriteArg(stream, a); });
+    forEachRequired(m_args, [&stream](const auto a) { writeArg(stream, a); });
     stream << std::endl;
   }
 
-  if (HasOptional(mArgs.begin(), mArgs.end())) {
-    stream << "Optional Arguments" << std::endl;
+  if (hasOptional(m_args.begin(), m_args.end())) {
+    stream << "Optional arguments" << std::endl;
 
-    ForEachOptional(mArgs, [&stream](const auto a) { WriteArg(stream, a); });
+    forEachOptional(m_args, [&stream](const auto a) { writeArg(stream, a); });
     stream << std::endl;
   }
 
-  if (!mFlags.empty()) {
+  if (!m_flags.empty()) {
     stream << "Flags" << std::endl;
-    std::for_each(mFlags.begin(), mFlags.end(), [&stream](const auto a) {
-      WriteFlag(stream, a);
+    std::for_each(m_flags.begin(), m_flags.end(), [&stream](const auto a) {
+      writeFlag(stream, a);
     });
     stream << std::endl;
   }
 }
 
-void scl::util::ProgramOptions::Parser::PrintHelp(std::string_view error_msg) {
+void util::ProgramOptions::Parser::printHelp(std::string_view error_msg) {
   bool error = !error_msg.empty();
 
   if (error) {
     std::cerr << "ERROR: " << error_msg << std::endl;
   }
 
-  if (!mProgramName.empty()) {
-    ArgListShort(std::cout, mProgramName);
+  if (!m_program_name.empty()) {
+    argListShort(std::cout, m_program_name);
   }
-  ArgListLong(std::cout);
-
-#ifdef SCL_UTIL_NO_EXIT_ON_ERROR
-
-  throw std::runtime_error(error ? "bad" : "good");
-
-#else
-
-  std::exit(error ? 1 : 0);
-
-#endif
+  argListLong(std::cout);
 }

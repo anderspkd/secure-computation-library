@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,11 +18,13 @@
 #ifndef SCL_NET_TCP_UTILS_H
 #define SCL_NET_TCP_UTILS_H
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <system_error>
 #include <thread>
 
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 
@@ -34,6 +36,8 @@ namespace scl::net {
  * @brief Socket type. Probably <code>int</code>.
  */
 using SocketType = int;
+
+namespace details {
 
 /**
  * @brief A connection.
@@ -58,11 +62,11 @@ struct Connection {
  * @return A socket.
  */
 template <typename Sys = SysIFace>
-SocketType CreateServerSocket(int port, int backlog) {
-  SocketType ssock = Sys::Socket(AF_INET, SOCK_STREAM, 0);
+SocketType createServerSocket(int port, int backlog) {
+  SocketType ssock = Sys::socket(AF_INET, SOCK_STREAM, 0);
 
   if (ssock < 0) {
-    throw std::system_error(Sys::GetError(),
+    throw std::system_error(Sys::getError(),
                             std::generic_category(),
                             "could not acquire server socket");
   }
@@ -70,27 +74,27 @@ SocketType CreateServerSocket(int port, int backlog) {
   int opt = 1;
   auto options = SO_REUSEADDR | SO_REUSEPORT;
 
-  if (Sys::SetSockOpt(ssock, SOL_SOCKET, options, &opt, sizeof(opt)) < 0) {
-    throw std::system_error(Sys::GetError(),
+  if (Sys::setSockOpt(ssock, SOL_SOCKET, options, &opt, sizeof(opt)) < 0) {
+    throw std::system_error(Sys::getError(),
                             std::generic_category(),
                             "could not set socket options");
   }
 
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = Sys::HostToNet(INADDR_ANY);
-  addr.sin_port = Sys::HostToNet(port);
+  addr.sin_addr.s_addr = Sys::hostToNet(INADDR_ANY);
+  addr.sin_port = Sys::hostToNet(port);
 
   struct sockaddr* addr_ptr = (struct sockaddr*)&addr;
 
-  if (Sys::Bind(ssock, addr_ptr, sizeof(addr)) < 0) {
-    throw std::system_error(Sys::GetError(),
+  if (Sys::bind(ssock, addr_ptr, sizeof(addr)) < 0) {
+    throw std::system_error(Sys::getError(),
                             std::generic_category(),
                             "could not bind socket");
   }
 
-  if (Sys::Listen(ssock, backlog)) {
-    throw std::system_error(Sys::GetError(),
+  if (Sys::listen(ssock, backlog)) {
+    throw std::system_error(Sys::getError(),
                             std::generic_category(),
                             "could not listen on socket");
   }
@@ -105,19 +109,19 @@ SocketType CreateServerSocket(int port, int backlog) {
  * @return An accepted connection
  */
 template <typename Sys = SysIFace>
-Connection AcceptConnection(SocketType server_socket) {
-  auto sa = std::make_unique<struct sockaddr>();
+Connection acceptConnection(SocketType server_socket) {
+  struct sockaddr sa;
   auto addrsize = sizeof(struct sockaddr_in);
-  SocketType sock = Sys::Accept(server_socket, sa.get(), (socklen_t*)&addrsize);
+  SocketType sock = Sys::accept(server_socket, &sa, (socklen_t*)&addrsize);
 
   if (sock < 0) {
-    throw std::system_error(Sys::GetError(),
+    throw std::system_error(Sys::getError(),
                             std::generic_category(),
                             "could not accept connection");
   }
 
-  const auto* p = (struct sockaddr_in*)sa.get();
-  std::string hostname = Sys::NetToAddr(p->sin_addr);
+  const auto* p = (struct sockaddr_in*)&sa;
+  std::string hostname = Sys::netToAddr(p->sin_addr);
 
   return {sock, hostname};
 }
@@ -129,35 +133,71 @@ Connection AcceptConnection(SocketType server_socket) {
  * @param port the port of the remote peer
  * @return A socket.
  */
-template <typename Sys = SysIFace>
-SocketType ConnectAsClient(const std::string& hostname, int port) {
+template <typename SYS = SysIFace>
+SocketType connectAsClient(const std::string& hostname, int port) {
   using namespace std::chrono_literals;
 
-  SocketType sock = Sys::Socket(AF_INET, SOCK_STREAM, 0);
+  SocketType sock = SYS::socket(AF_INET, SOCK_STREAM, 0);
 
   if (sock < 0) {
-    throw std::system_error(Sys::GetError(),
+    throw std::system_error(SYS::getError(),
                             std::generic_category(),
                             "could not acquire socket");
   }
 
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
-  addr.sin_port = Sys::HostToNet(port);
+  addr.sin_port = SYS::hostToNet(port);
 
-  int err = Sys::AddrToBin(AF_INET, hostname.c_str(), &(addr.sin_addr));
+  int err = SYS::addrToBin(AF_INET, hostname.c_str(), &(addr.sin_addr));
 
   if (err == 0) {
     throw std::runtime_error("invalid hostname");
   }
 
-  while (Sys::Connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-    std::this_thread::sleep_for(300ms);
+  if (SYS::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    throw std::system_error(SYS::getError(),
+                            std::generic_category(),
+                            "could not connect");
   }
 
   return sock;
 }
 
+template <typename SYS = SysIFace>
+void markSocketNonBlocking(SocketType socket) {
+  auto flags = SYS::fcntl(socket, F_GETFL, 0);
+  if (flags == -1) {
+    throw std::system_error(SYS::getError(),
+                            std::generic_category(),
+                            "could not read current flags of socket");
+  }
+
+  if (SYS::fcntl(socket, F_SETFL, flags | O_NONBLOCK) == -1) {
+    throw std::system_error(SYS::getError(),
+                            std::generic_category(),
+                            "could not set O_NONBLOCK on socket");
+  }
+}
+
+template <typename SYS = SysIFace>
+bool pollSocket(SocketType socket, short event) {
+  struct pollfd fds {
+    socket, POLLIN, 0
+  };
+
+  auto r = SYS::poll(&fds, 1, 0);
+
+  if (r < 0) {
+    throw std::system_error(SYS::getError(),
+                            std::generic_category(),
+                            "poll failed");
+  }
+
+  return r > 0 && fds.revents == event;
+}
+
+}  // namespace details
 }  // namespace scl::net
 
 #endif  // SCL_NET_TCP_UTILS_H

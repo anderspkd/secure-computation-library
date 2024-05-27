@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,7 @@
 
 #include <stdexcept>
 
-#include "scl/math/vec.h"
+#include "scl/math/vector.h"
 #include "scl/util/prg.h"
 
 namespace scl::ss {
@@ -36,15 +36,15 @@ namespace scl::ss {
  * \f$(x_1,x_2,\dots,x_n)\f$ of values such that \f$x=\sum_i x_i\f$.
  *
  * <p>An additive secret-sharing output by this function is a math::Vec object,
- * and so reconstructing the secret is simply <code>shares.Sum()</code>.
+ * and so reconstructing the secret is simply <code>shares.sum()</code>.
  */
 template <typename T>
-math::Vec<T> AdditiveShare(const T& secret, std::size_t n, util::PRG& prg) {
+math::Vector<T> additiveShare(const T& secret, std::size_t n, util::PRG& prg) {
   std::vector<T> shares;
   shares.reserve(n);
-  auto sum = T::Zero();
+  auto sum = T::zero();
   for (std::size_t i = 0; i < n - 1; ++i) {
-    const auto s = T::Random(prg);
+    const auto s = T::random(prg);
     shares.emplace_back(s);
     sum += s;
   }

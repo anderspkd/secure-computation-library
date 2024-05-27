@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "scl/math/fp.h"
 #include "scl/ss/additive.h"
@@ -25,17 +25,17 @@ using namespace scl;
 
 TEST_CASE("AdditiveSS", "[ss]") {
   using FF = math::Fp<61>;
-  auto prg = util::PRG::Create();
+  auto prg = util::PRG::create();
 
   auto secret = FF(12345);
 
-  auto shares = ss::AdditiveShare(secret, 10, prg);
-  REQUIRE(shares.Size() == 10);
-  REQUIRE(shares.Sum() == secret);
+  auto shares = ss::additiveShare(secret, 10, prg);
+  REQUIRE(shares.size() == 10);
+  REQUIRE(shares.sum() == secret);
 
   auto x = FF(55555);
-  auto shr_x = ss::AdditiveShare(x, 10, prg);
-  auto sum = shares.Add(shr_x);
+  auto shr_x = ss::additiveShare(x, 10, prg);
+  auto share_sum = shares.add(shr_x);
 
-  REQUIRE(sum.Sum() == secret + x);
+  REQUIRE(share_sum.sum() == secret + x);
 }

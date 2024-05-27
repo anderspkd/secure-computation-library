@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,39 +21,67 @@
 #include <any>
 #include <cstddef>
 #include <stdexcept>
+#include <utility>
 
 #include "scl/protocol/base.h"
 #include "scl/simulation/config.h"
-#include "scl/simulation/context.h"
+#include "scl/simulation/event.h"
+#include "scl/simulation/hook.h"
 
 namespace scl::sim {
 
 /**
  * @brief Manager for a simulation.
  *
- * The role of a Manager object is to describe the different parameters that
- * goes into simulation, such as how the network behaves, how to handle outputs
- * and for how many replications to run.
+ * A Manager manages certain aspects of a protocol simulation:
+ * <ul>
+ * <li>The number of replications in the simulation.
+ * <li>The protocol to simulate.
+ * <li>What to do with the protocol(s) output.
+ * <li>What network to use.
+ * <li>When to terminate protocol(s).
+ * <li>What to do when a protocol finishes.
+ * </ul>
+ *
+ * Manager only requires implementing the Manager::protocol function that is
+ * responsible for constructing the protocols to be simulated. Everything else
+ * has sensible defaults.
+ *
+ * <h3>The Manager::protocol function</h3>
+ *
+ * This is one of two required function and specifies which protocol to
+ * simulate. The return value is an STL vector of proto::Protocol objects to
+ * simulate. The length of this vector is assumed by the simulator to define the
+ * number of parties present in the protocol. The vector is allowed to contain
+ * <code>nullptr</code> values. (These will simply correspond to parties that
+ * are not running any code.)
+ *
+ * <h3>Handling simulation outputs</h3>
+ *
+ * The other of the required functions. Each run of the simulator produces a
+ * list of traces (one per party). The Manager::handleSimulatorOutput function
+ * decides what to do with said traces.
+ *
+ * <h3>Hooks</h3>
+ *
+ * Manager::addHook makes it possible to specify "hooks" that the simulator will
+ * run before and after a protocols' proto::Protocol::run function is
+ * called. Each hook is called with the ID of the protocol, corresponding to the
+ * protocol's index in the vector that Manager::protocol returned, as well as a
+ * "read-only" view of the simulators context.
+ *
+ * <h3>Handling protocol outputs</h3>
+ *
+ * Any output produced by a protocol will be passed to Manager::handleOutput,
+ * and customizing this function therefore allows us to e.g., check correctness
+ * of a protocol.
  */
 class Manager {
  public:
   /**
-   * @brief Construct a new manager.
-   * @param replications the number of replications to simulate.
-   */
-  Manager(std::size_t replications) : m_replications(replications) {}
-
-  /**
    * @brief Destructor.
    */
   virtual ~Manager() {}
-
-  /**
-   * @brief Get the number of replications.
-   */
-  std::size_t Replications() const {
-    return m_replications;
-  }
 
   /**
    * @brief Return a fresh instance of the protocol to simulate.
@@ -64,20 +92,25 @@ class Manager {
    * important that objects returned by this function are independent of objects
    * previously returned by calling this function.
    */
-  virtual std::vector<std::unique_ptr<proto::Protocol>> Protocol() = 0;
+  virtual std::vector<std::unique_ptr<proto::Protocol>> protocol() = 0;
+
+  /**
+   * @brief Handle the output of a simulation.
+   * @param party_id the ID of the party that ran in the simulation.
+   * @param trace the simulation trace produced by the simulator.
+   */
+  virtual void handleSimulatorOutput(std::size_t party_id,
+                                     const SimulationTrace& trace) = 0;
 
   /**
    * @brief Handle the output produced by some party.
-   * @param replication the replication that the output was produced in.
    * @param party_id the ID of the party who produced the output.
    * @param output the output.
    *
    * The default implementation simply discards the output.
    */
-  virtual void HandleOutput(std::size_t replication,
-                            std::size_t party_id,
-                            const std::any& output) {
-    (void)replication;
+  virtual void handleProtocolOutput(std::size_t party_id,
+                                    const std::any& output) {
     (void)party_id;
     (void)output;
   }
@@ -87,61 +120,87 @@ class Manager {
    *
    * The default is to return a SimpleNetworkConfig instance.
    */
-  virtual std::shared_ptr<NetworkConfig> NetworkConfiguration() {
-    return std::make_shared<SimpleNetworkConfig>();
+  virtual std::unique_ptr<NetworkConfig> networkConfiguration() const {
+    return std::make_unique<SimpleNetworkConfig>();
   }
 
   /**
-   * @brief Decide whether to terminate a party.
-   * @param party_id the ID of the party.
-   * @param view a view of the simulation context.
+   * @brief Add a new hook.
+   * @tparam HOOK the hook.
+   * @tparam HOOK_ARGS argument pack for the arguments passed to the hook.
+   * @param trigger the event type to trigger the hook on.
+   * @param args arguments to pass to the constructor of the hook.
    *
-   * <p>Under normal circumstances, a party is terminated when its Run function
-   * returns <code>nullptr</code>. This function can be used to terminate a
-   * party prematurely, e.g., after it has been running for a certain amount of
-   * time.
-   *
-   * <p>The default implementation never terminates parties prematurely.
+   * Use this function to add <code>sim::Hook</code>s to the simulation. The
+   * hook to add is specified by the \p HOOK template argument, and the hook is
+   * constructed by the addHook function in a manner similar to how
+   * std::make_unique works. The added hook will be run every time an event of
+   * type \p trigger is generated.
    */
-  virtual bool Terminate(std::size_t party_id, const Context::View& view) {
-    (void)party_id;
-    (void)view;
-    return false;
+  template <typename HOOK, typename... HOOK_ARGS>
+  void addHook(EventType trigger, HOOK_ARGS&&... args) {
+    static_assert(std::is_base_of_v<Hook, HOOK>);
+    m_hooks.emplace_back(TriggerAndHook{
+        trigger,
+        std::make_unique<HOOK>(std::forward<HOOK_ARGS>(args)...)});
+  }
+
+  /**
+   * @brief Add a new hook.
+   * @tparam HOOK the hook.
+   * @tparam HOOK_ARGS argument pack for the arguments passed to the hook.
+   * @param args arguments to pass to the constructor of the hook.
+   *
+   * Use this function to add <code>sim::Hook</code>s to the simulation. The
+   * hook to add is specified by the \p HOOK template argument, and the hook is
+   * constructed by the addHook function in a manner similar to how
+   * std::make_unique works. The added hook will be run for all events.
+   */
+  template <typename HOOK, typename... HOOK_ARGS>
+  void addHook(HOOK_ARGS&&... args) {
+    static_assert(std::is_base_of_v<Hook, HOOK>);
+    m_hooks.emplace_back(TriggerAndHook{
+        {},
+        std::make_unique<HOOK>(std::forward<HOOK_ARGS>(args)...)});
   }
 
  private:
-  std::size_t m_replications;
+  friend void simulate(std::unique_ptr<sim::Manager> manager);
+  std::vector<TriggerAndHook> m_hooks;
 };
 
 /**
- * @brief A simple simulation manager which allows running a protocol once.
+ * @brief Manager that outputs traces to a stream.
+ *
+ * Writes simulation traces to a provided stream as a json object of the form:
+ *
+ * @code
+ * {
+ *   "replication": <replication>,
+ *   "party_id": <party_id>,
+ *   "trace": <trace>
+ * }
+ * @endcode
  */
-class SingleReplicationManager final : public Manager {
+class ManagerWithOutputToStream : public Manager {
  public:
   /**
-   * @brief Construct a new SingleReplicationManager.
-   * @param protocol the protocol to run
+   * @brief Create a new ManagerWithOutputToStream.
+   * @param stream the stream to write the output to.
    */
-  SingleReplicationManager(
-      std::vector<std::unique_ptr<proto::Protocol>> protocol)
-      : Manager(1), m_protocol(std::move(protocol)), m_used(false) {}
+  ManagerWithOutputToStream(std::ostream& stream) : m_stream(stream) {}
 
-  /**
-   * @brief Get the protocol to simulate.
-   * @throws std::logic_error if this function is called more than once.
-   */
-  std::vector<std::unique_ptr<proto::Protocol>> Protocol() {
-    if (m_used) {
-      throw std::logic_error(
-          "Protocol called twice on SingleReplicationManager");
-    }
-    m_used = true;
-    return std::move(m_protocol);
+  void handleSimulatorOutput(std::size_t party_id,
+                             const SimulationTrace& trace) override {
+    m_stream << "{";
+    m_stream << "\"party_id\":" << party_id << ",";
+    m_stream << "\"trace\":";
+    writeTrace(m_stream, trace);
+    m_stream << "}" << std::endl;
   }
 
  private:
-  std::vector<std::unique_ptr<proto::Protocol>> m_protocol;
-  bool m_used;
+  std::ostream& m_stream;
 };
 
 }  // namespace scl::sim

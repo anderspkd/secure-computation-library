@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@
 #define SCL_UTIL_TIME_H
 
 #include <chrono>
+#include <ratio>
 
 namespace scl::util {
 
@@ -39,10 +40,18 @@ struct Time {
   /**
    * @brief Get the current time as a TimePoint.
    */
-  static TimePoint Now() {
+  static TimePoint now() {
     return std::chrono::steady_clock::now();
   };
 };
+
+/**
+ * @brief Convert a timestamp to milliseconds.
+ */
+inline long double timeToMillis(Time::Duration time) {
+  using namespace std::chrono;
+  return duration<long double, std::milli>(time).count();
+}
 
 }  // namespace scl::util
 

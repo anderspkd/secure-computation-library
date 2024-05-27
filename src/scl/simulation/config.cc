@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,7 @@
 
 using namespace scl;
 
-void sim::ChannelConfig::Builder::Validate() const {
+void sim::ChannelConfig::Builder::validate() const {
   if (m_bandwidth.has_value()) {
     if (m_bandwidth.value() == 0) {
       throw std::invalid_argument("bandwidth cannot be 0");
@@ -52,14 +52,14 @@ void sim::ChannelConfig::Builder::Validate() const {
 }
 
 std::ostream& sim::operator<<(std::ostream& os, const ChannelConfig& config) {
-  if (config.Type() == sim::ChannelConfig::NetworkType::TCP) {
+  if (config.type() == sim::ChannelConfig::NetworkType::TCP) {
     os << "SimulationConfig{";
     os << "Type: TCP, ";
-    os << "Bandwidth: " << config.Bandwidth() << " bits/s, ";
+    os << "Bandwidth: " << config.bandwidth() << " bits/s, ";
     os << "RTT: " << config.RTT() << " ms, ";
     os << "MSS: " << config.MSS() << " bytes, ";
-    os << "PackageLoss: " << 100 * config.PackageLoss() << "%, ";
-    os << "WindowSize: " << config.WindowSize() << " bytes}";
+    os << "PackageLoss: " << 100 * config.packetLoss() << "%, ";
+    os << "WindowSize: " << config.windowSize() << " bytes}";
   } else {
     os << "SimulationConfig{INSTANT}";
   }
@@ -67,10 +67,10 @@ std::ostream& sim::operator<<(std::ostream& os, const ChannelConfig& config) {
   return os;
 }
 
-sim::ChannelConfig sim::ChannelConfig::Default() {
-  return ChannelConfig::Builder{}.Build();
+sim::ChannelConfig sim::ChannelConfig::defaultConfig() {
+  return ChannelConfig::Builder{}.build();
 }
 
-sim::ChannelConfig sim::ChannelConfig::Loopback() {
-  return ChannelConfig::Builder{}.Type(NetworkType::INSTANT).Build();
+sim::ChannelConfig sim::ChannelConfig::loopback() {
+  return ChannelConfig::Builder{}.type(NetworkType::INSTANT).build();
 }

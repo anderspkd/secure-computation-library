@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,12 +21,13 @@
 #include <cerrno>
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-namespace scl::net {
+namespace scl::net::details {
 
 /**
  * @brief System call wrapper.
@@ -38,21 +39,28 @@ struct SysIFace {
   /**
    * @brief See man 3 errno.
    */
-  static auto GetError() {
+  static auto getError() {
     return errno;
   }
 
   /**
    * @brief See man 2 socket.
    */
-  static auto Socket(int domain, int type, int protocol) {
+  static auto socket(int domain, int type, int protocol) {
     return ::socket(domain, type, protocol);
+  }
+
+  /**
+   * @brief See man 2 fcntl.
+   */
+  static auto fcntl(int fd, int cmd, int flags) {
+    return ::fcntl(fd, cmd, flags);
   }
 
   /**
    * @brief See man 2 setsockopt.
    */
-  static auto SetSockOpt(int sockfd,
+  static auto setSockOpt(int sockfd,
                          int level,
                          int optname,
                          const void* optval,
@@ -63,49 +71,49 @@ struct SysIFace {
   /**
    * @brief See man htons.
    */
-  static auto HostToNet(short hostshort) {
+  static auto hostToNet(short hostshort) {
     return ::htons(hostshort);
   }
 
   /**
    * @brief See man 2 bind.
    */
-  static auto Bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
+  static auto bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
     return ::bind(sockfd, addr, addrlen);
   }
 
   /**
    * @brief See man 2 listen.
    */
-  static auto Listen(int sockfd, int backlog) {
+  static auto listen(int sockfd, int backlog) {
     return ::listen(sockfd, backlog);
   }
 
   /**
    * @brief See man 2 accept.
    */
-  static auto Accept(int sockfd, struct sockaddr* addr, socklen_t* addrlen) {
+  static auto accept(int sockfd, struct sockaddr* addr, socklen_t* addrlen) {
     return ::accept(sockfd, addr, addrlen);
   }
 
   /**
    * @brief See man 3 inet_pton.
    */
-  static auto AddrToBin(int af, const char* src, void* dst) {
+  static auto addrToBin(int af, const char* src, void* dst) {
     return ::inet_pton(af, src, dst);
   }
 
   /**
    * @brief See man 3 inet_ntoa.
    */
-  static auto NetToAddr(struct in_addr inp) {
+  static auto netToAddr(struct in_addr inp) {
     return ::inet_ntoa(inp);
   }
 
   /**
    * @brief See man 2 connect.
    */
-  static auto Connect(int sockfd,
+  static auto connect(int sockfd,
                       const struct sockaddr* addr,
                       socklen_t addrlen) {
     return ::connect(sockfd, addr, addrlen);
@@ -114,32 +122,32 @@ struct SysIFace {
   /**
    * @brief See man 2 poll.
    */
-  static auto Poll(struct pollfd* fds, nfds_t nfds, int timeout) {
+  static auto poll(struct pollfd* fds, nfds_t nfds, int timeout) {
     return ::poll(fds, nfds, timeout);
   }
 
   /**
    * @brief See man 2 close.
    */
-  static auto Close(int fd) {
+  static auto close(int fd) {
     return ::close(fd);
   }
 
   /**
    * @brief See man 2 read.
    */
-  static auto Read(int fd, void* buf, size_t count) {
+  static auto read(int fd, void* buf, size_t count) {
     return ::read(fd, buf, count);
   }
 
   /**
    * @brief See man 2 write.
    */
-  static auto Write(int fd, const void* buf, size_t count) {
+  static auto write(int fd, const void* buf, size_t count) {
     return ::write(fd, buf, count);
   }
 };
 
-}  // namespace scl::net
+}  // namespace scl::net::details
 
 #endif  // SCL_NET_SYS_IFACE_H

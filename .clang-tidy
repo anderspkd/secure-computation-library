@@ -1,4 +1,4 @@
-Checks: '-*,bugprone-*,performance-*,readability-*,google-global-names-in-headers,cert-dcl59-cpp,-bugprone-easily-swappable-parameters,-readability-identifier-length,-readability-magic-numbers,-readability-function-cognitive-complexity,-readability-function-size'
+Checks: '-*,bugprone-*,performance-*,readability-*,google-global-names-in-headers,cert-dcl59-cpp,-bugprone-easily-swappable-parameters,-readability-identifier-length,-readability-magic-numbers,-readability-function-cognitive-complexity,-readability-function-size,-readability-convert-member-functions-to-static'
 
 CheckOptions:
 - key: performance-unnecessary-value-param.AllowedTypes
@@ -21,6 +21,9 @@ CheckOptions:
 #
 # readability-magic-numbers:
 #   Too strict.
+#
+# readability-convert-member-functions-to-static
+#   Too many false positives.
 #
 # readability-function-cognitive-complexity
 #   Catch2.

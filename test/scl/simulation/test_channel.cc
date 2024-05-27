@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,186 +15,74 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <memory>
 
+#include "scl/coro/runtime.h"
+#include "scl/net/loopback.h"
+#include "scl/net/packet.h"
 #include "scl/simulation/channel.h"
 #include "scl/simulation/config.h"
 #include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
-#include "scl/simulation/mem_channel_buffer.h"
-#include "scl/simulation/simulator.h"
+#include "scl/simulation/runtime.h"
 
 using namespace scl;
+using namespace std::chrono_literals;
 
 namespace {
 
-struct InstantNetworkConfig final : sim::NetworkConfig {
-  sim::ChannelConfig Get(sim::ChannelId channel_id) override {
-    (void)channel_id;
-    return sim::ChannelConfig::Loopback();
-  }
-};
-
-auto StartEvent(util::Time::Duration ts) {
-  return std::make_shared<sim::Event>(sim::Event::Type::START, ts);
+std::array<sim::details::SimulatedChannel, 2> createChannels(
+    sim::details::GlobalContext& gctx) {
+  auto transport = std::make_shared<sim::details::Transport>();
+  sim::details::SimulatedChannel channel01({0, 1}, gctx.view(0), transport);
+  sim::details::SimulatedChannel channel10({1, 0}, gctx.view(1), transport);
+  return {channel01, channel10};
 }
 
-auto StopEvent(util::Time::Duration ts) {
-  return std::make_shared<sim::Event>(sim::Event::Type::STOP, ts);
+std::size_t getChannelDataEventAmount(std::shared_ptr<sim::Event> event_ptr) {
+  return std::dynamic_pointer_cast<sim::ChannelDataEvent>(event_ptr)->amount;
 }
 
 }  // namespace
 
-TEST_CASE("Channel recv packet blocking", "[sim]") {
-  auto cfg = std::make_shared<InstantNetworkConfig>();
-  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(2, cfg);
-  auto chl0 = sim::Channel({0, 1}, ctx);
-  auto chl1 = sim::Channel({1, 0}, ctx);
+TEST_CASE("SimulatedChannel send/recv", "[sim]") {
+  auto gctx = sim::details::GlobalContext::create(
+      2,
+      std::make_unique<sim::SimpleNetworkConfig>(),
+      {});
+  auto channels = createChannels(gctx);
+
+  gctx.view(0).recordEvent(sim::Event::start());
+  gctx.view(1).recordEvent(sim::Event::start());
+
+  auto rt = sim::details::SimulatorRuntime(gctx);
 
   net::Packet p;
-  p << 123;
-  ctx->AddEvent(0, StartEvent(util::Time::Duration::zero()));
-  chl0.Send(p);
-  const auto t0 = ctx->Trace(0);
-  REQUIRE(t0.size() == 2);
-  REQUIRE(t0[0]->EventType() == sim::Event::Type::START);
-  REQUIRE(t0[1]->EventType() == sim::Event::Type::PACKET_SEND);
+  p << 1 << 2 << 3;
 
-  ctx->AddEvent(1, StartEvent(util::Time::Duration::zero()));
-  chl1.Recv();
+  const std::size_t expected_size =
+      sizeof(net::Packet::SizeType) + 3 * sizeof(int);
 
-  const auto t1 = ctx->Trace(1);
-  REQUIRE(t1.size() == 2);
-  REQUIRE(t1[0]->EventType() == sim::Event::Type::START);
-  REQUIRE(t1[1]->EventType() == sim::Event::Type::PACKET_RECV);
-}
+  gctx.view(0).startClock();
+  rt.run(channels[0].send(std::move(p)));
+  REQUIRE(gctx.traces[0].size() == 2);
+  REQUIRE(gctx.traces[0].back()->type == sim::EventType::SEND);
+  REQUIRE(getChannelDataEventAmount(gctx.traces[0].back()) == expected_size);
 
-TEST_CASE("Channel recv packet non-blocking", "[sim]") {
-  auto cfg = std::make_shared<InstantNetworkConfig>();
-  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(2, cfg);
-  auto chl0 = sim::Channel({0, 1}, ctx);
-  auto chl1 = sim::Channel({1, 0}, ctx);
+  REQUIRE(gctx.sends[{0, 1}].size() == 1);
+  auto send_ts = gctx.sends[{0, 1}].front();
+  REQUIRE(gctx.traces[0].back()->timestamp == send_ts);
 
-  net::Packet p;
-  p << 123;
-  ctx->AddEvent(0, StartEvent(util::Time::Duration(1000)));
-  chl0.Send(p);
+  gctx.view(1).startClock();
+  auto pr = rt.run(channels[1].recv());
+  REQUIRE(pr.read<int>() == 1);
+  REQUIRE(pr.read<int>() == 2);
+  REQUIRE(pr.read<int>() == 3);
 
-  ctx->AddEvent(1, StartEvent(util::Time::Duration::zero()));
-  auto pkt = chl1.Recv(false);
+  REQUIRE(gctx.traces[1].size() == 2);
+  REQUIRE(gctx.traces[1].back()->type == sim::EventType::RECV);
+  REQUIRE(getChannelDataEventAmount(gctx.traces[1].back()) == expected_size);
 
-  REQUIRE_FALSE(pkt.has_value());
-  auto t0 = ctx->Trace(1);
-  REQUIRE(t0.size() == 2);
-  REQUIRE(t0[0]->EventType() == sim::Event::Type::START);
-  REQUIRE(t0[1]->EventType() == sim::Event::Type::PACKET_RECV);
-
-  ctx->AddEvent(1, StartEvent(ctx->LatestTimestamp(0)));
-  auto pkt0 = chl1.Recv(false);
-
-  REQUIRE(pkt0.has_value());
-  t0 = ctx->Trace(1);
-  REQUIRE(t0.size() == 4);
-  REQUIRE(t0[2]->EventType() == sim::Event::Type::START);
-  REQUIRE(t0[3]->EventType() == sim::Event::Type::PACKET_RECV);
-}
-
-TEST_CASE("Channel recv chunked", "[sim]") {
-  auto cfg = std::make_shared<InstantNetworkConfig>();
-  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(2, cfg);
-  auto chl0 = sim::Channel({0, 1}, ctx);
-  auto chl1 = sim::Channel({1, 0}, ctx);
-
-  unsigned char data[] = {1, 2, 3, 4};
-  ctx->AddEvent(0, StartEvent(util::Time::Duration::zero()));
-  chl0.Send(data, 4);
-
-  ctx->AddEvent(1, StartEvent(util::Time::Duration::zero()));
-  unsigned char recv[4] = {0};
-
-  REQUIRE(ctx->HasWrite({0, 1}));
-  REQUIRE(ctx->NextWrite({0, 1}).amount == 4);
-  chl1.Recv(recv, 2);
-
-  REQUIRE(ctx->NextWrite({0, 1}).amount == 2);
-  chl1.Recv(recv + 2, 2);
-  REQUIRE_FALSE(ctx->HasWrite({0, 1}));
-
-  REQUIRE(data[0] == recv[0]);
-  REQUIRE(data[1] == recv[1]);
-  REQUIRE(data[2] == recv[2]);
-  REQUIRE(data[3] == recv[3]);
-}
-
-TEST_CASE("Channel HasData no data, but not far ahead", "[sim]") {
-  auto cfg = std::make_shared<InstantNetworkConfig>();
-  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(2, cfg);
-
-  sim::Channel p0({0, 1}, ctx);
-  sim::Channel p1({1, 0}, ctx);
-
-  // P1 at time 100000, P0 at time 0. So we can say for sure that P1 does not
-  // have data for P0.
-
-  ctx->AddEvent(1, StartEvent(util::Time::Duration(100000)));
-  ctx->AddEvent(0, StartEvent(util::Time::Duration::zero()));
-
-  ctx->UpdateCheckpoint();
-  auto hd = p0.HasData();
-  REQUIRE_FALSE(hd);
-}
-
-TEST_CASE("Channel HasData no data, other party terminated", "[sim]") {
-  auto cfg = std::make_shared<InstantNetworkConfig>();
-  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(2, cfg);
-
-  sim::Channel p0({0, 1}, ctx);
-  sim::Channel p1({1, 0}, ctx);
-
-  ctx->AddEvent(1, StopEvent(util::Time::Duration::zero()));
-  ctx->AddEvent(0, StartEvent(util::Time::Duration::zero()));
-
-  ctx->UpdateCheckpoint();
-  auto hd = p0.HasData();
-  REQUIRE_FALSE(hd);
-}
-
-TEST_CASE("Channel HasData no data, fails", "[sim]") {
-  auto cfg = std::make_shared<InstantNetworkConfig>();
-  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(3, cfg);
-
-  sim::Channel p0({0, 1}, ctx);
-  sim::Channel p1({1, 0}, ctx);
-
-  // P1 at time 100000, P0 at time 0. So we can say for sure that P1 does not
-  // have data for P0.
-
-  ctx->AddEvent(1, StartEvent(util::Time::Duration::zero()));
-  ctx->AddEvent(0, StartEvent(util::Time::Duration::zero()));
-
-  ctx->UpdateCheckpoint();
-  REQUIRE_THROWS_MATCHES(p0.HasData(),
-                         sim::SimulationFailure,
-                         Catch::Matchers::Message("no data, and we're ahead"));
-  auto next = ctx->NextToRun(0);
-  REQUIRE(next.value_or(-1) == 1);
-}
-
-TEST_CASE("Channel HasData other party not started", "[sim]") {
-  auto cfg = std::make_shared<InstantNetworkConfig>();
-  auto ctx = sim::Context::Create<sim::MemoryBackedChannelBuffer>(3, cfg);
-
-  sim::Channel p0({0, 1}, ctx);
-  sim::Channel p1({1, 0}, ctx);
-
-  ctx->AddEvent(0, StartEvent(util::Time::Duration::zero()));
-
-  ctx->UpdateCheckpoint();
-  REQUIRE_THROWS_MATCHES(
-      p0.HasData(),
-      sim::SimulationFailure,
-      Catch::Matchers::Message("other party hasnt started yet"));
-  auto next = ctx->NextToRun(0);
-  REQUIRE(next.value_or(-1) == 1);
+  REQUIRE(gctx.sends[{0, 1}].empty());
 }

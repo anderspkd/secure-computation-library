@@ -17,7 +17,9 @@ INPUT                  = doc/mainpage.md \
                          include/scl/net \
                          include/scl/simulation \
                          include/scl/protocol \
+                         include/scl/coro \
                          include/scl/serialization
+
 FILE_PATTERNS          = *.h
 EXCLUDE_SYMBOLS        = SCL_*
 
@@ -34,7 +36,6 @@ USE_MDFILE_AS_MAINPAGE = doc/mainpage.md
 HTML_EXTRA_STYLESHEET  = doc/styling.css
 
 GENERATE_TREEVIEW      = YES
-CLASS_DIAGRAMS         = NO
 
 USE_MATHJAX            = YES
 

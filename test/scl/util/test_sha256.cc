@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
 #include "scl/math/curves/secp256k1.h"
@@ -32,7 +32,7 @@ TEST_CASE("Sha256 empty hash", "[misc]") {
       0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55};
 
   util::Sha256 hash;
-  auto digest = hash.Finalize();
+  auto digest = hash.finalize();
   REQUIRE(digest.size() == 32);
   REQUIRE(digest == SHA256_empty);
 }
@@ -44,15 +44,15 @@ TEST_CASE("Sha256 abc hash", "[misc]") {
       0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad};
 
   util::Sha256 hash;
-  hash.Update({'a', 'b', 'c'});
-  auto digest = hash.Finalize();
+  hash.update({'a', 'b', 'c'});
+  auto digest = hash.finalize();
   REQUIRE(digest.size() == 32);
   REQUIRE(digest == SHA256_abc);
 
   util::Sha256 hash_;
-  hash_.Update({'a', 'b'});
-  hash_.Update({'c'});
-  auto digest_ = hash_.Finalize();
+  hash_.update({'a', 'b'});
+  hash_.update({'c'});
+  auto digest_ = hash_.finalize();
   REQUIRE(digest_.size() == 32);
   REQUIRE(digest_ == SHA256_abc);
 }
@@ -65,27 +65,25 @@ TEST_CASE("Sha256 hash almost complete chunk", "[misc]") {
 
   const unsigned char data[57] = {0};
   util::Sha256 hash;
-  hash.Update(data, 57);
-  REQUIRE(hash.Finalize() == digest);
+  hash.update(data, 57);
+  REQUIRE(hash.finalize() == digest);
 }
-
-#ifdef SCL_ENABLE_EC_TESTS
 
 TEST_CASE("Sha256 bouncycastle reference", "[misc]") {
   // Reference test showing that serialization + hashing is the same as
   // bouncycastle in Java.
 
-  using Curve = math::EC<math::Secp256k1>;
-  auto pk = Curve::Generator() * math::Number::FromString("a");
+  using Curve = math::EC<math::ec::Secp256k1>;
+  auto pk = Curve::generator() * math::Number::fromString("a");
 
-  const auto n = Curve::ByteSize(false);
+  const auto n = Curve::byteSize(false);
   unsigned char buf[n] = {0};
-  pk.Write(buf, false);
+  pk.write(buf, false);
 
   util::Sha256 hash;
-  hash.Update(buf, n);
+  hash.update(buf, n);
 
-  auto d = hash.Finalize();
+  auto d = hash.finalize();
 
   std::array<unsigned char, 32> target = {
       0xde, 0xc1, 0x6a, 0xc2, 0x78, 0x99, 0xeb, 0xdf, 0x76, 0x0e, 0xaf,
@@ -94,5 +92,3 @@ TEST_CASE("Sha256 bouncycastle reference", "[misc]") {
 
   REQUIRE(d == target);
 }
-
-#endif

@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,154 +20,285 @@
 #include <chrono>
 #include <ios>
 
+#include "scl/simulation/channel_id.h"
+#include "scl/util/time.h"
+
 using namespace scl;
+
+std::shared_ptr<sim::Event> sim::Event::start() {
+  return std::make_shared<Event>(EventType::START,
+                                 util::Time::Duration::zero());
+}
+
+std::shared_ptr<sim::Event> sim::Event::stop(util::Time::Duration timestamp) {
+  return std::make_shared<Event>(EventType::STOP, timestamp);
+}
+
+std::shared_ptr<sim::Event> sim::Event::killed(util::Time::Duration timestamp,
+                                               const std::string& reason) {
+  return std::make_shared<KillEvent>(timestamp, reason);
+}
+
+std::shared_ptr<sim::Event> sim::Event::cancelled(
+    util::Time::Duration timestamp) {
+  return std::make_shared<Event>(EventType::CANCELLED, timestamp);
+}
+
+std::shared_ptr<sim::Event> sim::Event::closeChannel(
+    util::Time::Duration timestamp,
+    sim::ChannelId channel_id) {
+  return std::make_shared<ChannelEvent>(EventType::CLOSE,
+                                        timestamp,
+                                        channel_id);
+}
+
+std::shared_ptr<sim::Event> sim::Event::sendData(util::Time::Duration timestamp,
+                                                 sim::ChannelId channel_id,
+                                                 std::size_t amount) {
+  return std::make_shared<ChannelDataEvent>(EventType::SEND,
+                                            timestamp,
+                                            channel_id,
+                                            amount);
+}
+
+std::shared_ptr<sim::Event> sim::Event::recvData(util::Time::Duration timestamp,
+                                                 sim::ChannelId channel_id,
+                                                 std::size_t amount) {
+  return std::make_shared<ChannelDataEvent>(EventType::RECV,
+                                            timestamp,
+                                            channel_id,
+                                            amount);
+}
+
+std::shared_ptr<sim::Event> sim::Event::hasData(util::Time::Duration timestamp,
+                                                sim::ChannelId channel_id) {
+  return std::make_shared<ChannelEvent>(EventType::HAS_DATA,
+                                        timestamp,
+                                        channel_id);
+}
+
+std::shared_ptr<sim::Event> sim::Event::sleep(
+    util::Time::Duration timestamp,
+    util::Time::Duration sleep_duration) {
+  return std::make_shared<SleepEvent>(EventType::SLEEP,
+                                      timestamp,
+                                      sleep_duration);
+}
+
+std::shared_ptr<sim::Event> sim::Event::output(util::Time::Duration timestamp) {
+  return std::make_shared<Event>(EventType::OUTPUT, timestamp);
+}
+
+std::shared_ptr<sim::Event> sim::Event::protocolBegin(
+    util::Time::Duration timestamp,
+    const std::string& protocol_name) {
+  return std::make_shared<ProtocolEvent>(EventType::PROTOCOL_BEGIN,
+                                         timestamp,
+                                         protocol_name);
+}
+
+std::shared_ptr<sim::Event> sim::Event::protocolEnd(
+    util::Time::Duration timestamp,
+    const std::string& protocol_name) {
+  return std::make_shared<ProtocolEvent>(EventType::PROTOCOL_END,
+                                         timestamp,
+                                         protocol_name);
+}
 
 namespace {
 
-auto EventTypeToString(sim::Event::Type type) {
-  if (type == sim::Event::Type::START) {
-    return "START";
-  }
-
-  if (type == sim::Event::Type::STOP) {
-    return "STOP";
-  }
-
-  if (type == sim::Event::Type::SEND) {
-    return "SEND";
-  }
-
-  if (type == sim::Event::Type::RECV) {
-    return "RECV";
-  }
-
-  if (type == sim::Event::Type::HAS_DATA) {
-    return "HAS_DATA";
-  }
-
-  if (type == sim::Event::Type::OUTPUT) {
-    return "OUTPUT";
-  }
-
-  if (type == sim::Event::Type::SLEEP) {
-    return "SLEEP";
-  }
-
-  if (type == sim::Event::Type::SEGMENT_BEGIN) {
-    return "SEGMENT_BEGIN";
-  }
-
-  if (type == sim::Event::Type::SEGMENT_END) {
-    return "SEGMENT_END";
-  }
-
-  if (type == sim::Event::Type::CHECKPOINT) {
-    return "CHECKPOINT";
-  }
-
-  if (type == sim::Event::Type::PACKET_SEND) {
-    return "PACKET_SEND";
-  }
-
-  if (type == sim::Event::Type::PACKET_RECV) {
-    return "PACKET_RECV";
-  }
-
-  if (type == sim::Event::Type::KILLED) {
-    return "KILLED";
-  }
-
-  // if (type == Measurement::Type::CLOSE)
-  return "CLOSE";
-}
-
-void WriteClose(std::ostream& os, const sim::NetworkEvent* m) {
-  os << " [Local=" << m->LocalParty() << ", Remote=" << m->RemoteParty() << "]";
-}
-
-void WriteSend(std::ostream& os, const sim::NetworkDataEvent* m) {
-  os << " ["
-     << "Sender=" << m->LocalParty() << ", Receiver=" << m->RemoteParty()
-     << ", Amount=" << m->DataAmount() << "]";
-}
-
-void WriteRecv(std::ostream& os, const sim::NetworkDataEvent* m) {
-  os << " ["
-     << "Receiver=" << m->LocalParty() << ", Sender=" << m->RemoteParty()
-     << ", Amount=" << m->DataAmount() << "]";
-}
-
-void WritePacketRecv(std::ostream& os, const sim::PacketRecvEvent* m) {
-  os << " ["
-     << "Receiver=" << m->LocalParty() << ", Sender=" << m->RemoteParty()
-     << ", Amount=" << m->DataAmount() << ", Blocking=" << std::boolalpha
-     << m->Blocking() << "]";
-}
-
-void WriteSegment(std::ostream& os, const sim::SegmentEvent* m) {
-  const auto name = m->Name();
-  if (name.empty()) {
-    os << " [Unnamed segment]";
-  } else {
-    os << " [Name=" << name << "]";
+std::string eventTypeToString(sim::EventType type) {
+  switch (type) {
+    case sim::EventType::START:
+      return "START";
+      break;
+    case sim::EventType::STOP:
+      return "STOP";
+      break;
+    case sim::EventType::SEND:
+      return "SEND";
+      break;
+    case sim::EventType::RECV:
+      return "RECV";
+      break;
+    case sim::EventType::HAS_DATA:
+      return "HAS_DATA";
+      break;
+    case sim::EventType::OUTPUT:
+      return "OUTPUT";
+      break;
+    case sim::EventType::SLEEP:
+      return "SLEEP";
+      break;
+    case sim::EventType::PROTOCOL_BEGIN:
+      return "PROTOCOL_BEGIN";
+      break;
+    case sim::EventType::PROTOCOL_END:
+      return "PROTOCOL_END";
+      break;
+    case sim::EventType::KILLED:
+      return "KILLED";
+      break;
+    case sim::EventType::CANCELLED:
+      return "CANCELLED";
+      break;
+      // case sim::EventType::CLOSE:
+    default:
+      return "CLOSE";
   }
 }
 
-void WriteHasData(std::ostream& os, const sim::HasDataEvent* m) {
-  os << " [Local=" << m->LocalParty() << ", Remote=" << m->RemoteParty()
-     << ", DataAvailable=" << std::boolalpha << m->HadData() << "]";
+void writeObj(std::ostream& stream, const std::string& string) {
+  stream << "\"" << string << "\"";
 }
 
-void WriteCheckpoint(std::ostream& os, const sim::CheckpointEvent* m) {
-  os << " [" << m->Id() << "]";
+void writeKey(std::ostream& stream, const std::string& name) {
+  writeObj(stream, name);
+  stream << ":";
+}
+
+void writeObj(std::ostream& stream, const std::size_t& val) {
+  stream << val;
+}
+
+void writeObj(std::ostream& stream, const long double& val) {
+  stream << val;
+}
+
+void writeObj(std::ostream& stream, const util::Time::Duration& d) {
+  auto t = std::chrono::duration<long double, std::milli>(d).count();
+  writeObj(stream, t);
+}
+
+void writeObj(std::ostream& stream, const sim::ChannelId& id) {
+  stream << "{";
+
+  writeKey(stream, "local");
+  writeObj(stream, id.local);
+
+  stream << ",";
+
+  writeKey(stream, "remote");
+  writeObj(stream, id.remote);
+
+  stream << "}";
+}
+
+void writeEvent(std::ostream& stream, const sim::ChannelEvent* event) {
+  stream << "{";
+
+  writeKey(stream, "channel_id");
+  writeObj(stream, event->channel_id);
+
+  stream << "}";
+}
+
+void writeEvent(std::ostream& stream, const sim::ChannelDataEvent* event) {
+  stream << "{";
+
+  writeKey(stream, "channel_id");
+  writeObj(stream, event->channel_id);
+
+  stream << ",";
+
+  writeKey(stream, "amount");
+  writeObj(stream, event->amount);
+
+  stream << "}";
+}
+
+void writeEvent(std::ostream& stream, const sim::SleepEvent* event) {
+  stream << "{";
+
+  writeKey(stream, "duration");
+  writeObj(stream, event->sleep_duration);
+
+  stream << "}";
+}
+
+void writeEvent(std::ostream& stream, const sim::ProtocolEvent* event) {
+  stream << "{";
+
+  writeKey(stream, "name");
+  writeObj(stream, event->protocol_name);
+
+  stream << "}";
+}
+
+void writeEvent(std::ostream& stream, const sim::KillEvent* event) {
+  stream << "{";
+
+  writeKey(stream, "reason");
+  writeObj(stream, event->reason);
+
+  stream << "}";
 }
 
 }  // namespace
 
-std::ostream& sim::operator<<(std::ostream& os, Event::Type type) {
-  return os << EventTypeToString(type);
+std::ostream& sim::operator<<(std::ostream& stream,
+                              const sim::EventType event_type) {
+  return stream << eventTypeToString(event_type);
 }
 
-std::ostream& sim::operator<<(std::ostream& os, const sim::Event* m) {
-  using namespace std::chrono;
-  const auto t = m->EventType();
-  os << t << " at ";
-  os << duration<double, std::milli>(m->Timestamp()).count();
-  os << " ms";
-  if (m->Offset() > util::Time::Duration::zero()) {
-    os << " [Offset=";
-    os << duration<double, std::milli>(m->Offset()).count();
-    os << " ms]";
+std::ostream& sim::operator<<(std::ostream& stream, const sim::Event* event) {
+  stream << "{";
+
+  writeKey(stream, "timestamp");
+  writeObj(stream, util::timeToMillis(event->timestamp));
+
+  stream << ",";
+
+  writeKey(stream, "type");
+  writeObj(stream, eventTypeToString(event->type));
+
+  stream << ",";
+
+  writeKey(stream, "metadata");
+
+  switch (event->type) {
+    case EventType::CLOSE:
+    case EventType::HAS_DATA:
+      writeEvent(stream, dynamic_cast<const ChannelEvent*>(event));
+      break;
+
+    case EventType::SEND:
+    case EventType::RECV:
+      writeEvent(stream, dynamic_cast<const ChannelDataEvent*>(event));
+      break;
+
+    case EventType::SLEEP:
+      writeEvent(stream, dynamic_cast<const SleepEvent*>(event));
+      break;
+
+    case EventType::PROTOCOL_BEGIN:
+    case EventType::PROTOCOL_END:
+      writeEvent(stream, dynamic_cast<const ProtocolEvent*>(event));
+      break;
+
+    case EventType::KILLED:
+      writeEvent(stream, dynamic_cast<const KillEvent*>(event));
+      break;
+
+    default:
+      stream << "{}";
+      break;
   }
 
-  if (t == sim::Event::Type::SEGMENT_BEGIN ||
-      t == sim::Event::Type::SEGMENT_END) {
-    WriteSegment(os, dynamic_cast<const SegmentEvent*>(m));
+  stream << "}";
+
+  return stream;
+}
+
+void sim::writeTrace(std::ostream& stream, const sim::SimulationTrace& trace) {
+  stream << "[";
+
+  if (!trace.empty()) {
+    for (std::size_t i = 0; i < trace.size() - 1; i++) {
+      stream << trace[i] << ",";
+    }
+    stream << trace[trace.size() - 1];
   }
 
-  if (t == sim::Event::Type::CLOSE) {
-    WriteClose(os, dynamic_cast<const NetworkEvent*>(m));
-  }
-
-  if (t == sim::Event::Type::SEND || t == sim::Event::Type::PACKET_SEND) {
-    WriteSend(os, dynamic_cast<const NetworkDataEvent*>(m));
-  }
-
-  if (t == sim::Event::Type::RECV) {
-    WriteRecv(os, dynamic_cast<const NetworkDataEvent*>(m));
-  }
-
-  if (t == sim::Event::Type::PACKET_RECV) {
-    WritePacketRecv(os, dynamic_cast<const PacketRecvEvent*>(m));
-  }
-
-  if (t == sim::Event::Type::HAS_DATA) {
-    WriteHasData(os, dynamic_cast<const HasDataEvent*>(m));
-  }
-
-  if (t == sim::Event::Type::CHECKPOINT) {
-    WriteCheckpoint(os, dynamic_cast<const CheckpointEvent*>(m));
-  }
-
-  return os;
+  stream << "]";
 }

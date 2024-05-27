@@ -1,0 +1,36 @@
+name: Coverage
+
+on:
+  push:
+    branches:
+      - '*'
+      - '!master'
+
+jobs:
+  coverage:
+    name: coverage
+    runs-on: ubuntu-24.04
+    env:
+      COV_THRESHOLD_LINES: 95
+      COV_THRESHOLD_FUNCS: 90
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup
+        shell: bash
+        run: sudo apt-get install -y lcov
+
+      - name: Build
+        shell: bash
+        run: |
+          cmake . -B build -DSCL_BUILD_TEST_WITH_COVERAGE=ON -DSCL_BUILD_DOCUMENTATION=OFF
+          cmake --build build
+
+      - name: Compute coverage
+        shell: bash
+        run: cmake --build build --target coverage | tee cov.txt
+
+      - name: Check coverage
+        shell: bash
+        run: ./scripts/check_coverage.sh cov.txt

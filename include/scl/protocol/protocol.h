@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,9 @@
 #define SCL_PROTOCOL_PROTOCOL_H
 
 #include "scl/protocol/base.h"
+#include "scl/protocol/env.h"
+#include "scl/protocol/eval.h"
+#include "scl/protocol/result.h"
 
 /**
  * @brief %Protocol utilities.

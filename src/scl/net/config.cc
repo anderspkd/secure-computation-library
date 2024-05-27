@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,9 +23,11 @@
 #include <stdexcept>
 #include <string>
 
+using namespace scl;
+
 namespace {
 
-void ValidateIdAndSize(std::size_t id, std::size_t n) {
+void validateIdAndSize(std::size_t id, std::size_t n) {
   if (n == 0) {
     throw std::invalid_argument("n cannot be zero");
   }
@@ -37,9 +39,8 @@ void ValidateIdAndSize(std::size_t id, std::size_t n) {
 
 }  // namespace
 
-scl::net::NetworkConfig scl::net::NetworkConfig::Load(
-    std::size_t id,
-    const std::string& filename) {
+net::NetworkConfig net::NetworkConfig::load(std::size_t id,
+                                            const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
@@ -66,16 +67,15 @@ scl::net::NetworkConfig scl::net::NetworkConfig::Load(
     info.emplace_back(Party{id, hostname, port});
   }
 
-  ValidateIdAndSize(id, info.size());
+  validateIdAndSize(id, info.size());
 
   return NetworkConfig(id, info);
 }
 
-scl::net::NetworkConfig scl::net::NetworkConfig::Localhost(
-    std::size_t id,
-    std::size_t size,
-    std::size_t port_base) {
-  ValidateIdAndSize(id, size);
+net::NetworkConfig net::NetworkConfig::localhost(std::size_t id,
+                                                 std::size_t size,
+                                                 std::size_t port_base) {
+  validateIdAndSize(id, size);
 
   std::vector<Party> info;
   for (std::size_t i = 0; i < size; ++i) {
@@ -86,24 +86,10 @@ scl::net::NetworkConfig scl::net::NetworkConfig::Localhost(
   return NetworkConfig(id, info);
 }
 
-std::string scl::net::NetworkConfig::ToString() const {
-  std::stringstream ss;
-  ss << "[id=" << m_id << ", ";
-  std::size_t i = 0;
-  for (; i < m_parties.size() - 1; i++) {
-    const auto party = m_parties[i];
-    ss << "{" << party.id << ", " << party.hostname << ", " << party.port
-       << "}, ";
-  }
-  const auto last = m_parties[i];
-  ss << "{" << last.id << ", " << last.hostname << ", " << last.port << "}]";
-  return ss.str();
-}
+void net::NetworkConfig::validate() {
+  auto n = networkSize();
 
-void scl::net::NetworkConfig::Validate() {
-  auto n = NetworkSize();
-
-  if (static_cast<std::size_t>(Id()) >= n) {
+  if (static_cast<std::size_t>(id()) >= n) {
     throw std::invalid_argument("my ID is invalid in config");
   }
 

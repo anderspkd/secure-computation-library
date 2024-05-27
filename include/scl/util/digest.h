@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,17 +32,17 @@ namespace scl::util {
  *
  * This type is effectively <code>std::array<unsigned char, N / 8</code>.
  */
-template <std::size_t Bits>
-using Digest = std::array<unsigned char, Bits / 8>;
+template <std::size_t BITS>
+using Digest = std::array<unsigned char, BITS / 8>;
 
 /**
  * @brief Convert a digest to a string.
  * @param digest the digest
  * @return a hex representation of the digest.
  */
-template <typename D>
-std::string DigestToString(const D& digest) {
-  return ToHexString(digest.begin(), digest.end());
+template <typename DIGEST>
+std::string digestToString(const DIGEST& digest) {
+  return toHexString(digest.begin(), digest.end());
 }
 
 }  // namespace scl::util

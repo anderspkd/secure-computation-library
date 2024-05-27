@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,14 +19,15 @@
 #define SCL_UTIL_CMDLINE_H
 
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
-#include <list>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
+#include <vector>
 
 namespace scl::util {
 
@@ -38,10 +39,10 @@ namespace scl::util {
  *
  * @code
  * auto p = ProgramOptions::Parser("some description")
- *            .Add(ProgramArg::Required("foo", "int", "foo description"))
- *            .Add(ProgramArg::Optional("bar", "bool", "123"))
- *            .Add(ProgramFlag("flag"))
- *            .Parse(argc, argv);
+ *            .add(ProgramArg::required("foo", "int", "foo description"))
+ *            .add(ProgramArg::optional("bar", "bool", "123"))
+ *            .add(ProgramFlag("flag"))
+ *            .parse(argc, argv);
  * @endcode
  *
  * The above snippet will parse the <code>argv</code> argument vector passed to
@@ -58,8 +59,8 @@ class ProgramOptions {
    * @param name the name of the argument.
    * @return true if the argument was set, false otherwise.
    */
-  bool Has(std::string_view name) const {
-    return mArgs.find(name) != mArgs.end();
+  bool has(std::string_view name) const {
+    return m_args.find(name) != m_args.end();
   }
 
   /**
@@ -67,8 +68,8 @@ class ProgramOptions {
    * @param name the name of the flag.
    * @return true if the flag was set, false otherwise.
    */
-  bool FlagSet(std::string_view name) const {
-    return mFlags.find(name) != mFlags.end();
+  bool flagSet(std::string_view name) const {
+    return m_flags.find(name) != m_flags.end();
   }
 
   /**
@@ -76,8 +77,8 @@ class ProgramOptions {
    * @param name the name of the argument.
    * @return the value of the argument, as is.
    */
-  std::string_view Get(std::string_view name) const {
-    return mArgs.at(name);
+  std::string_view get(std::string_view name) const {
+    return m_args.at(name);
   }
 
   /**
@@ -92,24 +93,24 @@ class ProgramOptions {
    * object.
    */
   template <typename T>
-  T Get(std::string_view name) const;
+  T get(std::string_view name) const;
 
  private:
   ProgramOptions(
       const std::unordered_map<std::string_view, std::string_view>& args,
       const std::unordered_map<std::string_view, bool>& flags)
-      : mArgs(args), mFlags(flags){};
+      : m_args(args), m_flags(flags){};
 
-  std::unordered_map<std::string_view, std::string_view> mArgs;
-  std::unordered_map<std::string_view, bool> mFlags;
+  std::unordered_map<std::string_view, std::string_view> m_args;
+  std::unordered_map<std::string_view, bool> m_flags;
 };
 
 /**
  * @brief Specialization of CmdArgs::Get for <code>bool</code>.
  */
 template <>
-inline bool ProgramOptions::Get<bool>(std::string_view name) const {
-  const auto v = mArgs.at(name);
+inline bool ProgramOptions::get<bool>(std::string_view name) const {
+  const auto v = m_args.at(name);
   return v == "1" || v == "true";
 }
 
@@ -117,17 +118,17 @@ inline bool ProgramOptions::Get<bool>(std::string_view name) const {
  * @brief Specialization for CmdArgs::Get for <code>int</code>.
  */
 template <>
-inline int ProgramOptions::Get<int>(std::string_view name) const {
-  return std::stoi(mArgs.at(name).data());
+inline int ProgramOptions::get<int>(std::string_view name) const {
+  return std::stoi(m_args.at(name).data());
 }
 
 /**
  * @brief Specialization of CmdArgs::Get for <code>std::size_t</code>.
  */
 template <>
-inline std::size_t ProgramOptions::Get<std::size_t>(
+inline std::size_t ProgramOptions::get<std::size_t>(
     std::string_view name) const {
-  return std::stoul(mArgs.at(name).data());
+  return std::stoul(m_args.at(name).data());
 }
 
 /**
@@ -140,7 +141,7 @@ struct ProgramArg {
    * @param type_hint a string describing the expected type. E.g., "int".
    * @param description a short description.
    */
-  static ProgramArg Required(std::string_view name,
+  static ProgramArg required(std::string_view name,
                              std::string_view type_hint,
                              std::string_view description = "") {
     return ProgramArg{true, name, type_hint, description, {}};
@@ -153,7 +154,7 @@ struct ProgramArg {
    * @param default_value an optional default value.
    * @param description a short description.
    */
-  static ProgramArg Optional(std::string_view name,
+  static ProgramArg optional(std::string_view name,
                              std::string_view type_hint,
                              std::optional<std::string_view> default_value,
                              std::string_view description = "") {
@@ -163,7 +164,7 @@ struct ProgramArg {
   /**
    * @brief Whether this argument is required.
    */
-  bool required;
+  bool is_required;
 
   /**
    * @brief The name of this argument.
@@ -221,17 +222,14 @@ class ProgramOptions::Parser {
    * @brief Create a command-line argument parser.
    * @param description a short description of the program.
    */
-  Parser(std::string_view description = "") : mDescription(description) {}
+  Parser(std::string_view description = "") : m_description(description) {}
 
   /**
    * @brief Define an argument.
    * @param def an argument definition.
    */
-  Parser& Add(const ProgramArg& def) {
-    if (Exists(def)) {
-      PrintHelp("duplicate argument definition");
-    }
-    mArgs.emplace_back(def);
+  Parser& add(const ProgramArg& def) {
+    m_args.emplace_back(def);
     return *this;
   }
 
@@ -239,11 +237,8 @@ class ProgramOptions::Parser {
    * @brief Define a flag argument.
    * @param flag a flag definition.
    */
-  Parser& Add(const ProgramFlag& flag) {
-    if (Exists(flag)) {
-      PrintHelp("duplicate argument definition");
-    }
-    mFlags.emplace_back(flag);
+  Parser& add(const ProgramFlag& flag) {
+    m_flags.emplace_back(flag);
     return *this;
   }
 
@@ -251,67 +246,91 @@ class ProgramOptions::Parser {
    * @brief Parse arguments.
    * @param argc the number of arguments.
    * @param argv the arguments.
+   * @return the program options, or an error message.
    *
    * The \p argc and \p argv are assumed to be the inputs to a programs main
    * function.
    */
-  ProgramOptions Parse(int argc, char* argv[]);
+  std::variant<ProgramOptions, std::string_view> parseArguments(int argc,
+                                                                char* argv[]);
+
+  /**
+   * @brief Parse arguments.
+   * @param argc the number of arguments.
+   * @param argv the arguments.
+   * @param exit_on_error whether to std::exit when parsing fails
+   * @return a set of program options.
+   */
+  ProgramOptions parse(int argc, char* argv[], bool exit_on_error = true) {
+    auto opts = parseArguments(argc, argv);
+    if (opts.index() == 0) {
+      return std::get<ProgramOptions>(opts);
+    }
+    auto error_msg = std::get<std::string_view>(opts);
+    printHelp(error_msg);
+    if (exit_on_error) {
+      std::exit(error_msg.empty() ? 0 : 1);
+    } else {
+      throw std::runtime_error(error_msg.empty() ? "no error" : "error");
+    }
+  }
 
   /**
    * @brief Print a help string to stdout.
    */
-  void Help() const {
-    ArgListLong(std::cout);
+  void help() const {
+    argListLong(std::cout);
   }
 
  private:
+  std::string_view m_description;
+  std::string_view m_program_name;
+
+  std::vector<ProgramArg> m_args;
+  std::vector<ProgramFlag> m_flags;
+
   template <typename T>
-  bool Exists(const T& arg_or_flag) const;
-  void ArgListShort(std::ostream& stream, std::string_view program_name) const;
-  void ArgListLong(std::ostream& stream) const;
+  bool exists(const T& arg_or_flag) const;
+  void argListShort(std::ostream& stream, std::string_view program_name) const;
+  void argListLong(std::ostream& stream) const;
 
-  bool IsArg(std::string_view name) const;
-  bool IsFlag(std::string_view name) const;
+  bool isArg(std::string_view name) const;
+  bool isFlag(std::string_view name) const;
 
   template <typename P>
-  void ForEachOptional(const std::list<ProgramArg>& list, P pred) const {
+  void forEachOptional(const std::vector<ProgramArg>& list, P pred) const {
     std::for_each(list.begin(), list.end(), [&](const auto e) {
-      if (!e.required) {
+      if (!e.is_required) {
         pred(e);
       }
     });
   }
 
   template <typename P>
-  void ForEachRequired(const std::list<ProgramArg>& list, P pred) const {
+  void forEachRequired(const std::vector<ProgramArg>& list, P pred) const {
     std::for_each(list.begin(), list.end(), [&](const auto e) {
-      if (e.required) {
+      if (e.is_required) {
         pred(e);
       }
     });
   }
 
-  void PrintHelp(std::string_view error_msg = "");
-
-  std::string_view mDescription;
-  std::string_view mProgramName;
-
-  std::list<ProgramArg> mArgs;
-  std::list<ProgramFlag> mFlags;
+  void printHelp(std::string_view error_msg = "");
 };
 
 template <typename T>
-bool ProgramOptions::Parser::Exists(const T& arg_or_flag) const {
-  const auto exists_a = std::any_of(mArgs.begin(), mArgs.end(), [&](auto a) {
+bool ProgramOptions::Parser::exists(const T& arg_or_flag) const {
+  const auto exists_a = std::any_of(m_args.begin(), m_args.end(), [&](auto a) {
     return a.name == arg_or_flag.name;
   });
   if (exists_a) {
     return true;
   }
 
-  const auto exists_f = std::any_of(mFlags.begin(), mFlags.end(), [&](auto a) {
-    return a.name == arg_or_flag.name;
-  });
+  const auto exists_f =
+      std::any_of(m_flags.begin(), m_flags.end(), [&](auto a) {
+        return a.name == arg_or_flag.name;
+      });
   return exists_f;
 }
 

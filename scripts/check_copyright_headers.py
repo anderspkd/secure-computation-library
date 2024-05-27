@@ -2,9 +2,12 @@
 
 import os
 
+YEAR = "2024"
+AUTHOR = "Anders Dalskov"
+
 header = """\
 /* SCL --- Secure Computation Library
- * ---- THIS LINE IS IGNORED ----
+ * Copyright (C) {year} {author}
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,21 +24,14 @@ header = """\
  */
 """
 
-copyright_line = " * Copyright (C) 2023"
-
 def check_file(filename, path):
-    expected_header = header.rstrip().split("\n")
+    expected_header = header.format(year=YEAR, author=AUTHOR).rstrip().split("\n")
     with open(path, 'r') as f:
         lines = f.readlines()[:len(expected_header) + 1]
         n = 0
         good = True
         for a, b in zip(expected_header, lines):
-            ## copyright line
-            if n == 1:
-                if not b.startswith(copyright_line):
-                    good = False
-                    break
-            elif a.rstrip() != b.rstrip():
+            if a.rstrip() != b.rstrip():
                 good = False
                 break
             n += 1

@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,345 +33,304 @@
 namespace scl::sim {
 
 /**
- * @brief An event generated during simulation.
+ * @brief Event types.
  */
-class Event {
- public:
+enum class EventType {
   /**
-   * @brief Type of the event.
+   * @brief Event generated when a party starts running.
    */
-  enum class Type {
-    /**
-     * @brief Event indicating that a party started running.
-     */
-    START,
-
-    /**
-     * @brief Event indicating that a party stopped running.
-     */
-    STOP,
-
-    /**
-     * @brief Event indicating a network Send operation.
-     */
-    SEND,
-
-    /**
-     * @brief Event indicating a network Recv operation.
-     */
-    RECV,
-
-    /**
-     * @brief Event indicating that a party queried a channel for data.
-     */
-    HAS_DATA,
-
-    /**
-     * @brief Event indicating a party closed a connection.
-     */
-    CLOSE,
-
-    /**
-     * @brief Event indicating a party put its thread to sleep.
-     */
-    SLEEP,
-
-    /**
-     * @brief Event indicating that a party produces output.
-     */
-    OUTPUT,
-
-    /**
-     * @brief Event made at the start of a protocol segment.
-     */
-    SEGMENT_BEGIN,
-
-    /**
-     * @brief Event made at the end of a protocol segment.
-     */
-    SEGMENT_END,
-
-    /**
-     * @brief A checkpoint recorded by the protocol.
-     */
-    CHECKPOINT,
-
-    /**
-     * @brief Event made when a party sends a net::Packet.
-     */
-    PACKET_SEND,
-
-    /**
-     * @brief Event made when a party receives a net::Packet.
-     */
-    PACKET_RECV,
-
-    /**
-     * @brief Event made when a party is stopped prematurely.
-     */
-    KILLED
-  };
+  START,
 
   /**
-   * @brief Construct a new measurement.
-   * @param type the type of the measurement
-   * @param timestamp the timepoint for this measurement
-   * @param offset an offset for the timestamp
+   * @brief Event generated when a party stops running.
    */
-  Event(Type type, util::Time::Duration timestamp, util::Time::Duration offset)
-      : m_type(type), m_timestamp(timestamp), m_offset(offset){};
+  STOP,
 
   /**
-   * @brief Construct a new measurement.
-   * @param type the type of the measurement
-   * @param timestamp the timepoint for this measurement.
+   * @brief Event generated when a party is forcibly stopped.
    */
-  Event(Type type, util::Time::Duration timestamp)
-      : Event(type, timestamp, util::Time::Duration::zero()) {}
-
-  virtual ~Event(){};
+  KILLED,
 
   /**
-   * @brief Get the adjusted time of this event.
-   *
-   * This will return the adjusted (i.e., "real-time") time of the event. The
-   * un-adjusted timestamp is <code>Time() - Offset()</code>.
+   * @brief Event generated when a party was cancelled by the manager.
    */
-  util::Time::Duration Timestamp() const {
-    return m_timestamp + m_offset;
-  }
+  CANCELLED,
 
   /**
-   * @brief Get the type of this event.
+   * @brief Event generated when a channel is closed.
    */
-  Type EventType() const {
-    return m_type;
-  }
+  CLOSE,
 
   /**
-   * @brief Get the offset of the timestamp of this event.
+   * @brief Event generated when data is sent on a channel.
    */
-  util::Time::Duration Offset() const {
-    return m_offset;
-  }
+  SEND,
 
- private:
-  Type m_type;
-  util::Time::Duration m_timestamp;
-  util::Time::Duration m_offset;
+  /**
+   * @brief Event generated when data is received on a channel.
+   */
+  RECV,
+
+  /**
+   * @brief Event generated when a channel is queried for the presence of data.
+   */
+  HAS_DATA,
+
+  /**
+   * @brief Event generated when a party sleeps.
+   */
+  SLEEP,
+
+  /**
+   * @brief Event generated when a party produces output.
+   */
+  OUTPUT,
+
+  /**
+   * @brief Event generated at the start of a protocol.
+   */
+  PROTOCOL_BEGIN,
+
+  /**
+   * @brief Event generated at the end of a protocol.
+   */
+  PROTOCOL_END,
+
 };
 
 /**
- * @brief Events related to a network channel.
+ * @brief An event in a simulation.
  */
-class NetworkEvent : public Event {
- public:
+struct Event {
   /**
-   * @brief Construct a new network measurement.
-   * @param type the type of the measurement
-   * @param timestamp the time of the measurement
-   * @param id the ID of the channel
+   * @brief Create an event indicating the party started running.
    */
-  NetworkEvent(Type type, util::Time::Duration timestamp, ChannelId id)
-      : Event(type, timestamp), m_id(id) {}
+  static std::shared_ptr<Event> start();
 
   /**
-   * @brief Construct a new network measurement with an offset.
-   * @param type the type of the measurement
-   * @param timestamp the time of the measurement
-   * @param offset an offset
-   * @param id the ID of the channel
+   * @brief Create an event indicating the party stopped running.
+   * @param timestamp the time the party stopped running at.
    */
-  NetworkEvent(Type type,
+  static std::shared_ptr<Event> stop(util::Time::Duration timestamp);
+
+  /**
+   * @brief Create an event indicating the party was killed by an exception.
+   * @param timestamp the time the party was stopped.
+   * @param reason a message describing the reason for the kill.
+   */
+  static std::shared_ptr<Event> killed(util::Time::Duration timestamp,
+                                       const std::string& reason);
+
+  /**
+   * @brief Create an event indicating the party was stopped.
+   * @param timestamp the time the party was stopped.
+   */
+  static std::shared_ptr<Event> cancelled(util::Time::Duration timestamp);
+
+  /**
+   * @brief Create an event indicating that a channel was closed.
+   * @param timestamp the time the channel was closed.
+   * @param channel_id the ID of the channel.
+   */
+  static std::shared_ptr<Event> closeChannel(util::Time::Duration timestamp,
+                                             ChannelId channel_id);
+
+  /**
+   * @brief Create an event indicating that some data was sent on a channel.
+   * @param timestamp the time the data was sent.
+   * @param channel_id the ID of the channel.
+   * @param amount the amount of bytes sent.
+   */
+  static std::shared_ptr<Event> sendData(util::Time::Duration timestamp,
+                                         ChannelId channel_id,
+                                         std::size_t amount);
+
+  /**
+   * @brief Create an event indicating that some data was received on a channel.
+   * @param timestamp the time the data was received.
+   * @param channel_id the ID of the channel.
+   * @param amount the amount of bytes received.
+   */
+  static std::shared_ptr<Event> recvData(util::Time::Duration timestamp,
+                                         ChannelId channel_id,
+                                         std::size_t amount);
+
+  /**
+   * @brief Create an event indicating that a channel was queried for the
+   * presence of data.
+   * @param timestamp the time of the query.
+   * @param channel_id the ID of the channel.
+   */
+  static std::shared_ptr<Event> hasData(util::Time::Duration timestamp,
+                                        ChannelId channel_id);
+
+  /**
+   * @brief Create an event indicating that the party slept.
+   * @param timestamp the time the party went to sleep.
+   * @param sleep_duration the duration of the sleep.
+   */
+  static std::shared_ptr<Event> sleep(util::Time::Duration timestamp,
+                                      util::Time::Duration sleep_duration);
+
+  /**
+   * @brief Create an event indicating that the party produced an output.
+   */
+  static std::shared_ptr<Event> output(util::Time::Duration timestamp);
+
+  /**
+   * @brief Create an event indicating that a protocol began.
+   * @param timestamp the starting time of the protocol.
+   * @param protocol_name the name of the protocol.
+   */
+  static std::shared_ptr<Event> protocolBegin(util::Time::Duration timestamp,
+                                              const std::string& protocol_name);
+
+  /**
+   * @brief Create an event indicating that a protocol ended.
+   * @param timestamp the finishing time of the protocol.
+   * @param protocol_name the name of the protocol.
+   */
+  static std::shared_ptr<Event> protocolEnd(util::Time::Duration timestamp,
+                                            const std::string& protocol_name);
+
+  /**
+   * @brief Constructor.
+   */
+  Event(EventType type, util::Time::Duration timestamp)
+      : type(type), timestamp(timestamp) {}
+
+  virtual ~Event() {}
+
+  /**
+   * @brief The event type.
+   */
+  EventType type;
+
+  /**
+   * @brief The event timestamp.
+   */
+  util::Time::Duration timestamp;
+};
+
+/**
+ * @brief An event relating to a channel.
+ */
+struct ChannelEvent : public Event {
+  /**
+   * @brief Constructor
+   */
+  ChannelEvent(EventType type,
                util::Time::Duration timestamp,
-               util::Time::Duration offset,
-               ChannelId id)
-      : Event(type, timestamp, offset), m_id(id) {}
+               ChannelId channel_id)
+      : Event(type, timestamp), channel_id(channel_id) {}
 
+  ~ChannelEvent() {}
   /**
-   * @brief Get the ID of the local party in this network event.
+   * @brief The ID of the channel this event was created for.
    */
-  std::size_t LocalParty() const {
-    return m_id.local;
-  }
-
-  /**
-   * @brief Get the ID of the remote party in this network event.
-   */
-  std::size_t RemoteParty() const {
-    return m_id.remote;
-  }
-
- private:
-  ChannelId m_id;
+  ChannelId channel_id;
 };
 
 /**
- * @brief Events related to data transfers on the network.
+ * @brief An event relating to a channel send or receive action.
  */
-class NetworkDataEvent : public NetworkEvent {
- public:
+struct ChannelDataEvent final : public ChannelEvent {
   /**
-   * @brief Create a new network data event.
-   * @param type the type of the event.
-   * @param timestamp when the event took place.
-   * @param id the ID of the channel.
-   * @param amount the amount of data sent or received.
+   * @brief Constructor.
    */
-  NetworkDataEvent(Type type,
+  ChannelDataEvent(EventType type,
                    util::Time::Duration timestamp,
-                   ChannelId id,
+                   ChannelId channel_id,
                    std::size_t amount)
-      : NetworkEvent(type, timestamp, id), m_amount(amount) {}
+      : ChannelEvent(type, timestamp, channel_id), amount(amount) {}
 
   /**
-   * @brief Create a new network data event.
-   * @param type the type of the event.
-   * @param timestamp when the event took place.
-   * @param offset an offset to \p timestamp.
-   * @param id the ID of the channel.
-   * @param amount the amount of data sent or received.
+   * @brief The amount of data in this event.
    */
-  NetworkDataEvent(Type type,
-                   util::Time::Duration timestamp,
-                   util::Time::Duration offset,
-                   ChannelId id,
-                   std::size_t amount)
-      : NetworkEvent(type, timestamp, offset, id), m_amount(amount) {}
-
-  /**
-   * @brief Get the amount of data sent or received.
-   */
-  std::size_t DataAmount() const {
-    return m_amount;
-  }
-
- private:
-  std::size_t m_amount;
+  std::size_t amount;
 };
 
 /**
- * @brief An event created when a party calls the packet recv function on a
- * channel.
+ * @brief An event relating to a sleep.
  */
-class PacketRecvEvent final : public NetworkDataEvent {
- public:
+struct SleepEvent final : public Event {
   /**
-   * @brief Create a new network data event.
-   * @param timestamp when the event took place.
-   * @param offset an offset to \p timestamp.
-   * @param id the ID of the channel.
-   * @param amount the amount of data sent or received.
-   * @param blocking whether the Recv call was blocking.
+   * @brief Constructor.
    */
-  PacketRecvEvent(util::Time::Duration timestamp,
-                  util::Time::Duration offset,
-                  ChannelId id,
-                  std::size_t amount,
-                  bool blocking)
-      : NetworkDataEvent(Type::PACKET_RECV, timestamp, offset, id, amount),
-        m_blocking(blocking) {}
-
+  SleepEvent(EventType type,
+             util::Time::Duration timestamp,
+             util::Time::Duration sleep_duration)
+      : Event(type, timestamp + sleep_duration),
+        sleep_duration(sleep_duration) {}
   /**
-   * @brief True if the call was blocking and false otherwise.
+   * @brief The sleep duration.
    */
-  bool Blocking() const {
-    return m_blocking;
-  }
-
- private:
-  bool m_blocking;
+  util::Time::Duration sleep_duration;
 };
 
 /**
- * @brief Event created when a party calls HasData on a channel.
+ * @brief A protocol event.
  */
-class HasDataEvent final : public NetworkEvent {
- public:
+struct ProtocolEvent final : public Event {
   /**
-   * @brief Construct a new HasDataEvent.
-   * @param timestamp the time the event happened.
-   * @param id the ID of the channel.
-   * @param had_data whether data was available.
+   * @brief Constructor.
    */
-  HasDataEvent(util::Time::Duration timestamp, ChannelId id, bool had_data)
-      : NetworkEvent(Type::HAS_DATA, timestamp, id), m_had_data(had_data) {}
-
+  ProtocolEvent(EventType type,
+                util::Time::Duration timestamp,
+                const std::string& protocol_name)
+      : Event(type, timestamp), protocol_name(protocol_name) {}
   /**
-   * @brief Whether the call that generated this event had data.
+   * @brief The name of the protocol.
    */
-  bool HadData() const {
-    return m_had_data;
-  }
-
- private:
-  bool m_had_data;
+  std::string protocol_name;
 };
 
 /**
- * @brief An event taken at the start or end of <code>Protocol::Run</code>.
+ * @brief A kill event.
  */
-class SegmentEvent final : public Event {
- public:
+struct KillEvent final : public Event {
   /**
-   * @brief Construct a new segment event.
-   * @param type the type. Either SEGMENT_BEGIN or SEGMENT_END
-   * @param timestamp the time of the event
-   * @param name the name of the segment.
+   * @brief Constructor.
    */
-  SegmentEvent(Type type, util::Time::Duration timestamp, std::string name)
-      : Event(type, timestamp), m_name(std::move(name)){};
+  KillEvent(util::Time::Duration timestamp, const std::string& reason)
+      : Event(EventType::KILLED, timestamp), reason(reason) {}
 
   /**
-   * @brief Get the name of this segment.
+   * @brief The message giving a reason for the kill.
    */
-  std::string Name() const {
-    return m_name;
-  }
-
- private:
-  std::string m_name;
-};
-
-/**
- * @brief An event created when a protocol calls
- * <code>env.clock.Checkpoint()</code>.
- */
-class CheckpointEvent final : public Event {
- public:
-  /**
-   * @brief Create a new checkpoint event.
-   * @param timestamp the time of the event.
-   * @param id the id of the checkpoint.
-   */
-  CheckpointEvent(util::Time::Duration timestamp, const std::string& id)
-      : Event(Event::Type::CHECKPOINT, timestamp), m_id(id) {}
-
-  /**
-   * @brief Get the checkpoint id.
-   */
-  std::string Id() const {
-    return m_id;
-  }
-
- private:
-  std::string m_id;
+  std::string reason;
 };
 
 /**
  * @brief Pretty print an event type.
  */
-std::ostream& operator<<(std::ostream& os, Event::Type type);
+std::ostream& operator<<(std::ostream& stream, EventType type);
 
 /**
- * @brief Pretty print a measurement to a stream.
+ * @brief Pretty print an event.
  */
-std::ostream& operator<<(std::ostream& os, const Event* m);
+std::ostream& operator<<(std::ostream& stream, const Event* event);
 
 /**
- * @brief A simulation trace is simply a vector of measurements.
+ * @brief Pretty print an event.
+ */
+inline std::ostream& operator<<(std::ostream& stream,
+                                std::shared_ptr<Event> event) {
+  return stream << event.get();
+}
+
+/**
+ * @brief The execution trace of a simulation is a list of the events it
+ * generated.
  */
 using SimulationTrace = std::vector<std::shared_ptr<Event>>;
+
+/**
+ * @brief Write a trace to an output stream.
+ * @param stream the stream.
+ * @param trace the trace.
+ */
+void writeTrace(std::ostream& stream, const SimulationTrace& trace);
 
 }  // namespace scl::sim
 

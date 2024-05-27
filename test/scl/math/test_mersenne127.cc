@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <sstream>
 
 #include "scl/math/fp.h"
@@ -26,23 +26,23 @@ using Field = math::Fp<127>;
 using u128 = __uint128_t;
 
 TEST_CASE("Mersenne127 defs", "[math][ff]") {
-  REQUIRE(Field::BitSize() == 127);
-  REQUIRE(Field::ByteSize() == 16);
-  REQUIRE(std::string(Field::Name()) == "Mersenne127");
+  REQUIRE(Field::bitSize() == 127);
+  REQUIRE(Field::byteSize() == 16);
+  REQUIRE(std::string(Field::name()) == "Mersenne127");
 }
 
 TEST_CASE("Mersenne127 to string", "[math][ff]") {
-  REQUIRE(Field::Zero().ToString() == "0");
-  REQUIRE(Field::One().ToString() == "1");
+  REQUIRE(Field::zero().toString() == "0");
+  REQUIRE(Field::one().toString() == "1");
 
   Field x(0x7b);
-  REQUIRE(x.ToString() == "7b");
+  REQUIRE(x.toString() == "7b");
 
-  REQUIRE(Field::FromString("80000000000000000000000000000000") ==
-          Field::One());
+  REQUIRE(Field::fromString("80000000000000000000000000000000") ==
+          Field::one());
 
-  Field big = Field::FromString("58797a14d0653d22a05c11c60e1aacf4");
-  REQUIRE(big.ToString() == "58797a14d0653d22a05c11c60e1aacf4");
+  Field big = Field::fromString("58797a14d0653d22a05c11c60e1aacf4");
+  REQUIRE(big.toString() == "58797a14d0653d22a05c11c60e1aacf4");
 
   std::stringstream ss;
   ss << x;
@@ -50,19 +50,19 @@ TEST_CASE("Mersenne127 to string", "[math][ff]") {
 }
 
 TEST_CASE("Mersenne127 from string", "[math][ff]") {
-  auto y = Field::FromString("7b");
+  auto y = Field::fromString("7b");
   REQUIRE(y == Field(0x7b));
 }
 
 TEST_CASE("Mersenne127 read/write", "[math][ff]") {
-  Field big = Field::FromString("58797a14d0653d22a05c11c60e1aacf4");
-  unsigned char buffer[Field::ByteSize()];
-  big.Write(buffer);
-  auto y = Field::Read(buffer);
+  Field big = Field::fromString("58797a14d0653d22a05c11c60e1aacf4");
+  unsigned char buffer[Field::byteSize()];
+  big.write(buffer);
+  auto y = Field::read(buffer);
   REQUIRE(big == y);
 
   Field x(0x7b);
-  x.Write(buffer);
-  auto z = Field::Read(buffer);
+  x.write(buffer);
+  auto z = Field::read(buffer);
   REQUIRE(z == x);
 }

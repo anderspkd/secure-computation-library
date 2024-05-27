@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@
 #include <cstddef>
 #include <unordered_map>
 
-#include "scl/math/vec.h"
+#include "scl/math/vector.h"
 
 namespace scl::math {
 
@@ -40,9 +40,9 @@ namespace scl::math {
  * auto nodes = ...  // 0, 1, 2, 3, 4, 5
  * auto ys = ...     // f(0), f(2), f(3), f(4), f(5)
  *
- * auto basis = ComputeLagrangeBasis(nodes, 7);
+ * auto basis = computeLagrangeBasis(nodes, 7);
  *
- * auto f7 = ys.Dot(basis);  // f(7)
+ * auto f7 = ys.dot(basis);  // f(7)
  * @endcode
  *
  * <p>The nodes provided must be pairwise invertible. That is, for every
@@ -52,12 +52,12 @@ namespace scl::math {
  * @see https://en.wikipedia.org/wiki/Lagrange_polynomial
  */
 template <typename T>
-Vec<T> ComputeLagrangeBasis(const math::Vec<T>& nodes, const T& x) {
-  const auto n = nodes.Size();
+Vector<T> computeLagrangeBasis(const math::Vector<T>& nodes, const T& x) {
+  const auto n = nodes.size();
   std::vector<T> b;
   b.reserve(n);
   for (std::size_t i = 0; i < n; ++i) {
-    auto ell = T::One();
+    auto ell = T::one();
     const auto xi = nodes[i];
     for (std::size_t j = 0; j < n; ++j) {
       if (i != j) {
@@ -74,11 +74,11 @@ Vec<T> ComputeLagrangeBasis(const math::Vec<T>& nodes, const T& x) {
  * @brief Computes a lagrange basis for a set of nodes.
  * @param nodes the set of nodes.
  * @param x the evaluation point x.
- * @see ComputeLagrangeBasis
+ * @see computeLagrangeBasis
  */
 template <typename T>
-Vec<T> ComputeLagrangeBasis(const math::Vec<T>& nodes, int x) {
-  return ComputeLagrangeBasis(nodes, T{x});
+Vector<T> computeLagrangeBasis(const math::Vector<T>& nodes, int x) {
+  return computeLagrangeBasis(nodes, T{x});
 }
 
 }  // namespace scl::math

@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,15 +31,15 @@ namespace scl::math {
 /**
  * @brief Select a suitable Finite Field based on a provided bitlevel.
  */
-template <std::size_t Bits>
+template <std::size_t BITS>
 struct FieldSelector {
-  static_assert(Bits > 0 && Bits < 128, "Bits not in range [1, 127]");
+  static_assert(BITS > 0 && BITS < 128, "Bits not in range [1, 127]");
 
   /**
    * @brief The field.
    */
-  using Field =
-      std::conditional_t<SCL_IN_RANGE(Bits, 1, 61), Mersenne61, Mersenne127>;
+  using Field = std::
+      conditional_t<SCL_IN_RANGE(BITS, 1, 61), ff::Mersenne61, ff::Mersenne127>;
 };
 
 #undef SCL_IN_RANGE
@@ -60,8 +60,8 @@ struct FieldSelector {
  * @see Mersenne61
  * @see Mersenne127
  */
-template <std::size_t Bits>
-using Fp = FF<typename FieldSelector<Bits>::Field>;
+template <std::size_t BITS>
+using Fp = FF<typename FieldSelector<BITS>::Field>;
 
 }  // namespace scl::math
 

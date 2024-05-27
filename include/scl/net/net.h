@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2023 Anders Dalskov
+ * Copyright (C) 2024 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,10 +19,9 @@
 #define SCL_NET_NET_H
 
 #include "scl/net/config.h"
-#include "scl/net/mem_channel.h"
+#include "scl/net/loopback.h"
 #include "scl/net/network.h"
 #include "scl/net/tcp_channel.h"
-#include "scl/net/threaded_sender.h"
 
 /**
  * @brief %Network utilities.
