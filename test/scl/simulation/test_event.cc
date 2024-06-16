@@ -102,11 +102,11 @@ TEST_CASE("Simulation events", "[sim]") {
   }
 
   SECTION("RECV") {
-    auto e = sim::Event::recvData(123ms, {1, 2}, 10);
+    auto e = sim::Event::readData(123ms, {1, 2}, 10);
     REQUIRE(str(e) ==
             "{"
             "\"timestamp\":123,"
-            "\"type\":\"RECV\","
+            "\"type\":\"READ\","
             "\"metadata\":{"
             "\"channel_id\":{\"local\":1,\"remote\":2},"
             "\"amount\":10"
