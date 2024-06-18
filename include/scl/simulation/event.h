@@ -67,9 +67,9 @@ enum class EventType {
   SEND,
 
   /**
-   * @brief Event generated when data is received on a channel.
+   * @brief Event generated when data is read from a channel.
    */
-  RECV,
+  READ,
 
   /**
    * @brief Event generated when a channel is queried for the presence of data.
@@ -146,12 +146,12 @@ struct Event {
                                          std::size_t amount);
 
   /**
-   * @brief Create an event indicating that some data was received on a channel.
-   * @param timestamp the time the data was received.
+   * @brief Create an event indicating that some data was read from a channel.
+   * @param timestamp the time the data was read.
    * @param channel_id the ID of the channel.
-   * @param amount the amount of bytes received.
+   * @param amount the amount of bytes read.
    */
-  static std::shared_ptr<Event> recvData(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> readData(util::Time::Duration timestamp,
                                          ChannelId channel_id,
                                          std::size_t amount);
 

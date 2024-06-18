@@ -61,10 +61,10 @@ std::shared_ptr<sim::Event> sim::Event::sendData(util::Time::Duration timestamp,
                                             amount);
 }
 
-std::shared_ptr<sim::Event> sim::Event::recvData(util::Time::Duration timestamp,
+std::shared_ptr<sim::Event> sim::Event::readData(util::Time::Duration timestamp,
                                                  sim::ChannelId channel_id,
                                                  std::size_t amount) {
-  return std::make_shared<ChannelDataEvent>(EventType::RECV,
+  return std::make_shared<ChannelDataEvent>(EventType::READ,
                                             timestamp,
                                             channel_id,
                                             amount);
@@ -118,8 +118,8 @@ std::string eventTypeToString(sim::EventType type) {
     case sim::EventType::SEND:
       return "SEND";
       break;
-    case sim::EventType::RECV:
-      return "RECV";
+    case sim::EventType::READ:
+      return "READ";
       break;
     case sim::EventType::HAS_DATA:
       return "HAS_DATA";
@@ -263,7 +263,7 @@ std::ostream& sim::operator<<(std::ostream& stream, const sim::Event* event) {
       break;
 
     case EventType::SEND:
-    case EventType::RECV:
+    case EventType::READ:
       writeEvent(stream, dynamic_cast<const ChannelDataEvent*>(event));
       break;
 
