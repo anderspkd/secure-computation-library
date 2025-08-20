@@ -135,7 +135,7 @@ class Array final {
    * This function will attempt to construct a \p T element using \p value, and
    * then fill all slots with this value.
    */
-  explicit Array(int value) : Array(T{value}){};
+  explicit Array(int value) : Array(T{value}) {};
 
   /**
    * @brief Copy construct an Array from another array.
@@ -316,7 +316,7 @@ class Array final {
     requires Invertible<T>
   {
     Array<T, N> p = *this;
-    return p.Invert();
+    return p.invert();
   }
 
   /**
