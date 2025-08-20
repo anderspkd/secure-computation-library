@@ -151,10 +151,10 @@ coro::Task<void> TcpChannel<SYS>::send(const Packet& packet) {
       } else {
         throw std::system_error(err, std::generic_category(), "send failed");
       }
+    } else {
+      rem -= written;
+      data += written;
     }
-
-    rem -= written;
-    data += written;
   }
 }
 
@@ -178,10 +178,10 @@ coro::Task<void> recvInto(SocketType socket,
       } else {
         throw std::system_error(err, std::generic_category(), "recv failed");
       }
+    } else {
+      rem -= read;
+      dst += read;
     }
-
-    rem -= read;
-    dst += read;
   }
 }
 
