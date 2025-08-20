@@ -81,7 +81,7 @@ TEST_CASE("SimulatedChannel send/recv", "[sim]") {
   REQUIRE(pr.read<int>() == 3);
 
   REQUIRE(gctx.traces[1].size() == 2);
-  REQUIRE(gctx.traces[1].back()->type == sim::EventType::RECV);
+  REQUIRE(gctx.traces[1].back()->type == sim::EventType::READ);
   REQUIRE(getChannelDataEventAmount(gctx.traces[1].back()) == expected_size);
 
   REQUIRE(gctx.sends[{0, 1}].empty());

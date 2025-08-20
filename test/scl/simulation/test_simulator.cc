@@ -99,7 +99,7 @@ TEST_CASE("Simulate SendRecv protocol", "[sim]") {
       REQUIRE(trace[0]->type == sim::EventType::START);
       REQUIRE(trace[1]->type == sim::EventType::PROTOCOL_BEGIN);
       REQUIRE(trace[2]->type == sim::EventType::SEND);
-      REQUIRE(trace[3]->type == sim::EventType::RECV);
+      REQUIRE(trace[3]->type == sim::EventType::READ);
       REQUIRE(trace[4]->type == sim::EventType::CLOSE);
       REQUIRE(trace[5]->type == sim::EventType::CLOSE);
       REQUIRE(trace[6]->type == sim::EventType::PROTOCOL_END);

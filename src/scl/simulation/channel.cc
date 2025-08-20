@@ -79,7 +79,7 @@ coro::Task<net::Packet> sim::details::SimulatedChannel::recv() {
   elapsed = m_context.recv(m_cid.remote, totalPacketSize(packet), elapsed);
 
   const std::size_t nbytes = totalPacketSize(packet);
-  m_context.recordEvent(Event::recvData(elapsed, m_cid, nbytes));
+  m_context.recordEvent(Event::readData(elapsed, m_cid, nbytes));
   m_context.startClock();
   co_return packet;
 }
