@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.30)
 
 set(SCL_SOURCE_FILES_TEST
   scl/util/test_prg.cc
