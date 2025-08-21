@@ -2,7 +2,7 @@
 
 import os
 
-YEAR = "2024"
+YEAR = "2025"
 AUTHOR = "Anders Dalskov"
 
 header = """\
