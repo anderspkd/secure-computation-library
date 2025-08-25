@@ -24,7 +24,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace scl::coro {
+namespace scl {
 
 template <typename RESULT>
 class Task;
@@ -241,6 +241,6 @@ auto batch(std::vector<RESULT>&& tasks, std::size_t min_complete) {
   return details::PartialBatch{std::move(tasks), min_complete};
 }
 
-}  // namespace scl::coro
+}  // namespace scl
 
 #endif  // SCL_CORO_BATCH_H

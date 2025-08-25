@@ -22,7 +22,7 @@
 
 #include "scl/simulation/event.h"
 
-namespace scl::sim {
+namespace scl {
 
 class SimulationContext;
 
@@ -107,6 +107,6 @@ struct TriggerAndHook {
   std::unique_ptr<Hook> hook;
 };
 
-}  // namespace scl::sim
+}  // namespace scl
 
 #endif  // SCL_SIMULATION_HOOK_H

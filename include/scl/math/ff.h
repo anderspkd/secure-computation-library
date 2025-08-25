@@ -18,16 +18,13 @@
 #ifndef SCL_MATH_FF_H
 #define SCL_MATH_FF_H
 
-#include <algorithm>
 #include <string>
-#include <type_traits>
 
 #include "scl/math/fields/ff_ops.h"
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 #include "scl/util/prg.h"
 
 namespace scl {
-namespace math {
 
 /**
  * @brief Finite Field interface.
@@ -345,10 +342,6 @@ FF<T> exp(const FF<T>& base, std::size_t exp) {
   return r;
 }
 
-}  // namespace math
-
-namespace seri {
-
 /**
  * @brief Serializer specialization for math::FF types.
  */
@@ -390,7 +383,6 @@ struct Serializer<math::FF<FIELD>> {
   }
 };
 
-}  // namespace seri
 }  // namespace scl
 
 #endif  // SCL_MATH_FF_H

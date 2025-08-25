@@ -24,7 +24,7 @@
 #include "scl/math/ec.h"
 #include "scl/math/ff.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief A signature for some signature scheme.
@@ -41,7 +41,7 @@ class ECDSA;
 template <>
 struct Signature<ECDSA> {
  private:
-  using ElementType = math::FF<math::ec::Secp256k1::Scalar>;
+  using ElementType = FF<Secp256k1::Scalar>;
 
  public:
   /**
@@ -89,7 +89,7 @@ class ECDSA {
   /**
    * @brief Public key type. A curve point.
    */
-  using PublicKey = math::EC<math::ec::Secp256k1>;
+  using PublicKey = EC<Secp256k1>;
 
   /**
    * @brief Secret key type. An element modulo the order of the curve.
@@ -177,6 +177,6 @@ class ECDSA {
   }
 };
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_SIGN_H

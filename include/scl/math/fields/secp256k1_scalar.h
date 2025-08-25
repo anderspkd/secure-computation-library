@@ -23,7 +23,7 @@
 
 #include <gmp.h>
 
-namespace scl::math::ff {
+namespace scl {
 
 /**
  * @brief Finite field modulo a Secp256k1 prime order sub-group.

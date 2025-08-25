@@ -26,7 +26,7 @@
 #include "scl/serialization/serializable.h"
 #include "scl/serialization/serializer.h"
 
-namespace scl::net {
+namespace scl {
 
 /**
  * @brief A container for data to be sent on a Channel.
@@ -308,6 +308,6 @@ class Packet {
   }
 };
 
-}  // namespace scl::net
+}  // namespace scl
 
 #endif  // SCL_NET_PACKET_H

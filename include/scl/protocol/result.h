@@ -21,7 +21,7 @@
 #include <any>
 #include <memory>
 
-namespace scl::proto {
+namespace scl {
 
 struct Protocol;
 
@@ -82,6 +82,6 @@ struct ProtocolResult {
   std::any result;
 };
 
-}  // namespace scl::proto
+}  // namespace scl
 
 #endif  // SCL_PROTOCOL_RESULT_H

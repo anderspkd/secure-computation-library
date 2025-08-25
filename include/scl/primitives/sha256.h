@@ -25,7 +25,7 @@
 #include "scl/util/digest.h"
 #include "scl/util/iuf_hash.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief SHA256 hash function.
@@ -67,6 +67,6 @@ class Sha256 final : public IUFHash<Sha256> {
   DigestType writeDigest();
 };
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_SHA256_H

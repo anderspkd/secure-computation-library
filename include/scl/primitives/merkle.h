@@ -24,7 +24,7 @@
 #include "scl/util/digest.h"
 #include "scl/util/merkle_proof.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief Merkle hash tree.
@@ -180,6 +180,6 @@ bool MerkleTree<HASH, LEAF>::verify(const LEAF& leaf,
   return root == digest;
 }
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_MERKLE_H

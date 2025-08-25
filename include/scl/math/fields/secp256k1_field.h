@@ -23,7 +23,7 @@
 
 #include <gmp.h>
 
-namespace scl::math::ff {
+namespace scl {
 
 /**
  * @brief The Field over which secp256k1 is defined.

@@ -21,7 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace scl::math::ff {
+namespace scl {
 
 /**
  * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{61}-1\f$.

@@ -24,7 +24,7 @@
 #include "scl/math/z2k/z2k_ops.h"
 #include "scl/util/prg.h"
 
-namespace scl::math {
+namespace scl {
 
 /**
  * @brief Elements of the ring \f$\mathbb{Z}_{2^K}\f$ for integer \f$K\f$.
@@ -315,6 +315,6 @@ class Z2k final {
   ValueType m_value;
 };
 
-}  // namespace scl::math
+}  // namespace scl
 
 #endif  // SCL_MATH_Z2K_H

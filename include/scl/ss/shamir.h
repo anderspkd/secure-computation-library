@@ -30,9 +30,9 @@
 #include "scl/math/matrix.h"
 #include "scl/math/poly.h"
 #include "scl/math/vector.h"
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
-namespace scl::ss {
+namespace scl {
 
 /**
  * @brief Create a Shamir secret-sharing.
@@ -49,13 +49,13 @@ namespace scl::ss {
  * points in which \f$f\f$ is evaluated is called the alphas.
  */
 template <typename T>
-math::Vector<T> shamirSecretShare(const T& secret,
-                                  std::size_t t,
-                                  std::size_t n,
-                                  util::PRG& prg) {
-  auto c = math::Vector<T>::random(t + 1, prg);
+Vector<T> shamirSecretShare(const T& secret,
+                            std::size_t t,
+                            std::size_t n,
+                            PRG& prg) {
+  auto c = Vector<T>::random(t + 1, prg);
   c[0] = secret;
-  const auto p = math::Polynomial<T>::create(c);
+  const auto p = Polynomial<T>::create(c);
 
   std::vector<T> shares;
   shares.reserve(n);
@@ -64,7 +64,7 @@ math::Vector<T> shamirSecretShare(const T& secret,
     shares.emplace_back(p.evaluate(x++));
   }
 
-  return math::Vector<T>(shares);
+  return Vector<T>(shares);
 }
 
 /**
@@ -79,11 +79,9 @@ math::Vector<T> shamirSecretShare(const T& secret,
  * \f$\alpha_i=\mathtt{alphas}[i]\f$ and returns \f$f(x)\f$.
  */
 template <typename T>
-T shamirRecoverP(const math::Vector<T>& shares,
-                 const math::Vector<T>& alphas,
-                 const T& x) {
-  const auto lb = math::computeLagrangeBasis(alphas, x);
-  return math::innerProd<T>(shares.begin(), shares.end(), lb.begin());
+T shamirRecoverP(const Vector<T>& shares, const Vector<T>& alphas, const T& x) {
+  const auto lb = computeLagrangeBasis(alphas, x);
+  return innerProd<T>(shares.begin(), shares.end(), lb.begin());
 }
 
 /**
@@ -97,10 +95,8 @@ T shamirRecoverP(const math::Vector<T>& shares,
  * obtained from ss::ShamirShare.
  */
 template <typename T>
-T shamirRecoverP(const math::Vector<T>& shares) {
-  return shamirRecoverP(shares,
-                        math::Vector<T>::range(1, shares.size() + 1),
-                        T{});
+T shamirRecoverP(const Vector<T>& shares) {
+  return shamirRecoverP(shares, Vector<T>::range(1, shares.size() + 1), T{});
 }
 
 /**
@@ -114,8 +110,8 @@ T shamirRecoverP(const math::Vector<T>& shares) {
  * @throws std::logic_error if the provided shares are not consistent.
  */
 template <typename T>
-T shamirRecoverD(const math::Vector<T>& shares,
-                 const math::Vector<T>& alphas,
+T shamirRecoverD(const Vector<T>& shares,
+                 const Vector<T>& alphas,
                  std::size_t t,
                  std::size_t d,
                  const T& x) {
@@ -127,16 +123,15 @@ T shamirRecoverD(const math::Vector<T>& shares,
   const auto ns = alphas.subVector(d + 1);
 
   for (std::size_t i = m; i < d + t; ++i) {
-    auto lb = math::computeLagrangeBasis(ns, alphas[i]);
-    auto yi =
-        math::innerProd<T>(shares.begin(), shares.begin() + m, lb.begin());
+    auto lb = computeLagrangeBasis(ns, alphas[i]);
+    auto yi = innerProd<T>(shares.begin(), shares.begin() + m, lb.begin());
     if (yi != shares[i]) {
       throw std::logic_error("error detected during recovery");
     }
   }
 
-  auto lb = math::computeLagrangeBasis(ns, x);
-  return math::innerProd<T>(shares.begin(), shares.begin() + m, lb.begin());
+  auto lb = computeLagrangeBasis(ns, x);
+  return innerProd<T>(shares.begin(), shares.begin() + m, lb.begin());
 }
 
 /**
@@ -149,9 +144,9 @@ T shamirRecoverD(const math::Vector<T>& shares,
  * \f$\mathtt{alphas}=(1,\dots,\mathtt{shares.size()}+1)\f$ and \f$x=0\f$.
  */
 template <typename T>
-T shamirRecoverD(const math::Vector<T>& shares, std::size_t t) {
+T shamirRecoverD(const Vector<T>& shares, std::size_t t) {
   const std::size_t n = 2 * t + 1;
-  return shamirRecoverD(shares, math::Vector<T>::range(1, n + 1), t, t, T{});
+  return shamirRecoverD(shares, Vector<T>::range(1, n + 1), t, t, T{});
 }
 
 /**
@@ -175,12 +170,12 @@ struct ErrorCorrectedSecret {
   /**
    * @brief The recovered polynomial.
    */
-  math::Polynomial<T> f;
+  Polynomial<T> f;
 
   /**
    * @brief The error polynomial.
    */
-  math::Polynomial<T> err;
+  Polynomial<T> err;
 };
 
 /**
@@ -200,14 +195,14 @@ struct ErrorCorrectedSecret {
  * <p>This function can correct up to \f$t\f$ errors in the supplied shares.
  */
 template <typename T>
-ErrorCorrectedSecret<T> shamirRecoverC(const math::Vector<T>& shares,
-                                       const math::Vector<T>& alphas) {
+ErrorCorrectedSecret<T> shamirRecoverC(const Vector<T>& shares,
+                                       const Vector<T>& alphas) {
   const std::size_t t = (shares.size() - 1) / 3;
   const std::size_t n = 3 * t + 1;
 
-  math::Matrix<T> A(n);
-  math::Vector<T> b(n);
-  math::Vector<T> x(n);
+  Matrix<T> A(n);
+  Vector<T> b(n);
+  Vector<T> x(n);
   int e;
   for (std::size_t k = 0; k <= t; ++k) {
     e = t - k;  // NOLINT
@@ -231,11 +226,11 @@ ErrorCorrectedSecret<T> shamirRecoverC(const math::Vector<T>& shares,
     }
   }
 
-  math::Vector<T> cE{x.begin(), x.begin() + e + 1};
+  Vector<T> cE{x.begin(), x.begin() + e + 1};
   cE[e] = T(1);
 
-  auto E = math::Polynomial<T>::create(cE);
-  auto Q = math::Polynomial<T>::create(math::Vector<T>{x.begin() + e, x.end()});
+  auto E = Polynomial<T>::create(cE);
+  auto Q = Polynomial<T>::create(Vector<T>{x.begin() + e, x.end()});
   auto qr = Q.divide(E);
 
   if (!qr[1].isZero()) {
@@ -254,10 +249,10 @@ ErrorCorrectedSecret<T> shamirRecoverC(const math::Vector<T>& shares,
  * \f$\mathtt{alphas}=(1,\dots,\mathtt{shares.size()}+1)\f$.
  */
 template <typename T>
-ErrorCorrectedSecret<T> shamirRecoverC(const math::Vector<T>& shares) {
-  return shamirRecoverC(shares, math::Vector<T>::range(1, shares.size() + 1));
+ErrorCorrectedSecret<T> shamirRecoverC(const Vector<T>& shares) {
+  return shamirRecoverC(shares, Vector<T>::range(1, shares.size() + 1));
 }
 
-}  // namespace scl::ss
+}  // namespace scl
 
 #endif  // SCL_SS_SHAMIR_H

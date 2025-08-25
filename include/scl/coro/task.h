@@ -27,7 +27,7 @@
 #include "scl/coro/batch.h"
 #include "scl/coro/promise.h"
 
-namespace scl::coro {
+namespace scl {
 
 class Runtime;
 
@@ -188,6 +188,6 @@ inline Task<void> TaskPromise<void>::get_return_object() {
 }
 
 }  // namespace details
-}  // namespace scl::coro
+}  // namespace scl
 
 #endif  // SCL_CORO_TASK_H

@@ -23,7 +23,7 @@
 #include <functional>
 #include <memory>
 
-namespace scl::coro {
+namespace scl {
 
 class Runtime;
 
@@ -34,8 +34,8 @@ namespace details {
  */
 template <typename FUTURE>
 concept FutureAwaitableType = requires(FUTURE future) {
-                                { future() } -> std::convertible_to<bool>;
-                              };
+  { future() } -> std::convertible_to<bool>;
+};
 
 /**
  * @brief The awaiter for future events.
@@ -50,7 +50,7 @@ class FutureAwaiter final {
    * @brief Construct a new awaiter from a future.
    * @param future the future.
    */
-  FutureAwaiter(FUTURE&& future) : m_future(std::forward<FUTURE>(future)){};
+  FutureAwaiter(FUTURE&& future) : m_future(std::forward<FUTURE>(future)) {};
 
   /**
    * @brief Futures are by design not ready immediately.
@@ -83,6 +83,6 @@ class FutureAwaiter final {
 };
 
 }  // namespace details
-}  // namespace scl::coro
+}  // namespace scl
 
 #endif  // SCL_CORO_FUTURE_H

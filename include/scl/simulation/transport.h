@@ -28,7 +28,7 @@
 #include "scl/simulation/channel_id.h"
 #include "scl/simulation/context.h"
 
-namespace scl::sim::details {
+namespace scl::details {
 
 /**
  * @brief Transport layer for a simulated network.
@@ -111,6 +111,6 @@ class Transport final {
   std::vector<PktAndCount> m_packets;
 };
 
-}  // namespace scl::sim::details
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_TRANSPORT_H

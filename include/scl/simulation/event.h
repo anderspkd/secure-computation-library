@@ -30,7 +30,7 @@
 #include "scl/simulation/channel_id.h"
 #include "scl/util/time.h"
 
-namespace scl::sim {
+namespace scl {
 
 /**
  * @brief Event types.
@@ -332,6 +332,6 @@ using SimulationTrace = std::vector<std::shared_ptr<Event>>;
  */
 void writeTrace(std::ostream& stream, const SimulationTrace& trace);
 
-}  // namespace scl::sim
+}  // namespace scl
 
 #endif  // SCL_SIMULATION_EVENT_H

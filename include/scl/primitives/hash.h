@@ -23,7 +23,7 @@
 #include "scl/util/digest.h"
 #include "scl/util/sha3.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief A default hash function given a digest size.
@@ -34,6 +34,6 @@ namespace scl::util {
 template <std::size_t BITS>
 using Hash = Sha3<BITS>;
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_HASH_H

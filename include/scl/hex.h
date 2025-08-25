@@ -22,7 +22,7 @@
 #include <sstream>
 #include <string>
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief Convert value into a string.

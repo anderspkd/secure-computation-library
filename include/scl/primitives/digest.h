@@ -15,16 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_DIGEST_H
-#define SCL_UTIL_DIGEST_H
+#ifndef SCL_PRIMITIVES_DIGEST_H
+#define SCL_PRIMITIVES_DIGEST_H
 
 #include <array>
 #include <cstddef>
 #include <string>
 
-#include "scl/util/str.h"
+#include "scl/hex.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief A digest of some bitsize.
@@ -42,9 +42,9 @@ using Digest = std::array<unsigned char, BITS / 8>;
  */
 template <typename DIGEST>
 std::string digestToString(const DIGEST& digest) {
-  return toHexString(digest.begin(), digest.end());
+  return util::toHexString(digest.begin(), digest.end());
 }
 
-}  // namespace scl::util
+}  // namespace scl
 
-#endif  // SCL_UTIL_DIGEST_H
+#endif  // SCL_PRIMITIVES_DIGEST_H

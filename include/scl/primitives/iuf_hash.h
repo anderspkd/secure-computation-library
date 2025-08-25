@@ -27,7 +27,7 @@
 
 #include "scl/serialization/serializer.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief IUF (Init-Update-Finalize) interface for hash functions.
@@ -104,6 +104,6 @@ struct IUFHash {
   };
 };
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_IUF_HASH_H

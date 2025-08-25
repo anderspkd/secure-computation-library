@@ -21,9 +21,9 @@
 #include <coroutine>
 #include <functional>
 
-#include "scl/util/time.h"
+#include "scl/time.h"
 
-namespace scl::coro {
+namespace scl {
 
 class Runtime;
 

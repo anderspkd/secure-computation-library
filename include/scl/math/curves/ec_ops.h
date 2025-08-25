@@ -24,7 +24,7 @@
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
 
-namespace scl::math::ec {
+namespace scl {
 
 /**
  * @brief Set a point equal to the point-at-infinity.
@@ -152,6 +152,6 @@ void toBytes(unsigned char* dest,
 template <typename CURVE>
 std::string toString(const typename CURVE::ValueType& point);
 
-}  // namespace scl::math::ec
+}  // namespace scl
 
 #endif  // SCL_MATH_CURVES_EC_OPS_H

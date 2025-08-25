@@ -21,7 +21,7 @@
 #include "scl/coro/task.h"
 #include "scl/net/packet.h"
 
-namespace scl::net {
+namespace scl {
 
 /**
  * @brief Peer-to-peer communication channel interface.
@@ -39,27 +39,27 @@ class Channel {
    * @brief Send a data packet on the channel.
    * @param packet the packet to send.
    */
-  virtual coro::Task<void> send(Packet&& packet) = 0;
+  virtual Task<void> send(Packet&& packet) = 0;
 
   /**
    * @brief Send a data packet on the channel.
    * @param packet the packet to send.
    */
-  virtual coro::Task<void> send(const Packet& packet) = 0;
+  virtual Task<void> send(const Packet& packet) = 0;
 
   /**
    * @brief Receive a data packet from on the channel.
    * @return the received packet.
    */
-  virtual coro::Task<Packet> recv() = 0;
+  virtual Task<Packet> recv() = 0;
 
   /**
    * @brief Check if there is something to receive on this channel.
    * @return true if this channel has data and false otherwise.
    */
-  virtual coro::Task<bool> hasData() = 0;
+  virtual Task<bool> hasData() = 0;
 };
 
-}  // namespace scl::net
+}  // namespace scl
 
 #endif  // SCL_NET_CHANNEL_H

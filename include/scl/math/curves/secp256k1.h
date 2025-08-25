@@ -25,7 +25,7 @@
 #include "scl/math/fields/secp256k1_field.h"
 #include "scl/math/fields/secp256k1_scalar.h"
 
-namespace scl::math::ec {
+namespace scl {
 
 /**
  * @brief Elliptic curve definition for secp256k1.

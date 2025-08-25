@@ -28,7 +28,7 @@
 #include "scl/simulation/event.h"
 #include "scl/simulation/hook.h"
 
-namespace scl::sim {
+namespace scl {
 
 /**
  * @brief Manager for a simulation.
@@ -203,6 +203,6 @@ class ManagerWithOutputToStream : public Manager {
   std::ostream& m_stream;
 };
 
-}  // namespace scl::sim
+}  // namespace scl
 
 #endif  // SCL_SIMULATION_MANAGER_H

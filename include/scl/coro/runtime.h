@@ -31,7 +31,7 @@
 #include "scl/coro/task.h"
 #include "scl/util/time.h"
 
-namespace scl::coro {
+namespace scl {
 
 /**
  * @brief Interface for a coroutine runtime.
@@ -210,6 +210,6 @@ inline std::coroutine_handle<> SleepAwaiter::await_suspend(
 }
 
 }  // namespace details
-}  // namespace scl::coro
+}  // namespace scl
 
 #endif  // SCL_CORO_RUNTIME_H

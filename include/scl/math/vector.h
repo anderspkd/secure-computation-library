@@ -30,7 +30,6 @@
 #include "scl/util/prg.h"
 
 namespace scl {
-namespace math {
 
 template <typename ELEMENT>
 class Matrix;
@@ -273,8 +272,8 @@ class Vector final {
    */
   template <typename SCALAR>
     requires requires(const ELEMENT& e, const SCALAR& s) {
-               { (e) * (s) } -> std::convertible_to<ELEMENT>;
-             }
+      { (e) * (s) } -> std::convertible_to<ELEMENT>;
+    }
   Vector scalarMultiply(const SCALAR& scalar) const {
     std::vector<ELEMENT> r;
     r.reserve(size());
@@ -291,8 +290,8 @@ class Vector final {
    */
   template <typename SCALAR>
     requires requires(ELEMENT& e, const SCALAR& s) {
-               { e *= s } -> std::convertible_to<ELEMENT>;
-             }
+      { e *= s } -> std::convertible_to<ELEMENT>;
+    }
   Vector& scalarMultiplyInPlace(const SCALAR& scalar) {
     for (auto& v : m_values) {
       v *= scalar;
@@ -585,10 +584,6 @@ std::string Vector<ELEMENT>::toString() const {
   return ss.str();
 }
 
-}  // namespace math
-
-namespace seri {  // namespace seri
-
 /**
  * @brief Serializer specialization for math::Vec.
  */
@@ -628,7 +623,6 @@ struct Serializer<math::Vector<ELEMENT>> {
   }
 };
 
-}  // namespace seri
 }  // namespace scl
 
 #endif  // SCL_MATH_VECTOR_H

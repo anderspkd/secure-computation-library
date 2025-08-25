@@ -26,7 +26,7 @@
 #include "scl/protocol/env.h"
 #include "scl/protocol/result.h"
 
-namespace scl::proto {
+namespace scl {
 
 /**
  * @brief Evaluate a protocol.
@@ -98,6 +98,6 @@ inline coro::Task<void> evaluate(std::unique_ptr<Protocol> protocol, Env& env) {
   }
 }
 
-}  // namespace scl::proto
+}  // namespace scl
 
 #endif  // SCL_PROTOCOL_EVAL_H

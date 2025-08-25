@@ -26,7 +26,7 @@
 
 #include "scl/serialization.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief A simple bitmap.
@@ -265,6 +265,6 @@ struct Serializer<Bitmap> {
   }
 };
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_BITMAP_H

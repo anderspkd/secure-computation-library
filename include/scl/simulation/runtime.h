@@ -25,7 +25,7 @@
 #include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
 
-namespace scl::sim::details {
+namespace scl::details {
 
 /**
  * @brief Runtime implementation used in the simulator.
@@ -61,10 +61,7 @@ class SimulatorRuntime final : public coro::Runtime {
    * context.
    */
   void scheduleWithId(std::coroutine_handle<> coroutine, std::size_t id) {
-    m_tq.emplace_back(
-        coroutine,
-        []() { return true; },
-        id);
+    m_tq.emplace_back(coroutine, []() { return true; }, id);
   }
 
   void schedule(std::coroutine_handle<> coroutine,
@@ -90,6 +87,6 @@ class SimulatorRuntime final : public coro::Runtime {
   void removeCancelledCoros();
 };
 
-}  // namespace scl::sim::details
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_RUNTIME_H

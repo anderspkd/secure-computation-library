@@ -23,7 +23,7 @@
 #include "scl/math/vector.h"
 #include "scl/util/prg.h"
 
-namespace scl::ss {
+namespace scl {
 
 /**
  * @brief Creates an additive secret-sharing.
@@ -39,7 +39,7 @@ namespace scl::ss {
  * and so reconstructing the secret is simply <code>shares.sum()</code>.
  */
 template <typename T>
-math::Vector<T> additiveShare(const T& secret, std::size_t n, util::PRG& prg) {
+Vector<T> additiveShare(const T& secret, std::size_t n, PRG& prg) {
   std::vector<T> shares;
   shares.reserve(n);
   auto sum = T::zero();
@@ -52,6 +52,6 @@ math::Vector<T> additiveShare(const T& secret, std::size_t n, util::PRG& prg) {
   return shares;
 }  // LCOV_EXCL_LINE
 
-}  // namespace scl::ss
+}  // namespace scl
 
 #endif  // SCL_SS_ADDITIVE_H

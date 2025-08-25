@@ -24,7 +24,7 @@
 
 #include "scl/util/bitmap.h"
 
-namespace scl::sim::details {
+namespace scl::details {
 
 /**
  * @brief Exception used to signal that a coroutine has been cancelled.

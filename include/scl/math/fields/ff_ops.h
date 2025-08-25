@@ -25,7 +25,7 @@
 
 #include "scl/math/number.h"
 
-namespace scl::math::ff {
+namespace scl {
 
 /**
  * @brief Convert an int into a field element.
@@ -117,6 +117,6 @@ void fromBytes(typename FIELD::ValueType& dest, const unsigned char* src);
 template <typename FIELD>
 std::string toString(const typename FIELD::ValueType& in);
 
-}  // namespace scl::math::ff
+}  // namespace scl
 
 #endif  // SCL_MATH_FIELDS_FF_OPS_H

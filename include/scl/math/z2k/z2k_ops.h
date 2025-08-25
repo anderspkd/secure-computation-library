@@ -25,7 +25,7 @@
 
 #include "scl/util/str.h"
 
-namespace scl::math::z2k {
+namespace scl {
 
 /**
  * @brief Add two values modulo a power of 2 without normalization.

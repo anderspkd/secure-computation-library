@@ -19,12 +19,12 @@
 
 #include "scl/math/fp.h"
 #include "scl/math/number.h"
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 
 using namespace scl;
 
 TEST_CASE("Serialization simple types", "[misc]") {
-  using Sint = seri::Serializer<int>;
+  using Sint = util::Serializer<int>;
   const auto int_size = sizeof(int);
   unsigned char buf[4 * int_size];
 
@@ -53,7 +53,7 @@ struct SomeStruct {
 };
 
 TEST_CASE("Serialization simple types struct", "[misc]") {
-  using Sss = seri::Serializer<SomeStruct>;
+  using Sss = util::Serializer<SomeStruct>;
 
   SomeStruct s{1, true, 2.5};
   unsigned char buf[sizeof(SomeStruct)];
@@ -73,7 +73,7 @@ TEST_CASE("Serialization simple types struct", "[misc]") {
 constexpr std::size_t VEC_OVERHEAD = sizeof(seri::StlVecSizeType);
 
 TEST_CASE("Serialization vector", "[misc]") {
-  using Sv = seri::Serializer<std::vector<int>>;
+  using Sv = util::Serializer<std::vector<int>>;
   std::vector<int> v = {1, 2, 3, 4};
 
   REQUIRE(Sv::sizeOf(v) == 4 * sizeof(int) + VEC_OVERHEAD);
@@ -88,7 +88,7 @@ TEST_CASE("Serialization vector", "[misc]") {
 }
 
 TEST_CASE("Serialization vector vector", "[misc]") {
-  using Sv = seri::Serializer<std::vector<std::vector<int>>>;
+  using Sv = util::Serializer<std::vector<std::vector<int>>>;
   std::vector<std::vector<int>> v = {{1, 2, 3}, {2, 3}, {5, 6, 7}};
 
   const auto expected_size = 8 * sizeof(int) + 4 * VEC_OVERHEAD;
@@ -105,7 +105,7 @@ TEST_CASE("Serialization vector vector", "[misc]") {
 
 TEST_CASE("Serialization Vec", "[misc]") {
   using Fp = math::Fp<61>;
-  using Sv = seri::Serializer<std::vector<Fp>>;
+  using Sv = util::Serializer<std::vector<Fp>>;
 
   std::vector<Fp> v = {Fp(1), Fp(2), Fp(3)};
   const auto expected_size = VEC_OVERHEAD + Fp::byteSize() * 3;
@@ -122,7 +122,7 @@ TEST_CASE("Serialization Vec", "[misc]") {
 }
 
 TEST_CASE("Serialization number", "[misc]") {
-  using Sn = seri::Serializer<math::Number>;
+  using Sn = util::Serializer<math::Number>;
 
   math::Number a(1234);
   auto buf = std::make_unique<unsigned char[]>(Sn::sizeOf(a));
@@ -135,7 +135,7 @@ TEST_CASE("Serialization number", "[misc]") {
 }
 
 TEST_CASE("Serialization number vector", "[misc]") {
-  using Sn = seri::Serializer<std::vector<math::Number>>;
+  using Sn = util::Serializer<std::vector<math::Number>>;
 
   std::vector<math::Number> nums = {math::Number(22222123),
                                     math::Number(123),

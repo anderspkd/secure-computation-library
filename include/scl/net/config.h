@@ -31,7 +31,7 @@
 #define DEFAULT_PORT_OFFSET 9900
 #endif
 
-namespace scl::net {
+namespace scl {
 
 /**
  * @brief Connection information for a party.
@@ -107,7 +107,7 @@ class NetworkConfig {
    * @brief Create a network config for only one party.
    */
   NetworkConfig()
-      : m_id(0), m_parties(std::vector<Party>{Party{0, "0.0.0.0", 0}}){};
+      : m_id(0), m_parties(std::vector<Party>{Party{0, "0.0.0.0", 0}}) {};
 
   /**
    * @brief Gets the identity of this party.
@@ -144,6 +144,6 @@ class NetworkConfig {
   void validate();
 };
 
-}  // namespace scl::net
+}  // namespace scl
 
 #endif  // SCL_NET_CONFIG_H

@@ -28,7 +28,7 @@
 #include "scl/protocol/clock.h"
 #include "scl/util/time.h"
 
-namespace scl::proto {
+namespace scl {
 
 /**
  * @brief Environment for protocol executions.
@@ -62,6 +62,6 @@ inline Env createDefaultEnv(net::Network network) {
              .clock = std::make_unique<RealtimeClock>()};
 }
 
-}  // namespace scl::proto
+}  // namespace scl
 
 #endif  // SCL_PROTOCOL_ENV_H

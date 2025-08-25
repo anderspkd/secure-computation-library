@@ -22,7 +22,7 @@
 #include <functional>
 #include <ostream>
 
-namespace scl::sim {
+namespace scl {
 
 /**
  * @brief Channel identifier.
@@ -76,7 +76,7 @@ struct ChannelId {
   }
 };
 
-}  // namespace scl::sim
+}  // namespace scl
 
 /// @cond
 

@@ -29,7 +29,7 @@
 #include "scl/net/sys_iface.h"
 #include "scl/net/tcp_utils.h"
 
-namespace scl::net {
+namespace scl {
 
 /**
  * @brief A channel implementation using TCP.
@@ -210,6 +210,6 @@ coro::Task<bool> TcpChannel<SYS>::hasData() {
   co_return details::pollSocket(m_socket, POLLIN);
 }
 
-}  // namespace scl::net
+}  // namespace scl
 
 #endif  // SCL_NET_TCP_CHANNEL_H

@@ -25,7 +25,7 @@
 #include "scl/coro/task.h"
 #include "scl/net/channel.h"
 
-namespace scl::net {
+namespace scl {
 
 /**
  * @brief A loopback channel.
@@ -135,6 +135,6 @@ class LoopbackChannel final : public Channel {
   std::shared_ptr<Buffer> m_out;
 };
 
-}  // namespace scl::net
+}  // namespace scl
 
 #endif  // SCL_NET_LOOPBACK_H

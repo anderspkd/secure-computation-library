@@ -19,15 +19,13 @@
 #define SCL_MATH_NUMBER_H
 
 #include <cstdint>
-#include <memory>
 
 #include <gmp.h>
 
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 #include "scl/util/prg.h"
 
 namespace scl {
-namespace math {
 
 class Number;
 
@@ -454,10 +452,6 @@ class Number final {
                        const Number& mod);
 };
 
-}  // namespace math
-
-namespace seri {
-
 /**
  * @brief Serializer specialization for math::Number.
  */
@@ -499,7 +493,6 @@ struct Serializer<math::Number> {
   }
 };
 
-}  // namespace seri
 }  // namespace scl
 
 #endif  // SCL_MATH_NUMBER_H

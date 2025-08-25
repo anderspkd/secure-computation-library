@@ -24,7 +24,7 @@
 #include "scl/util/digest.h"
 #include "scl/util/iuf_hash.h"
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief SHA3 hash function.
@@ -125,7 +125,8 @@ void Sha3<BITS>::hash(const unsigned char* bytes, std::size_t nbytes) {
 
 template <std::size_t BITS>
 auto Sha3<BITS>::write() -> Sha3<BITS>::DigestType {
-  uint64_t t = (uint64_t)(((uint64_t)(0x02 | (1 << 2))) << ((m_byte_index)*8));
+  uint64_t t =
+      (uint64_t)(((uint64_t)(0x02 | (1 << 2))) << ((m_byte_index) * 8));
   m_state[m_word_index] ^= m_saved ^ t;
   m_state[CUTTOFF - 1] ^= 0x8000000000000000ULL;
   keccakf(m_state);
@@ -152,6 +153,6 @@ auto Sha3<BITS>::write() -> Sha3<BITS>::DigestType {
   return digest;
 }
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_SHA3_H

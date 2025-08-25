@@ -30,7 +30,7 @@
 
 #include "scl/net/sys_iface.h"
 
-namespace scl::net {
+namespace scl {
 
 /**
  * @brief Socket type. Probably <code>int</code>.
@@ -182,9 +182,7 @@ void markSocketNonBlocking(SocketType socket) {
 
 template <typename SYS = SysIFace>
 bool pollSocket(SocketType socket, short event) {
-  struct pollfd fds {
-    socket, POLLIN, 0
-  };
+  struct pollfd fds{socket, POLLIN, 0};
 
   auto r = SYS::poll(&fds, 1, 0);
 
@@ -198,6 +196,6 @@ bool pollSocket(SocketType socket, short event) {
 }
 
 }  // namespace details
-}  // namespace scl::net
+}  // namespace scl
 
 #endif  // SCL_NET_TCP_UTILS_H

@@ -34,7 +34,7 @@
 #include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
 
-namespace scl::net {
+namespace scl {
 
 struct MockNetwork;
 
@@ -81,7 +81,7 @@ class Network {
    * @param id the ID of the local party
    */
   Network(const std::vector<std::shared_ptr<Channel>>& channels, std::size_t id)
-      : m_channels(channels), m_id(id){};
+      : m_channels(channels), m_id(id) {};
 
   Network() = default;
 
@@ -212,6 +212,6 @@ class Network {
   std::size_t m_id;
 };
 
-}  // namespace scl::net
+}  // namespace scl
 
 #endif  // SCL_NET_NETWORK_H

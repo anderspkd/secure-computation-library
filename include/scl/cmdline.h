@@ -29,7 +29,7 @@
 #include <variant>
 #include <vector>
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief Simple command line argument parser.
@@ -99,7 +99,7 @@ class ProgramOptions {
   ProgramOptions(
       const std::unordered_map<std::string_view, std::string_view>& args,
       const std::unordered_map<std::string_view, bool>& flags)
-      : m_args(args), m_flags(flags){};
+      : m_args(args), m_flags(flags) {};
 
   std::unordered_map<std::string_view, std::string_view> m_args;
   std::unordered_map<std::string_view, bool> m_flags;
@@ -334,6 +334,6 @@ bool ProgramOptions::Parser::exists(const T& arg_or_flag) const {
   return exists_f;
 }
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_CMDLINE_H

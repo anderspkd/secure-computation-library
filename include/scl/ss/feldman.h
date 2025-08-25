@@ -28,7 +28,7 @@
 #include "scl/ss/shamir.h"
 #include "scl/util/prg.h"
 
-namespace scl::ss {
+namespace scl {
 
 /**
  * @brief A verifiable secret share for Feldman VSSS.
@@ -53,7 +53,7 @@ struct FeldmanShare {
   /**
    * @brief The commitments.
    */
-  math::Vector<Group> commitments;
+  Vector<Group> commitments;
 };
 
 /**
@@ -79,12 +79,12 @@ struct FeldmanSharing {
   /**
    * @brief The shares.
    */
-  math::Vector<typename GROUP::ScalarField> shares;
+  Vector<typename GROUP::ScalarField> shares;
 
   /**
    * @brief The commitments.
    */
-  math::Vector<GROUP> commitments;
+  Vector<GROUP> commitments;
 
   /**
    * @brief Get a particular party's share.
@@ -120,7 +120,7 @@ FeldmanSharing<GROUP> feldmanSecretShare(
     comm.emplace_back(shares[i] * gen);
   }
 
-  return {shares, math::Vector<GROUP>{comm}};
+  return {shares, Vector<GROUP>{comm}};
 }
 
 /**
@@ -136,10 +136,10 @@ FeldmanSharing<GROUP> feldmanSecretShare(
 template <typename GROUP>
 bool feldmanVerify(const FeldmanShare<GROUP>& share, std::size_t share_index) {
   using F = typename GROUP::ScalarField;
-  const auto ns = math::Vector<F>::range(share.commitments.size());
-  const auto lb = math::computeLagrangeBasis(ns, share_index);
+  const auto ns = Vector<F>::range(share.commitments.size());
+  const auto lb = computeLagrangeBasis(ns, share_index);
   const auto v =
-      math::innerProd<GROUP>(lb.begin(), lb.end(), share.commitments.begin());
+      innerProd<GROUP>(lb.begin(), lb.end(), share.commitments.begin());
   return v == GROUP::generator() * share.share;
 }
 
@@ -157,11 +157,11 @@ bool feldmanVerify(const FeldmanShare<GROUP>& share, std::size_t share_index) {
 template <typename GROUP>
 bool feldmanVerify(
     const typename FeldmanShare<GROUP>::Field& share,
-    const math::Vector<typename FeldmanShare<GROUP>::Group>& commitments,
+    const Vector<typename FeldmanShare<GROUP>::Group>& commitments,
     std::size_t share_index) {
   return feldmanVerify<GROUP>({share, commitments}, share_index);
 }
 
-}  // namespace scl::ss
+}  // namespace scl
 
 #endif  // SCL_SS_FELDMAN_H

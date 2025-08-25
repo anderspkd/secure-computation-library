@@ -34,7 +34,6 @@
 #include "scl/util/prg.h"
 
 namespace scl {
-namespace math {
 
 template <typename Elem>
 class Vector;
@@ -174,7 +173,7 @@ class Matrix final {
    * @brief Create a square matrix with default initialized values.
    * @param n the dimensions of the matrix
    */
-  explicit Matrix(std::size_t n) : Matrix(n, n){};
+  explicit Matrix(std::size_t n) : Matrix(n, n) {};
 
   /**
    * @brief The number of rows of this matrix.
@@ -418,7 +417,7 @@ class Matrix final {
 
  private:
   Matrix(std::size_t r, std::size_t c, std::vector<ELEMENT> v)
-      : m_rows(r), m_cols(c), m_values(v){};
+      : m_rows(r), m_cols(c), m_values(v) {};
 
   void ensureCompatible(const Matrix& other) {
     if (m_rows != other.m_rows || m_cols != other.m_cols) {
@@ -900,10 +899,6 @@ std::string Matrix<ELEMENT>::toString() const {
   return ss.str();
 }
 
-}  // namespace math
-
-namespace seri {
-
 /**
  * @brief Serializer specialization for a math::Mat.
  */
@@ -962,7 +957,6 @@ struct Serializer<math::Matrix<ELEMENT>> {
   }
 };
 
-}  // namespace seri
 }  // namespace scl
 
 #endif  // SCL_MATH_MATRIX_H

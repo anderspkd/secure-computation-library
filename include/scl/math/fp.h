@@ -24,7 +24,7 @@
 #include "scl/math/fields/mersenne127.h"
 #include "scl/math/fields/mersenne61.h"
 
-namespace scl::math {
+namespace scl {
 
 #define SCL_IN_RANGE(v, l, u) ((l) <= (v) && (v) <= (u))
 

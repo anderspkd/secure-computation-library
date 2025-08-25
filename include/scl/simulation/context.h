@@ -31,7 +31,7 @@
 #include "scl/simulation/hook.h"
 #include "scl/util/bitmap.h"
 
-namespace scl::sim {
+namespace scl {
 
 class SimulationContext;
 
@@ -289,6 +289,6 @@ inline SimulationContext GlobalContext::LocalContext::getContext() const {
 
 }  // namespace details
 
-}  // namespace scl::sim
+}  // namespace scl
 
 #endif  // SCL_SIMULATION_CONTEXT_H

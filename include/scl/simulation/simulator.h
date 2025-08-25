@@ -27,7 +27,7 @@
 #include "scl/simulation/event.h"
 #include "scl/simulation/manager.h"
 
-namespace scl::sim {
+namespace scl {
 
 /**
  * @brief Simulate the execution of a protocol.

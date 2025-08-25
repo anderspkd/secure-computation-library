@@ -26,7 +26,7 @@
 
 #include "scl/simulation/channel_id.h"
 
-namespace scl::sim {
+namespace scl {
 
 /**
  * @brief Configuration for a channel between two parties.
@@ -147,7 +147,7 @@ class ChannelConfig {
         m_rtt(rtt),
         m_MSS(MSS),
         m_package_loss(package_loss),
-        m_window_size(window_size){};
+        m_window_size(window_size) {};
 
   NetworkType m_type;
   std::size_t m_bandwidth;
@@ -170,7 +170,7 @@ class ChannelConfig::Builder {
   /**
    * @brief Create an empty simulation config builder.
    */
-  Builder(){};
+  Builder() {};
 
   /**
    * @brief Build the simulation config.
@@ -290,6 +290,6 @@ struct SimpleNetworkConfig final : public NetworkConfig {
   }
 };
 
-}  // namespace scl::sim
+}  // namespace scl
 
 #endif  // SCL_SIMULATION_CONFIG_H

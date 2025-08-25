@@ -26,12 +26,12 @@
 #include "scl/simulation/context.h"
 #include "scl/simulation/transport.h"
 
-namespace scl::sim::details {
+namespace scl::details {
 
 /**
  * @brief Channel implementation used during simulations.
  */
-class SimulatedChannel final : public net::Channel {
+class SimulatedChannel final : public Channel {
  public:
   /**
    * @brief Construct a SimulatedChannel.
@@ -56,28 +56,28 @@ class SimulatedChannel final : public net::Channel {
    *
    * Creates a EventType::SEND event.
    */
-  coro::Task<void> send(net::Packet&& packet) override;
+  Task<void> send(Packet&& packet) override;
 
   /**
    * @brief Sends data on the channel.
    *
    * Creates a EventType::SEND event.
    */
-  coro::Task<void> send(const net::Packet& packet) override;
+  Task<void> send(const Packet& packet) override;
 
   /**
    * @brief Receives data on the channel.
    *
    * Creates a EventType::RECV event.
    */
-  coro::Task<net::Packet> recv() override;
+  Task<Packet> recv() override;
 
   /**
    * @brief Checks if there is data available on this channel.
    *
    * Creates a EventType::HAS_DATA event.
    */
-  coro::Task<bool> hasData() override;
+  Task<bool> hasData() override;
 
  private:
   ChannelId m_cid;
@@ -85,6 +85,6 @@ class SimulatedChannel final : public net::Channel {
   std::shared_ptr<Transport> m_transport;
 };
 
-}  // namespace scl::sim::details
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_CHANNEL_H

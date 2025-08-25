@@ -23,7 +23,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace scl::util {
+namespace scl {
 
 template <typename T>
 struct Serializer;
@@ -90,6 +90,6 @@ struct Serializer<std::vector<T>> {
   }
 };
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_SERIALIZATION_H

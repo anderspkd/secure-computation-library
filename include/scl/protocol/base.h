@@ -27,7 +27,7 @@
 #include "scl/protocol/env.h"
 #include "scl/protocol/result.h"
 
-namespace scl::proto {
+namespace scl {
 
 /**
  * @brief Interface for protocols.
@@ -132,7 +132,7 @@ struct Protocol {
   /**
    * @brief Run the protocol.
    */
-  virtual coro::Task<ProtocolResult> run(Env& env) const = 0;
+  virtual Task<ProtocolResult> run(Env& env) const = 0;
 
   /**
    * @brief The protocol's name.
@@ -142,6 +142,6 @@ struct Protocol {
   }
 };
 
-}  // namespace scl::proto
+}  // namespace scl
 
 #endif  // SCL_PROTOCOL_BASE_H

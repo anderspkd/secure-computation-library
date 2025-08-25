@@ -27,7 +27,7 @@
 #include "scl/ss/shamir.h"
 #include "scl/util/prg.h"
 
-namespace scl::ss {
+namespace scl {
 
 /**
  * @brief A secret share in the Pedersen VSS scheme.
@@ -56,12 +56,12 @@ struct PedersenShare {
   /**
    * @brief The secret share and randomness.
    */
-  math::Array<Field, 2> share;
+  Array<Field, 2> share;
 
   /**
    * @brief The commitments.
    */
-  math::Vector<Group> commitments;
+  Vector<Group> commitments;
 
   /**
    * @brief Get the commitment randomness of this share.
@@ -96,12 +96,12 @@ struct PedersenSharing {
   /**
    * @brief The shares.
    */
-  math::Vector<math::Array<Field, 2>> shares;
+  Vector<Array<Field, 2>> shares;
 
   /**
    * @brief The share commitments.
    */
-  math::Vector<Group> commitments;
+  Vector<Group> commitments;
 
   /**
    * @brief Get the share of a particular party.
@@ -134,7 +134,7 @@ PedersenSharing<T> pedersenSecretShare(
   using F = typename PedersenSharing<T>::Field;
   using G = typename PedersenSharing<T>::Group;
 
-  const math::Array<F, 2> s = {{secret, randomness}};
+  const Array<F, 2> s = {{secret, randomness}};
   const auto shares = shamirSecretShare(s, t, n, prg);
 
   std::vector<G> comm;
@@ -176,7 +176,7 @@ PedersenSharing<GROUP> pedersenSecretShare(
  * @return the commitment of the share at \p share_index.
  */
 template <typename GROUP>
-GROUP computeCommitmentForIndex(const math::Vector<GROUP>& commitments,
+GROUP computeCommitmentForIndex(const Vector<GROUP>& commitments,
                                 std::size_t share_index) {
   if (share_index < commitments.size()) {
     return commitments[share_index];
@@ -185,9 +185,9 @@ GROUP computeCommitmentForIndex(const math::Vector<GROUP>& commitments,
   using Field = typename PedersenShare<GROUP>::Field;
   using Group = typename PedersenShare<GROUP>::Group;
 
-  const auto ns = math::Vector<Field>::range(commitments.size());
-  const auto lb = math::computeLagrangeBasis(ns, share_index);
-  return math::innerProd<Group>(lb.begin(), lb.end(), commitments.begin());
+  const auto ns = Vector<Field>::range(commitments.size());
+  const auto lb = computeLagrangeBasis(ns, share_index);
+  return innerProd<Group>(lb.begin(), lb.end(), commitments.begin());
 }
 
 /**
@@ -216,8 +216,8 @@ bool pedersenVerify(const PedersenShare<GROUP> share,
  */
 template <typename T>
 bool pedersenVerify(
-    const math::Array<typename PedersenSharing<T>::Field, 2>& share,
-    const math::Vector<typename PedersenSharing<T>::Group>& commitments,
+    const Array<typename PedersenSharing<T>::Field, 2>& share,
+    const Vector<typename PedersenSharing<T>::Group>& commitments,
     std::size_t share_index,
     const typename PedersenShare<T>::Group& h) {
   return pedersenVerify<T>({share, commitments}, share_index, h);
@@ -237,7 +237,7 @@ template <typename T, typename IT>
 std::vector<PedersenShare<T>> apply(
     const IT begin,
     const IT end,
-    const math::Matrix<typename PedersenShare<T>::Field>& matrix) {
+    const Matrix<typename PedersenShare<T>::Field>& matrix) {
   // stupid case
   if (begin == end) {
     return {};
@@ -252,7 +252,7 @@ std::vector<PedersenShare<T>> apply(
   // multiply matrix from left
   std::vector<PedersenShare<T>> shares_out(n);
   for (auto& share_out : shares_out) {
-    share_out.commitments = math::Vector<Group>(m);
+    share_out.commitments = Vector<Group>(m);
   }
 
   std::size_t i;
@@ -282,10 +282,10 @@ std::vector<PedersenShare<T>> apply(
 template <typename T>
 std::vector<PedersenShare<T>> apply(
     const std::vector<PedersenShare<T>>& shares,
-    const math::Matrix<typename PedersenShare<T>::Field>& matrix) {
+    const Matrix<typename PedersenShare<T>::Field>& matrix) {
   return apply<T>(shares.begin(), shares.end(), matrix);
 }
 
-}  // namespace scl::ss
+}  // namespace scl
 
 #endif  // SCL_SS_PEDERSEN_H

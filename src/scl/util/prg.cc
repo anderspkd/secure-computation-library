@@ -24,6 +24,8 @@
 #include <wmmintrin.h>
 #include <xmmintrin.h>
 
+using namespace scl;
+
 /**
  * PRG implementation based on AES-CTR with code from
  * https://github.com/sebastien-riou/aes-brute-force
@@ -85,8 +87,7 @@ auto createMask(long counter) {
 
 }  // namespace
 
-scl::util::PRG scl::util::PRG::create(const unsigned char* seed,
-                                      std::size_t seed_len) {
+PRG PRG::create(const unsigned char* seed, std::size_t seed_len) {
   std::array<unsigned char, PRG::seedSize()> s = {0};
   if (seed != nullptr) {
     if (seed_len > PRG::seedSize()) {
@@ -100,28 +101,28 @@ scl::util::PRG scl::util::PRG::create(const unsigned char* seed,
   return prg;
 }
 
-scl::util::PRG scl::util::PRG::create() {
+PRG scl::util::PRG::create() {
   return PRG::create(nullptr, 0);
 }
 
-scl::util::PRG scl::util::PRG::create(const std::string& seed) {
+PRG PRG::create(const std::string& seed) {
   return PRG::create((const unsigned char*)seed.c_str(), seed.length());
 }
 
-void scl::util::PRG::update() {
+void PRG::update() {
   m_counter += 1;
 }
 
-void scl::util::PRG::init() {
+void PRG::init() {
   aes128LoadKey(m_seed.data(), m_state);
 }
 
-void scl::util::PRG::reset() {
+void PRG::reset() {
   init();
   m_counter = PRG_INITIAL_COUNTER;
 }
 
-void scl::util::PRG::next(unsigned char* buffer, size_t n) {
+void PRG::next(unsigned char* buffer, size_t n) {
   if (n == 0) {
     return;
   }

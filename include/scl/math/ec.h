@@ -29,7 +29,6 @@
 #include "scl/math/number.h"
 
 namespace scl {
-namespace math {
 
 /**
  * @brief Elliptic Curve interface.
@@ -303,10 +302,6 @@ class EC final {
   typename CURVE::ValueType m_value;
 };
 
-}  // namespace math
-
-namespace seri {
-
 /**
  * @brief Serializer for EC types.
  *
@@ -337,8 +332,6 @@ struct Serializer<math::EC<CURVE>> {
     return sizeOf(point);
   }
 };
-
-}  // namespace seri
 
 }  // namespace scl
 

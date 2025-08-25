@@ -27,7 +27,6 @@
 #include "scl/util/prg.h"
 
 namespace scl {
-namespace math {
 
 /// @cond
 
@@ -414,10 +413,6 @@ class Array final {
   std::array<T, N> m_values;
 };
 
-}  // namespace math
-
-namespace seri {
-
 /**
  * @brief Serializer specialization for product types.
  */
@@ -453,8 +448,6 @@ struct Serializer<math::Array<GROUP, N>> {
     return sizeOf(prod);
   }
 };
-
-}  // namespace seri
 
 }  // namespace scl
 

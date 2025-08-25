@@ -23,7 +23,6 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include <emmintrin.h>
@@ -42,7 +41,7 @@
 #define PRG_INITIAL_COUNTER 0
 #endif
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief Pseudorandom generator based on AES-CTR.
@@ -162,7 +161,7 @@ class PRG {
   }
 
  private:
-  PRG(std::array<unsigned char, BLOCK_SIZE> seed) : m_seed(seed){};
+  PRG(std::array<unsigned char, BLOCK_SIZE> seed) : m_seed(seed) {};
 
   std::array<unsigned char, BLOCK_SIZE> m_seed = {0};
   long m_counter = PRG_INITIAL_COUNTER;
@@ -172,6 +171,6 @@ class PRG {
   void init();
 };
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_PRG_H

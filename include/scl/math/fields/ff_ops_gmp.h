@@ -29,7 +29,7 @@
 
 #include "scl/util/str.h"
 
-namespace scl::math::ff {
+namespace scl {
 
 #define SCL_BITS_PER_LIMB static_cast<std::size_t>(mp_bits_per_limb)
 #define SCL_BYTES_PER_LIMB sizeof(mp_limb_t)

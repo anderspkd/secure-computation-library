@@ -22,7 +22,7 @@
 
 #include "scl/math/vector.h"
 
-namespace scl::math {
+namespace scl {
 
 /**
  * @brief Polynomials over rings.
@@ -170,7 +170,8 @@ class Polynomial {
   }
 
  private:
-  Polynomial(const Vector<RING>& coefficients) : m_coefficients(coefficients){};
+  Polynomial(const Vector<RING>& coefficients)
+      : m_coefficients(coefficients) {};
 
   Vector<RING> m_coefficients;
 };
@@ -291,6 +292,6 @@ std::string Polynomial<RING>::toString(const char* polynomial_name,
   return ss.str();
 }
 
-}  // namespace scl::math
+}  // namespace scl
 
 #endif  // SCL_MATH_POLY_H

@@ -18,10 +18,8 @@
 #include "scl/math/number.h"
 
 #include <cstring>
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <type_traits>
 
 #include <gmp.h>
 

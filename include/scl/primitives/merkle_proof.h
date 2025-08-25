@@ -24,7 +24,6 @@
 #include "scl/util/bitmap.h"
 
 namespace scl {
-namespace util {
 
 /**
  * @brief A Merkle tree proof.
@@ -42,10 +41,6 @@ struct MerkleProof {
    */
   Bitmap direction;
 };
-
-}  // namespace util
-
-namespace seri {
 
 /**
  * @brief Serializer for MerkleProof.
@@ -89,7 +84,6 @@ struct Serializer<util::MerkleProof<DIGEST>> {
   }
 };
 
-}  // namespace seri
 }  // namespace scl
 
 #endif  // SCL_UTIL_MERKLE_PROOF_H

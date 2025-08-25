@@ -32,7 +32,7 @@
 #include "scl/coro/sleep_awaiter.h"
 #include "scl/util/time.h"
 
-namespace scl::coro {
+namespace scl {
 
 template <typename RESULT>
 class Task;

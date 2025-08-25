@@ -21,7 +21,7 @@
 #include <chrono>
 #include <ratio>
 
-namespace scl::util {
+namespace scl {
 
 /**
  * @brief Wrapper for time related types.
@@ -53,6 +53,6 @@ inline long double timeToMillis(Time::Duration time) {
   return duration<long double, std::milli>(time).count();
 }
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_TIME_H

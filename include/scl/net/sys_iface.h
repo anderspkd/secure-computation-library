@@ -27,7 +27,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-namespace scl::net::details {
+namespace scl::details {
 
 /**
  * @brief System call wrapper.
@@ -148,6 +148,6 @@ struct SysIFace {
   }
 };
 
-}  // namespace scl::net::details
+}  // namespace scl::details
 
 #endif  // SCL_NET_SYS_IFACE_H

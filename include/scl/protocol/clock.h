@@ -20,7 +20,7 @@
 
 #include "scl/util/time.h"
 
-namespace scl::proto {
+namespace scl {
 
 /**
  * @brief A clock interface.
@@ -56,6 +56,6 @@ class RealtimeClock final : public Clock {
   util::Time::TimePoint m_clock_start;
 };
 
-}  // namespace scl::proto
+}  // namespace scl
 
 #endif  // SCL_PROTOCOL_CLOCK_H

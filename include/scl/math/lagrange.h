@@ -23,7 +23,7 @@
 
 #include "scl/math/vector.h"
 
-namespace scl::math {
+namespace scl {
 
 /**
  * @brief Computes a lagrange basis for a set of nodes.
@@ -81,6 +81,6 @@ Vector<T> computeLagrangeBasis(const math::Vector<T>& nodes, int x) {
   return computeLagrangeBasis(nodes, T{x});
 }
 
-}  // namespace scl::math
+}  // namespace scl
 
 #endif  // SCL_MATH_LAGRANGE_H
