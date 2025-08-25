@@ -24,10 +24,9 @@
 #include <stdexcept>
 #include <vector>
 
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 
-namespace scl {
-namespace util {
+namespace scl::util {
 
 /**
  * @brief A simple bitmap.
@@ -228,18 +227,14 @@ class Bitmap {
     }
   }
 
-  friend scl::seri::Serializer<Bitmap>;
+  friend Serializer<Bitmap>;
 };
-
-}  // namespace util
-
-namespace seri {
 
 /**
  * @brief Serializer for util::Bitmap types.
  */
 template <>
-struct Serializer<util::Bitmap> {
+struct Serializer<Bitmap> {
   /**
    * @brief Get serialized size of a util::Bitmap.
    * @param bm the util::Bitmap.
@@ -270,8 +265,6 @@ struct Serializer<util::Bitmap> {
   }
 };
 
-}  // namespace seri
-
-}  // namespace scl
+}  // namespace scl::util
 
 #endif  // SCL_UTIL_BITMAP_H

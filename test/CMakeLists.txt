@@ -17,16 +17,15 @@
 cmake_minimum_required(VERSION 3.30)
 
 set(SCL_SOURCE_FILES_TEST
+  scl/test_bitmap.cc
+  scl/test_cmdline.cc
+  scl/test_serializer.cc
+
   scl/util/test_prg.cc
   scl/util/test_sha3.cc
   scl/util/test_sha256.cc
   scl/util/test_ecdsa.cc
-  scl/util/test_cmdline.cc
   scl/util/test_merkle.cc
-  scl/util/test_bitmap.cc
-  scl/util/test_measurement.cc
-
-  scl/serialization/test_serializer.cc
 
   scl/gf7.cc
   scl/math/test_mersenne61.cc
