@@ -19,11 +19,9 @@
 #define SCL_MATH_EC_H
 
 #include <array>
-#include <cstdint>
 #include <ostream>
 #include <string>
 
-#include "scl/math/array.h"
 #include "scl/math/curves/ec_ops.h"
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
@@ -77,7 +75,7 @@ class EC final {
    */
   constexpr static EC generator() {
     EC g;
-    ec::setGenerator<CURVE>(g.m_value);
+    setGenerator<CURVE>(g.m_value);
     return g;
   }
 
@@ -86,7 +84,7 @@ class EC final {
    */
   static EC read(const unsigned char* src) {
     EC e;
-    ec::fromBytes<CURVE>(e.m_value, src);
+    fromBytes<CURVE>(e.m_value, src);
     return e;
   }
 
@@ -95,7 +93,7 @@ class EC final {
    */
   static EC fromAffine(const Field& x, const Field& y) {
     EC e;
-    ec::setAffine<CURVE>(e.m_value, x, y);
+    setAffine<CURVE>(e.m_value, x, y);
     return e;
   }
 
@@ -110,7 +108,7 @@ class EC final {
    * @brief Create a new point equal to the point at infinity.
    */
   EC() {
-    ec::setPointAtInfinity<CURVE>(m_value);
+    setPointAtInfinity<CURVE>(m_value);
   }
 
   /**
@@ -122,7 +120,7 @@ class EC final {
    * @brief Add another EC point to this.
    */
   EC& operator+=(const EC& other) {
-    ec::add<CURVE>(m_value, other.m_value);
+    add<CURVE>(m_value, other.m_value);
     return *this;
   }
 
@@ -138,7 +136,7 @@ class EC final {
    * @brief Double this point.
    */
   EC& doublePointInPlace() {
-    ec::dbl<CURVE>(m_value);
+    dbl<CURVE>(m_value);
     return *this;
   }
 
@@ -154,7 +152,7 @@ class EC final {
    * @brief Subtract another point from this.
    */
   EC& operator-=(const EC& other) {
-    ec::subtract<CURVE>(m_value, other.m_value);
+    subtract<CURVE>(m_value, other.m_value);
     return *this;
   }
 
@@ -170,7 +168,7 @@ class EC final {
    * @brief Perform a scalar multiplication.
    */
   EC& operator*=(const Number& scalar) {
-    ec::scalarMultiply<CURVE>(m_value, scalar);
+    scalarMultiply<CURVE>(m_value, scalar);
     return *this;
   }
 
@@ -178,7 +176,7 @@ class EC final {
    * @brief Perform a scalar multiplication.
    */
   EC& operator*=(const ScalarField& scalar) {
-    ec::scalarMultiply<CURVE>(m_value, scalar);
+    scalarMultiply<CURVE>(m_value, scalar);
     return *this;
   }
 
@@ -216,7 +214,7 @@ class EC final {
    * @brief Negate this point.
    */
   EC& negate() {
-    ec::negate<CURVE>(m_value);
+    negate<CURVE>(m_value);
     return *this;
   }
 
@@ -232,7 +230,7 @@ class EC final {
    * @brief Check if this EC point is equal to another EC point.
    */
   bool equal(const EC& other) const {
-    return ec::equal<CURVE>(m_value, other.m_value);
+    return equal<CURVE>(m_value, other.m_value);
   }  // LCOV_EXCL_LINE
 
   /**
@@ -253,7 +251,7 @@ class EC final {
    * @brief Check if this point is equal to the point at inifity.
    */
   bool isPointAtInfinity() const {
-    return ec::isPointAtInfinity<CURVE>(m_value);
+    return isPointAtInfinity<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
@@ -262,7 +260,7 @@ class EC final {
    * Only well-defined if the point is not the point at infinity.
    */
   std::array<Field, 2> toAffine() const {
-    return ec::toAffine<CURVE>(m_value);
+    return toAffine<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
@@ -270,10 +268,10 @@ class EC final {
    */
   void normalize() {
     if (isPointAtInfinity()) {
-      ec::setPointAtInfinity<CURVE>(m_value);
+      setPointAtInfinity<CURVE>(m_value);
     } else {
       const auto afp = toAffine();
-      ec::setAffine<CURVE>(m_value, afp[0], afp[1]);
+      setAffine<CURVE>(m_value, afp[0], afp[1]);
     }
   }
 
@@ -281,7 +279,7 @@ class EC final {
    * @brief Output this point as a string.
    */
   std::string toString() const {
-    return ec::toString<CURVE>(m_value);
+    return toString<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
@@ -295,7 +293,7 @@ class EC final {
    * @brief Write this point to a buffer.
    */
   void write(unsigned char* dest, bool compress) const {
-    ec::toBytes<CURVE>(dest, m_value, compress);
+    toBytes<CURVE>(dest, m_value, compress);
   }  // LCOV_EXCL_LINE
 
  private:
@@ -308,18 +306,18 @@ class EC final {
  * Elliptic curve points are serialized uncompressed and in affine form.
  */
 template <typename CURVE>
-struct Serializer<math::EC<CURVE>> {
+struct Serializer<EC<CURVE>> {
   /**
    * @brief Get the size of a serialized EC point.
    */
-  static constexpr std::size_t sizeOf(const math::EC<CURVE>& /* ignored */) {
-    return math::EC<CURVE>::byteSize(false);
+  static constexpr std::size_t sizeOf(const EC<CURVE>& /* ignored */) {
+    return EC<CURVE>::byteSize(false);
   }
 
   /**
    * @brief Write an EC point to a buffer.
    */
-  static std::size_t write(const math::EC<CURVE>& point, unsigned char* buf) {
+  static std::size_t write(const EC<CURVE>& point, unsigned char* buf) {
     point.write(buf, false);
     return sizeOf(point);
   }
@@ -327,8 +325,8 @@ struct Serializer<math::EC<CURVE>> {
   /**
    * @brief Read an EC point from a buffer.
    */
-  static std::size_t read(math::EC<CURVE>& point, const unsigned char* buf) {
-    point = math::EC<CURVE>::read(buf);
+  static std::size_t read(EC<CURVE>& point, const unsigned char* buf) {
+    point = EC<CURVE>::read(buf);
     return sizeOf(point);
   }
 };

@@ -15,39 +15,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FIELDS_MERSENNE61_H
-#define SCL_MATH_FIELDS_MERSENNE61_H
+#include "scl/hex.h"
 
-#include <cstddef>
 #include <cstdint>
 
-namespace scl {
-
-/**
- * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{61}-1\f$.
- */
-struct Mersenne61 {
-  /**
-   * @brief Internal type elements of this field.
-   */
-  using ValueType = std::uint64_t;
-
-  /**
-   * @brief The name of this field.
-   */
-  constexpr static const char* NAME = "Mersenne61";
-
-  /**
-   * @brief The size of field elements of this field in bytes.
-   */
-  constexpr static const std::size_t BYTE_SIZE = sizeof(ValueType);
-
-  /**
-   * @brief The size of field elements of this field in bits.
-   */
-  constexpr static const std::size_t BIT_SIZE = 61;
-};
-
-}  // namespace scl::math::ff
-
-#endif  // SCL_MATH_FIELDS_MERSENNE61_H
+template <>
+std::string scl::toHexString(const __uint128_t& v) {
+  std::string str;
+  if (v == 0) {
+    str = "0";
+  } else {
+    std::stringstream ss;
+    auto top = static_cast<std::uint64_t>(v >> 64);
+    auto bot = static_cast<std::uint64_t>(v);
+    ss << std::hex;
+    if (top > 0) {
+      ss << top;
+    }
+    ss << bot;
+    str = ss.str();
+  }
+  return str;
+}  // LCOV_EXCL_LINE

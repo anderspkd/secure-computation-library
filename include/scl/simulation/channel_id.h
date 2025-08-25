@@ -18,7 +18,6 @@
 #ifndef SCL_SIMULATION_CHANNEL_ID_H
 #define SCL_SIMULATION_CHANNEL_ID_H
 
-#include <cstdint>
 #include <functional>
 #include <ostream>
 
@@ -81,8 +80,8 @@ struct ChannelId {
 /// @cond
 
 template <>
-struct std::hash<scl::sim::ChannelId> {
-  std::size_t operator()(const scl::sim::ChannelId& cid) const {
+struct std::hash<scl::ChannelId> {
+  std::size_t operator()(const scl::ChannelId& cid) const {
     return cid.local ^ (cid.remote << 32);
   }
 };

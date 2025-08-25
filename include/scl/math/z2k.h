@@ -19,7 +19,6 @@
 #define SCL_MATH_Z2K_H
 
 #include <cstdint>
-#include <stdexcept>
 
 #include "scl/math/z2k/z2k_ops.h"
 #include "scl/util/prg.h"
@@ -36,6 +35,7 @@ namespace scl {
  * byte (so Z2k<6> and Z2k<8> take up the same amount of space).
  */
 template <std::size_t BITS>
+  requires(BITS <= 128)
 class Z2k final {
  public:
   /**
@@ -70,7 +70,7 @@ class Z2k final {
    */
   static Z2k read(const unsigned char* src) {
     Z2k e;
-    z2k::fromBytes<ValueType, bitSize()>(e.m_value, src);
+    fromBytes<ValueType, bitSize()>(e.m_value, src);
     return e;
   }
 
@@ -80,7 +80,7 @@ class Z2k final {
   static Z2k random(util::PRG& prg) {
     unsigned char buffer[byteSize()];
     prg.next(buffer, byteSize());
-    return Z2k::read(buffer);
+    return read(buffer);
   }
 
   /**
@@ -88,7 +88,7 @@ class Z2k final {
    */
   static Z2k fromString(const std::string& str) {
     Z2k e;
-    z2k::convertIn<ValueType, bitSize()>(e.m_value, str);
+    convertIn<ValueType, bitSize()>(e.m_value, str);
     return e;
   }  // LCOV_EXCL_LINE
 
@@ -127,7 +127,7 @@ class Z2k final {
    * @brief Add another element to this.
    */
   Z2k& operator+=(const Z2k& other) {
-    z2k::add(m_value, other.m_value);
+    add(m_value, other.m_value);
     return *this;
   }
 
@@ -159,7 +159,7 @@ class Z2k final {
    * @brief Subtract another element from this.
    */
   Z2k& operator-=(const Z2k& other) {
-    z2k::subtract(m_value, other.m_value);
+    subtract(m_value, other.m_value);
     return *this;
   }
 
@@ -191,7 +191,7 @@ class Z2k final {
    * @brief Multiply another element to this.
    */
   Z2k& operator*=(const Z2k& other) {
-    z2k::multiply(m_value, other.m_value);
+    multiply(m_value, other.m_value);
     return *this;
   }
 
@@ -208,7 +208,7 @@ class Z2k final {
    * @throws std::invalid_argument if \p other is not invertible.
    */
   Z2k& operator/=(const Z2k& other) {
-    z2k::multiply(m_value, other.inverse().m_value);
+    multiply(m_value, other.inverse().m_value);
     return *this;
   }
 
@@ -225,7 +225,7 @@ class Z2k final {
    * @brief Negates this element.
    */
   Z2k& negate() {
-    z2k::negate(m_value);
+    negate(m_value);
     return *this;
   }
 
@@ -249,7 +249,7 @@ class Z2k final {
    * @throws std::invalid_argument if this element is not invertible.
    */
   Z2k& invert() {
-    z2k::invert<ValueType, bitSize()>(m_value);
+    invert<ValueType, bitSize()>(m_value);
     return *this;
   }
 
@@ -266,14 +266,14 @@ class Z2k final {
    * @brief Return the least significant bit of this element.
    */
   unsigned lsb() const {
-    return z2k::lsb(m_value);
+    return lsb(m_value);
   }
 
   /**
    * @brief Check if this element is equal to another element.
    */
   bool equal(const Z2k& other) const {
-    return z2k::equal<ValueType, BITS>(m_value, other.m_value);
+    return equal<ValueType, BITS>(m_value, other.m_value);
   }
 
   /**
@@ -294,7 +294,7 @@ class Z2k final {
    * @brief Return a string representation of this element.
    */
   std::string toString() const {
-    return z2k::toString<ValueType, bitSize()>(m_value);
+    return toString<ValueType, bitSize()>(m_value);
   }
 
   /**
@@ -308,7 +308,7 @@ class Z2k final {
    * @brief Write this element to a buffer.
    */
   void write(unsigned char* dest) const {
-    z2k::toBytes<ValueType, bitSize()>(m_value, dest);
+    toBytes<ValueType, bitSize()>(m_value, dest);
   }
 
  private:

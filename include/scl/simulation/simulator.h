@@ -19,12 +19,7 @@
 #define SCL_SIMULATION_SIMULATOR_H
 
 #include <memory>
-#include <utility>
-#include <vector>
 
-#include "scl/protocol/base.h"
-#include "scl/simulation/config.h"
-#include "scl/simulation/event.h"
 #include "scl/simulation/manager.h"
 
 namespace scl {
@@ -35,6 +30,6 @@ namespace scl {
  */
 void simulate(std::unique_ptr<Manager> manager);
 
-}  // namespace scl::sim
+}  // namespace scl
 
 #endif  // SCL_SIMULATION_SIMULATOR_H

@@ -20,16 +20,13 @@
 
 #include <deque>
 #include <memory>
-#include <optional>
-#include <stdexcept>
-#include <unordered_map>
 
+#include "scl/bitmap.h"
 #include "scl/simulation/cancellation.h"
 #include "scl/simulation/channel_id.h"
 #include "scl/simulation/config.h"
 #include "scl/simulation/event.h"
 #include "scl/simulation/hook.h"
-#include "scl/util/bitmap.h"
 
 namespace scl {
 
@@ -76,22 +73,22 @@ struct GlobalContext {
    * This is a mapping from a channel to timestamps of calls to send on the
    * channel that have not yet been received.
    */
-  std::unordered_map<ChannelId, std::deque<util::Time::Duration>> sends;
+  std::unordered_map<ChannelId, std::deque<Time::Duration>> sends;
 
   /**
    * @brief The local clocks for each party.
    */
-  std::vector<util::Time::TimePoint> clocks;
+  std::vector<Time::TimePoint> clocks;
 
   /**
    * @brief Map of parties currently in the process of receiving data.
    */
-  std::vector<util::Bitmap> recv_map;
+  std::vector<Bitmap> recv_map;
 
   /**
    * @brief Map used to indicate which parties have been stopped.
    */
-  mutable util::Bitmap cancellation_map;
+  mutable Bitmap cancellation_map;
 
   /**
    * @brief Hooks.
@@ -117,7 +114,7 @@ struct GlobalContext {
      * @param receiver the ID of the receiving party.
      * @param timestamp when the data was sent.
      */
-    void send(std::size_t receiver, util::Time::Duration timestamp) {
+    void send(std::size_t receiver, Time::Duration timestamp) {
       const ChannelId id{.local = m_id, .remote = receiver};
       m_gctx.sends[id].push_back(timestamp);
     }
@@ -132,9 +129,9 @@ struct GlobalContext {
      * <p>The return value is \p timestamp adjusted to account for any delay
      * that this party would incur in receiving \p nbytes.
      */
-    util::Time::Duration recv(std::size_t sender,
-                              std::size_t nbytes,
-                              util::Time::Duration timestamp);
+    Time::Duration recv(std::size_t sender,
+                        std::size_t nbytes,
+                        Time::Duration timestamp);
 
     /**
      * @brief Indicate that this party has started receiving data.
@@ -163,13 +160,13 @@ struct GlobalContext {
      * (defined as the timestamp on the last event produced by this party) plus
      * the time elapsed since the startClock was called.
      */
-    util::Time::Duration elapsedTime() const;
+    Time::Duration elapsedTime() const;
 
     /**
      * @brief Get the current time of some other party in the protocol.
      * @param other_party the ID of the other party.
      */
-    util::Time::Duration currentTimeOf(std::size_t other_party) const;
+    Time::Duration currentTimeOf(std::size_t other_party) const;
 
     /**
      * @brief Start the clock for this party.
@@ -186,7 +183,7 @@ struct GlobalContext {
      *
      * Does not check if an event exists.
      */
-    util::Time::Duration lastEventTimestamp() const;
+    Time::Duration lastEventTimestamp() const;
 
     /**
      * @brief Get a limited version of this context object.
@@ -239,7 +236,7 @@ class SimulationContext {
   /**
    * @brief Get the running time of a party.
    */
-  util::Time::Duration currentTimeOf(std::size_t party_id) const {
+  Time::Duration currentTimeOf(std::size_t party_id) const {
     return m_gctx.view(m_id).currentTimeOf(party_id);
   }
 

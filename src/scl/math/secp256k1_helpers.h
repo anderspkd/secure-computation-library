@@ -18,43 +18,41 @@
 #ifndef SCL_MATH_FIELDS_SECP256K1_HELPERS_H
 #define SCL_MATH_FIELDS_SECP256K1_HELPERS_H
 
-#include "naf.h"
-#include "scl/math/curves/secp256k1.h"
-#include "scl/math/ec.h"
-#include "scl/math/fields/secp256k1_field.h"
-#include "scl/math/fields/secp256k1_scalar.h"
+#include "scl/math/ff.h"
+#include "scl/math/naf.h"
+#include "scl/math/secp256k1_field.h"
+#include "scl/math/secp256k1_scalar.h"
 
-namespace scl::math::details {
+namespace scl::details {
 
 /**
  * @brief Check which of two field elements is smaller.
  *
  * Used in serialization.
  */
-bool isSmaller(const FF<ff::Secp256k1Field>& lhs,
-               const FF<ff::Secp256k1Field>& rhs);
+bool isSmaller(const FF<Secp256k1Field>& lhs, const FF<Secp256k1Field>& rhs);
 
 /**
  * @brief Compute the square root of an element.
  *
  * Used in serialization.
  */
-FF<ff::Secp256k1Field> sqrt(const FF<ff::Secp256k1Field>& x);
+FF<Secp256k1Field> sqrt(const FF<Secp256k1Field>& x);
 
 /**
  * @brief Convert a field element out of montgomery representation.
  *
  * Used in scalar multiplications.
  */
-FF<ff::Secp256k1Scalar> fromMonty(const FF<ff::Secp256k1Scalar>& x);
+FF<Secp256k1Scalar> fromMonty(const FF<Secp256k1Scalar>& x);
 
 /**
  * @brief Convert a field element into a NAF encoding.
  *
  * Used in scalar multiplication.
  */
-NafEncoding<ff::Secp256k1Scalar> toNaf(const FF<ff::Secp256k1Scalar>& x);
+NafEncoding<Secp256k1Scalar> toNaf(const FF<Secp256k1Scalar>& x);
 
-}  // namespace scl::math::details
+}  // namespace scl::details
 
 #endif  // SCL_MATH_FIELDS_SECP256K1_HELPERS_H

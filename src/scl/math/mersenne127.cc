@@ -15,16 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/math/fields/mersenne127.h"
+#include "scl/math/mersenne127.h"
 
+#include <cstdint>
 #include <cstring>
-#include <sstream>
 
-#include "./small_ff.h"
-#include "scl/math/fields/ff_ops.h"
-#include "scl/util/str.h"
-
-using namespace scl;
+#include "scl/hex.h"
+#include "scl/math/ff_ops.h"
+#include "scl/math/hex_util.h"
+#include "scl/math/small_ff.h"
 
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
@@ -32,26 +31,26 @@ using u128 = __uint128_t;
 // The prime p = 2^127 - 1.
 static const u128 p = (((u128)0x7FFFFFFFFFFFFFFF) << 64) | 0xFFFFFFFFFFFFFFFF;
 
-using Mersenne127 = scl::math::ff::Mersenne127;
+using Mersenne127 = scl::Mersenne127;
 
 template <>
-void math::ff::convertTo<Mersenne127>(u128& out, const int value) {
+void scl::details::convertTo<Mersenne127>(u128& out, const int value) {
   out = value < 0 ? value + p : value;
 }
 
 template <>
-void math::ff::convertTo<Mersenne127>(u128& out, const std::string& src) {
-  out = util::fromHexString<u128>(src);
+void scl::details::convertTo<Mersenne127>(u128& out, const std::string& src) {
+  out = fromHexString<u128>(src);
   out = out % p;
 }
 
 template <>
-void math::ff::add<Mersenne127>(u128& out, const u128& op) {
-  details::modAdd(out, op, p);
+void scl::details::add<Mersenne127>(u128& out, const u128& op) {
+  modAdd(out, op, p);
 }
 
 template <>
-void math::ff::subtract<Mersenne127>(u128& out, const u128& op) {
+void scl::details::subtract<Mersenne127>(u128& out, const u128& op) {
   details::modSub(out, op, p);
 }
 
@@ -85,7 +84,7 @@ u256 multiplyFull(const u128 x, const u128 y) {
 }  // namespace
 
 template <>
-void math::ff::multiply<Mersenne127>(u128& out, const u128& op) {
+void scl::details::multiply<Mersenne127>(u128& out, const u128& op) {
   u256 z = multiplyFull(out, op);
   out = z.high << 1;
   u128 b = z.low;
@@ -97,32 +96,33 @@ void math::ff::multiply<Mersenne127>(u128& out, const u128& op) {
 }
 
 template <>
-void math::ff::negate<Mersenne127>(u128& out) {
-  details::modNeg(out, p);
+void scl::details::negate<Mersenne127>(u128& out) {
+  modNeg(out, p);
 }
 
 template <>
-void math::ff::invert<Mersenne127>(u128& out) {
-  details::modInv<u128, __int128_t>(out, out, p);
+void scl::details::invert<Mersenne127>(u128& out) {
+  modInv<u128, __int128_t>(out, out, p);
 }
 
 template <>
-bool math::ff::equal<Mersenne127>(const u128& in1, const u128& in2) {
+bool scl::details::equal<Mersenne127>(const u128& in1, const u128& in2) {
   return in1 == in2;
 }
 
 template <>
-void math::ff::fromBytes<Mersenne127>(u128& dest, const unsigned char* src) {
+void scl::details::fromBytes<Mersenne127>(u128& dest,
+                                          const unsigned char* src) {
   dest = *(const u128*)src;
   dest = dest % p;
 }
 
 template <>
-void math::ff::toBytes<Mersenne127>(unsigned char* dest, const u128& src) {
+void scl::details::toBytes<Mersenne127>(unsigned char* dest, const u128& src) {
   std::memcpy(dest, &src, sizeof(u128));
 }
 
 template <>
-std::string math::ff::toString<Mersenne127>(const u128& in) {
-  return util::toHexString(in);
+std::string scl::details::toString<Mersenne127>(const u128& in) {
+  return toHexString(in);
 }

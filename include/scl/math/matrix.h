@@ -900,10 +900,10 @@ std::string Matrix<ELEMENT>::toString() const {
 }
 
 /**
- * @brief Serializer specialization for a math::Mat.
+ * @brief Serializer specialization for a Mat.
  */
 template <typename ELEMENT>
-struct Serializer<math::Matrix<ELEMENT>> {
+struct Serializer<Matrix<ELEMENT>> {
  private:
   // type used to denote a dimension
   using DimType = std::uint32_t;
@@ -919,7 +919,7 @@ struct Serializer<math::Matrix<ELEMENT>> {
    * @brief Size of a matrix.
    * @param mat the matrix.
    */
-  static std::size_t sizeOf(const math::Matrix<ELEMENT>& mat) {
+  static std::size_t sizeOf(const Matrix<ELEMENT>& mat) {
     return S_vec::sizeOf(mat.m_values) + 2 * sizeof(DimType);
   }
 
@@ -928,13 +928,12 @@ struct Serializer<math::Matrix<ELEMENT>> {
    * @param mat the matrix.
    * @param buf the buffer.
    */
-  static std::size_t write(const math::Matrix<ELEMENT>& mat,
-                           unsigned char* buf) {
+  static std::size_t write(const Matrix<ELEMENT>& mat, unsigned char* buf) {
     std::size_t offset = 0;
     offset = S_dim::write(static_cast<DimType>(mat.rows()), buf);
     offset += S_dim::write(static_cast<DimType>(mat.cols()), buf + offset);
-    S_vec::write(mat.m_values, buf + offset);
-    return sizeOf(mat);
+    offset += S_vec::write(mat.m_values, buf + offset);
+    return offset;
   }
 
   /**
@@ -943,17 +942,16 @@ struct Serializer<math::Matrix<ELEMENT>> {
    * @param buf the buffer.
    * @return the number of bytes read.
    */
-  static std::size_t read(math::Matrix<ELEMENT>& mat,
-                          const unsigned char* buf) {
+  static std::size_t read(Matrix<ELEMENT>& mat, const unsigned char* buf) {
     DimType rows;
     DimType cols;
     std::size_t offset = 0;
     offset = S_dim::read(rows, buf);
     offset += S_dim::read(cols, buf + offset);
     std::vector<ELEMENT> elements;
-    S_vec::read(elements, buf + offset);
-    mat = math::Matrix<ELEMENT>(rows, cols, std::move(elements));
-    return sizeOf(mat);
+    offset += S_vec::read(elements, buf + offset);
+    mat = Matrix<ELEMENT>(rows, cols, std::move(elements));
+    return offset;
   }
 };
 

@@ -59,18 +59,18 @@ find_library(GMP gmp libgmp REQUIRED)
 set(SCL_HEADERS "${CMAKE_SOURCE_DIR}/include")
 set(SCL_SOURCE_FILES
   src/scl/cmdline.cc
+  src/scl/hex.cc
 
-  src/scl/util/str.cc
-  src/scl/util/prg.cc
-  src/scl/util/sha3.cc
-  src/scl/util/sha256.cc
+  src/scl/primitives/prg.cc
+  src/scl/primitives/sha3.cc
+  src/scl/primitives/sha256.cc
 
-  src/scl/math/fields/ff_ops_gmp.cc
-  src/scl/math/fields/mersenne61.cc
-  src/scl/math/fields/mersenne127.cc
-  src/scl/math/fields/secp256k1_field.cc
-  src/scl/math/fields/secp256k1_scalar.cc
-  src/scl/math/curves/secp256k1_curve.cc
+  src/scl/math/ff_ops_gmp.cc
+  src/scl/math/mersenne61.cc
+  src/scl/math/mersenne127.cc
+  src/scl/math/secp256k1_field.cc
+  src/scl/math/secp256k1_scalar.cc
+  src/scl/math/secp256k1_curve.cc
   src/scl/math/number.cc
 
   src/scl/coro/runtime.cc

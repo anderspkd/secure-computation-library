@@ -17,14 +17,11 @@
 
 #include "scl/simulation/transport.h"
 
-using namespace scl;
-
-void sim::details::Transport::send(sim::ChannelId cid, net::Packet&& packet) {
+void scl::details::Transport::send(ChannelId cid, Packet&& packet) {
   m_channels[cid.flip()].push_back(std::move(packet));
 }
 
-void sim::details::Transport::send(sim::ChannelId cid,
-                                   const net::Packet& packet) {
+void scl::details::Transport::send(ChannelId cid, const Packet& packet) {
   std::size_t idx;
   for (idx = 0; idx < m_packets.size(); idx++) {
     if (m_packets[idx].packet == packet) {
@@ -39,14 +36,14 @@ void sim::details::Transport::send(sim::ChannelId cid,
   m_channels[cid.flip()].push_back(idx);
 }
 
-bool sim::details::Transport::hasData(ChannelId cid) const {
+bool scl::details::Transport::hasData(ChannelId cid) const {
   if (m_channels.contains(cid)) {
     return !m_channels.at(cid).empty();
   }
   return false;
 }
 
-net::Packet sim::details::Transport::recv(ChannelId cid) {
+scl::Packet scl::details::Transport::recv(ChannelId cid) {
   // define the variable before assignment to silence a bogus
   // maybe-uninitialized error by GCC.
   PktOrIdx pkt_or_idx;
@@ -56,7 +53,7 @@ net::Packet sim::details::Transport::recv(ChannelId cid) {
 
   if (pkt_or_idx.index() == 0) {
     // packet that was directly moved to us.
-    return std::get<net::Packet>(pkt_or_idx);
+    return std::get<Packet>(pkt_or_idx);
   }
 
   const std::size_t idx = std::get<std::size_t>(pkt_or_idx);
@@ -69,6 +66,7 @@ net::Packet sim::details::Transport::recv(ChannelId cid) {
   return m_packets[idx].packet;
 }
 
-void sim::details::Transport::cleanUp(GlobalContext& ctx) {
+void scl::details::Transport::cleanUp(GlobalContext& ctx) {
+  // TODO
   (void)ctx;
 }

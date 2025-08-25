@@ -18,11 +18,7 @@
 #ifndef SCL_SIMULATION_CONFIG_H
 #define SCL_SIMULATION_CONFIG_H
 
-#include <any>
-#include <functional>
 #include <optional>
-#include <stdexcept>
-#include <utility>
 
 #include "scl/simulation/channel_id.h"
 

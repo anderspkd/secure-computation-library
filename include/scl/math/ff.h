@@ -20,9 +20,10 @@
 
 #include <string>
 
-#include "scl/math/fields/ff_ops.h"
+#include "scl/math/ff_ops.h"
+#include "scl/math/number.h"
+#include "scl/primitives/prg.h"
 #include "scl/serialization.h"
-#include "scl/util/prg.h"
 
 namespace scl {
 
@@ -59,14 +60,14 @@ class FF final {
    */
   static FF read(const unsigned char* src) {
     FF e;
-    ff::fromBytes<FIELD>(e.m_value, src);
+    details::fromBytes<FIELD>(e.m_value, src);
     return e;
   }  // LCOV_EXCL_LINE
 
   /**
    * @brief Create a random element, using a supplied PRG.
    */
-  static FF random(util::PRG& prg) {
+  static FF random(PRG& prg) {
     unsigned char buffer[FF<FIELD>::byteSize()];
     prg.next(buffer, FF<FIELD>::byteSize());
     return FF<FIELD>::read(buffer);
@@ -77,7 +78,7 @@ class FF final {
    */
   static FF fromString(const std::string& hexstr) {
     FF e;
-    ff::convertTo<FIELD>(e.m_value, hexstr);
+    details::convertTo<FIELD>(e.m_value, hexstr);
     return e;
   }
 
@@ -101,7 +102,7 @@ class FF final {
    * @brief Create a new element from an int.
    */
   explicit constexpr FF(int value) {
-    ff::convertTo<FIELD>(m_value, value);
+    details::convertTo<FIELD>(m_value, value);
   }
 
   /**
@@ -118,7 +119,7 @@ class FF final {
    * @brief Add another field element to this.
    */
   FF& operator+=(const FF& other) {
-    ff::add<FIELD>(m_value, other.m_value);
+    details::add<FIELD>(m_value, other.m_value);
     return *this;
   }
 
@@ -150,7 +151,7 @@ class FF final {
    * @brief Subtract another field element to this.
    */
   FF& operator-=(const FF& other) {
-    ff::subtract<FIELD>(m_value, other.m_value);
+    details::subtract<FIELD>(m_value, other.m_value);
     return *this;
   }
 
@@ -182,7 +183,7 @@ class FF final {
    * @brief Multiply another field element to this.
    */
   FF& operator*=(const FF& other) {
-    ff::multiply<FIELD>(m_value, other.m_value);
+    details::multiply<FIELD>(m_value, other.m_value);
     return *this;
   }
 
@@ -213,7 +214,7 @@ class FF final {
    * @brief Negates this element.
    */
   FF& negate() {
-    ff::negate<FIELD>(m_value);
+    details::negate<FIELD>(m_value);
     return *this;
   }
 
@@ -223,7 +224,7 @@ class FF final {
   FF negated() const {
     auto copy = m_value;
     FF r;
-    ff::negate<FIELD>(copy);
+    details::negate<FIELD>(copy);
     r.m_value = copy;
     return r;
   }  // LCOV_EXCL_LINE
@@ -239,7 +240,7 @@ class FF final {
    * @brief Inverts this element.
    */
   FF& invert() {
-    ff::invert<FIELD>(m_value);
+    details::invert<FIELD>(m_value);
     return *this;
   }
 
@@ -255,7 +256,7 @@ class FF final {
    * @brief Checks if this element is equal to another.
    */
   bool equal(const FF& other) const {
-    return ff::equal<FIELD>(m_value, other.m_value);
+    return details::equal<FIELD>(m_value, other.m_value);
   }
 
   /**
@@ -276,7 +277,7 @@ class FF final {
    * @brief Returns a string representation of this element.
    */
   std::string toString() const {
-    return ff::toString<FIELD>(m_value);
+    return details::toString<FIELD>(m_value);
   }
 
   /**
@@ -290,7 +291,7 @@ class FF final {
    * @brief Write this element to a byte buffer.
    */
   void write(unsigned char* dest) const {
-    ff::toBytes<FIELD>(dest, m_value);
+    details::toBytes<FIELD>(dest, m_value);
   }
 
   /**
@@ -343,42 +344,42 @@ FF<T> exp(const FF<T>& base, std::size_t exp) {
 }
 
 /**
- * @brief Serializer specialization for math::FF types.
+ * @brief Serializer specialization for FF types.
  */
 template <typename FIELD>
-struct Serializer<math::FF<FIELD>> {
+struct Serializer<FF<FIELD>> {
   /**
-   * @brief Determine the size of an math::FF value.
+   * @brief Determine the size of an FF value.
    *
-   * The size of an math::FF element can be determined from its type alone, so
+   * The size of an FF element can be determined from its type alone, so
    * the argument is ignored.
    */
-  static constexpr std::size_t sizeOf(const math::FF<FIELD>& /* ignored */) {
-    return math::FF<FIELD>::byteSize();
+  static constexpr std::size_t sizeOf(const FF<FIELD>& /* ignored */) {
+    return FF<FIELD>::byteSize();
   }
 
   /**
-   * @brief Write an math::FF element to a buffer.
+   * @brief Write an FF element to a buffer.
    * @param elem the element.
    * @param buf the buffer.
    *
-   * Calls math::FF::write().
+   * Calls FF::write().
    */
-  static std::size_t write(const math::FF<FIELD>& elem, unsigned char* buf) {
+  static std::size_t write(const FF<FIELD>& elem, unsigned char* buf) {
     elem.write(buf);
     return sizeOf(elem);
   }
 
   /**
-   * @brief Read an math::FF element from a buffer.
+   * @brief Read an FF element from a buffer.
    * @param elem output variable holding the read element after reading.
    * @param buf the buffer.
    * @return the number of bytes read.
    *
-   * Calls math::FF::read() and returns math::FF::byteSize();
+   * Calls FF::read() and returns FF::byteSize();
    */
-  static std::size_t read(math::FF<FIELD>& elem, const unsigned char* buf) {
-    elem = math::FF<FIELD>::read(buf);
+  static std::size_t read(FF<FIELD>& elem, const unsigned char* buf) {
+    elem = FF<FIELD>::read(buf);
     return sizeOf(elem);
   }
 };

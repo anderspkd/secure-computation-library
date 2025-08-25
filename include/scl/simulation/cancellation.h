@@ -18,11 +18,7 @@
 #ifndef SCL_SIMULATION_CANCELLATION_H
 #define SCL_SIMULATION_CANCELLATION_H
 
-#include <cstddef>
-#include <optional>
 #include <stdexcept>
-
-#include "scl/util/bitmap.h"
 
 namespace scl::details {
 
@@ -33,6 +29,6 @@ struct CancellationException final : public std::runtime_error {
   CancellationException() : std::runtime_error("cancelled") {}
 };
 
-}  // namespace scl::sim::details
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_CANCELLATION_H

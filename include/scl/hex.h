@@ -56,6 +56,6 @@ std::string toHexString(It begin, It end) {
 template <>
 std::string toHexString(const __uint128_t& v);
 
-}  // namespace scl::util
+}  // namespace scl
 
 #endif  // SCL_UTIL_STR_H

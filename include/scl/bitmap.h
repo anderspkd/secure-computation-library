@@ -221,7 +221,7 @@ class Bitmap {
     return bits == 0 ? 1 : (bits - 1) / (BITS_PER_BLOCK) + 1;
   }
 
-  static void validateSizes(const util::Bitmap& bm0, const util::Bitmap& bm1) {
+  static void validateSizes(const Bitmap& bm0, const Bitmap& bm1) {
     if (bm0.numberOfBlocks() != bm1.numberOfBlocks()) {
       throw std::logic_error("bitmaps are different sizes");
     }
@@ -240,8 +240,8 @@ struct Serializer<Bitmap> {
    * @param bm the util::Bitmap.
    * @return the size in bytes of the \p bm.
    */
-  static std::size_t sizeOf(const util::Bitmap& bm) {
-    return Serializer<util::Bitmap::ContainerType>::sizeOf(bm.m_bits);
+  static std::size_t sizeOf(const Bitmap& bm) {
+    return Serializer<Bitmap::ContainerType>::sizeOf(bm.m_bits);
   }
 
   /**
@@ -250,8 +250,8 @@ struct Serializer<Bitmap> {
    * @param buf the buffer.
    * @return the number of bytes written.
    */
-  static std::size_t write(const util::Bitmap& bm, unsigned char* buf) {
-    return Serializer<util::Bitmap::ContainerType>::write(bm.m_bits, buf);
+  static std::size_t write(const Bitmap& bm, unsigned char* buf) {
+    return Serializer<Bitmap::ContainerType>::write(bm.m_bits, buf);
   }
 
   /**
@@ -260,8 +260,8 @@ struct Serializer<Bitmap> {
    * @param buf the buffer to read the util::Bitmap from.
    * @return the number of bytes read from \p buf.
    */
-  static std::size_t read(util::Bitmap& bm, const unsigned char* buf) {
-    return Serializer<util::Bitmap::ContainerType>::read(bm.m_bits, buf);
+  static std::size_t read(Bitmap& bm, const unsigned char* buf) {
+    return Serializer<Bitmap::ContainerType>::read(bm.m_bits, buf);
   }
 };
 

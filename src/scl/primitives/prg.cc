@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
 #include <algorithm>
 #include <string>
@@ -101,7 +101,7 @@ PRG PRG::create(const unsigned char* seed, std::size_t seed_len) {
   return prg;
 }
 
-PRG scl::util::PRG::create() {
+PRG PRG::create() {
   return PRG::create(nullptr, 0);
 }
 

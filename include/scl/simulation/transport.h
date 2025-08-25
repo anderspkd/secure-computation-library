@@ -23,7 +23,6 @@
 #include <unordered_map>
 #include <variant>
 
-#include "scl/coro/task.h"
 #include "scl/net/packet.h"
 #include "scl/simulation/channel_id.h"
 #include "scl/simulation/context.h"
@@ -43,14 +42,14 @@ class Transport final {
   // represents either an actual packet or an index to a packet. If
   // the variant is a packet, then it's because the packet was move'ed
   // to the receiver, whereas an index indicates that it was copied.
-  using PktOrIdx = std::variant<net::Packet, std::size_t>;
+  using PktOrIdx = std::variant<Packet, std::size_t>;
 
   // An indirect packet transfer. The count indicates how many other
   // parties are waiting to receive the packet, and is incremented
   // when the packet is sent and decremented when the packet is
   // received. It is essentially a reference counter.
   struct PktAndCount {
-    net::Packet packet;
+    Packet packet;
     std::size_t count;
   };
 
@@ -63,7 +62,7 @@ class Transport final {
    * This function will attempt to directly move the packet to the
    * receiver.
    */
-  void send(ChannelId cid, net::Packet&& packet);
+  void send(ChannelId cid, Packet&& packet);
 
   /**
    * @brief Send a packet on the transport.
@@ -75,7 +74,7 @@ class Transport final {
    * packet will happen when it is initially sent, and then once per
    * subsequent receive of the packet.
    */
-  void send(ChannelId cid, const net::Packet& packet);
+  void send(ChannelId cid, const Packet& packet);
 
   /**
    * @brief Check if there's data for a channel on this transport.
@@ -89,7 +88,7 @@ class Transport final {
    * This function should only be called if there is data to be had on
    * the channel. Calling it in other cases is undefined behavior.
    */
-  net::Packet recv(ChannelId cid);
+  Packet recv(ChannelId cid);
 
   /**
    * @brief Performs some clean-up on the transport.

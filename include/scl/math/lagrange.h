@@ -19,7 +19,6 @@
 #define SCL_MATH_LAGRANGE_H
 
 #include <cstddef>
-#include <unordered_map>
 
 #include "scl/math/vector.h"
 
@@ -52,7 +51,7 @@ namespace scl {
  * @see https://en.wikipedia.org/wiki/Lagrange_polynomial
  */
 template <typename T>
-Vector<T> computeLagrangeBasis(const math::Vector<T>& nodes, const T& x) {
+Vector<T> computeLagrangeBasis(const Vector<T>& nodes, const T& x) {
   const auto n = nodes.size();
   std::vector<T> b;
   b.reserve(n);
@@ -77,7 +76,7 @@ Vector<T> computeLagrangeBasis(const math::Vector<T>& nodes, const T& x) {
  * @see computeLagrangeBasis
  */
 template <typename T>
-Vector<T> computeLagrangeBasis(const math::Vector<T>& nodes, int x) {
+Vector<T> computeLagrangeBasis(const Vector<T>& nodes, int x) {
   return computeLagrangeBasis(nodes, T{x});
 }
 

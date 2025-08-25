@@ -19,8 +19,6 @@
 #define SCL_NET_CONFIG_H
 
 #include <cstddef>
-#include <memory>
-#include <sstream>
 #include <string>
 #include <vector>
 

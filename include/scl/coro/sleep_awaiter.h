@@ -19,7 +19,6 @@
 #define SCL_CORO_SLEEP_AWAITER_H
 
 #include <coroutine>
-#include <functional>
 
 #include "scl/time.h"
 
@@ -37,7 +36,7 @@ class SleepAwaiter {
   /**
    * @brief Create a new sleep awaiter.
    */
-  SleepAwaiter(util::Time::Duration duration) : m_duration(duration) {}
+  SleepAwaiter(Time::Duration duration) : m_duration(duration) {}
 
   /**
    * @brief Check if the sleep awaiter is ready.
@@ -67,12 +66,12 @@ class SleepAwaiter {
   }
 
  private:
-  util::Time::Duration m_duration;
+  Time::Duration m_duration;
 
   Runtime* m_runtime = nullptr;
 };
 
 }  // namespace details
-}  // namespace scl::coro
+}  // namespace scl
 
 #endif  // SCL_CORO_SLEEP_AWAITER_H

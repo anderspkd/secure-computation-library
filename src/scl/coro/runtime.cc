@@ -21,16 +21,14 @@
 
 #include "scl/coro/task.h"
 
-using namespace scl;
-
-void coro::details::removeHandle(Runtime* runtime,
-                                 std::coroutine_handle<> handle) {
+void scl::details::removeHandle(Runtime* runtime,
+                                std::coroutine_handle<> handle) {
   if (runtime != nullptr) {
     runtime->deschedule(handle);
   }
 }
 
-std::coroutine_handle<> coro::DefaultRuntime::next() {
+std::coroutine_handle<> scl::DefaultRuntime::next() {
   auto b = m_tq.begin();
   const auto e = m_tq.end();
   while (b != e) {
@@ -44,7 +42,7 @@ std::coroutine_handle<> coro::DefaultRuntime::next() {
   return std::noop_coroutine();
 }
 
-void coro::DefaultRuntime::deschedule(std::coroutine_handle<> coroutine) {
+void scl::DefaultRuntime::deschedule(std::coroutine_handle<> coroutine) {
   m_tq.remove_if([&coroutine](const Pair& pair) {
     return std::get<0>(pair) == coroutine;
   });

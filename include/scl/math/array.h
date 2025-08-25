@@ -21,9 +21,8 @@
 #include <array>
 #include <cstddef>
 #include <sstream>
-#include <type_traits>
 
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 #include "scl/util/prg.h"
 
 namespace scl {
@@ -417,13 +416,12 @@ class Array final {
  * @brief Serializer specialization for product types.
  */
 template <typename GROUP, std::size_t N>
-struct Serializer<math::Array<GROUP, N>> {
+struct Serializer<Array<GROUP, N>> {
   /**
    * @brief Get the serialized size of a product type.
    */
-  static constexpr std::size_t sizeOf(
-      const math::Array<GROUP, N>& /* ignored */) {
-    return math::Array<GROUP, N>::byteSize();
+  static constexpr std::size_t sizeOf(const Array<GROUP, N>& /* ignored */) {
+    return Array<GROUP, N>::byteSize();
   }
 
   /**
@@ -431,8 +429,7 @@ struct Serializer<math::Array<GROUP, N>> {
    * @param prod the element.
    * @param buf the buffer.
    */
-  static std::size_t write(const math::Array<GROUP, N>& prod,
-                           unsigned char* buf) {
+  static std::size_t write(const Array<GROUP, N>& prod, unsigned char* buf) {
     prod.write(buf);
     return sizeOf(prod);
   }
@@ -442,9 +439,8 @@ struct Serializer<math::Array<GROUP, N>> {
    * @param prod the output.
    * @param buf the buffer.
    */
-  static std::size_t read(math::Array<GROUP, N>& prod,
-                          const unsigned char* buf) {
-    prod = math::Array<GROUP, N>::read(buf);
+  static std::size_t read(Array<GROUP, N>& prod, const unsigned char* buf) {
+    prod = Array<GROUP, N>::read(buf);
     return sizeOf(prod);
   }
 };

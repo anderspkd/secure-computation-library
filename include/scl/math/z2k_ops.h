@@ -23,9 +23,10 @@
 #include <string>
 #include <type_traits>
 
-#include "scl/util/str.h"
+#include "scl/hex.h"
+#include "scl/math/hex_util.h"
 
-namespace scl {
+namespace scl::details {
 
 /**
  * @brief Add two values modulo a power of 2 without normalization.
@@ -129,7 +130,7 @@ void toBytes(const T& v, unsigned char* dest) {
  */
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
 void convertIn(T& v, const std::string& str) {
-  v = util::fromHexString<T>(str);
+  v = fromHexString<T>(str);
   v &= SCL_MASK(T, K);
 }
 
@@ -140,11 +141,11 @@ void convertIn(T& v, const std::string& str) {
 template <typename T, std::size_t K, std::enable_if_t<(K <= 128), bool> = true>
 std::string toString(const T& v) {
   auto w = v & SCL_MASK(T, K);
-  return util::toHexString(w);
+  return toHexString(w);
 }
 
 #undef SCL_MASK
 
-}  // namespace scl::math::z2k
+}  // namespace scl::details
 
 #endif  // SCL_MATH_Z2K_Z2K_OPS_H

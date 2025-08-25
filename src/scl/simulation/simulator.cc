@@ -30,7 +30,7 @@
 #include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
 #include "scl/simulation/runtime.h"
-#include "scl/util/time.h"
+#include "scl/time.h"
 
 using namespace scl;
 

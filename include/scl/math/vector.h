@@ -20,13 +20,11 @@
 
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <sstream>
 #include <stdexcept>
-#include <type_traits>
 #include <vector>
 
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 #include "scl/util/prg.h"
 
 namespace scl {
@@ -59,8 +57,6 @@ T innerProd(IT0 xb, IT0 xe, IT1 yb) {
 template <typename ELEMENT>
 class Vector final {
  public:
-  friend struct seri::Serializer<Vector<ELEMENT>>;
-
   /**
    * @brief The type of vector elements.
    */
@@ -477,6 +473,8 @@ class Vector final {
   }
 
  private:
+  friend struct Serializer<Vector<ELEMENT>>;
+
   void ensureCompatible(const Vector& other) const {
     if (size() != other.size()) {
       throw std::invalid_argument("Vec sizes mismatch");
@@ -585,10 +583,10 @@ std::string Vector<ELEMENT>::toString() const {
 }
 
 /**
- * @brief Serializer specialization for math::Vec.
+ * @brief Serializer specialization for Vec.
  */
 template <typename ELEMENT>
-struct Serializer<math::Vector<ELEMENT>> {
+struct Serializer<Vector<ELEMENT>> {
  private:
   using S_vec = Serializer<std::vector<ELEMENT>>;
 
@@ -597,28 +595,26 @@ struct Serializer<math::Vector<ELEMENT>> {
    * @brief Size of a vector.
    * @param vec the vector.
    */
-  static std::size_t sizeOf(const math::Vector<ELEMENT>& vec) {
+  static std::size_t sizeOf(const Vector<ELEMENT>& vec) {
     return S_vec::sizeOf(vec.m_values);
   }
 
   /**
-   * @brief Write a math::Vec to a buffer.
+   * @brief Write a Vec to a buffer.
    * @param vec the vector.
    * @param buf the buffer.
    */
-  static std::size_t write(const math::Vector<ELEMENT>& vec,
-                           unsigned char* buf) {
+  static std::size_t write(const Vector<ELEMENT>& vec, unsigned char* buf) {
     return S_vec::write(vec.m_values, buf);
   }
 
   /**
-   * @brief Read a math::Vec from a buf.
+   * @brief Read a Vec from a buf.
    * @param vec the vector.
    * @param buf the buffer.
    * @return the number of bytes read.
    */
-  static std::size_t read(math::Vector<ELEMENT>& vec,
-                          const unsigned char* buf) {
+  static std::size_t read(Vector<ELEMENT>& vec, const unsigned char* buf) {
     return S_vec::read(vec.m_values, buf);
   }
 };

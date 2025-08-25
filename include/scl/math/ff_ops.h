@@ -18,14 +18,9 @@
 #ifndef SCL_MATH_FIELDS_FF_OPS_H
 #define SCL_MATH_FIELDS_FF_OPS_H
 
-#include <cstdint>
-#include <cstring>
 #include <string>
-#include <type_traits>
 
-#include "scl/math/number.h"
-
-namespace scl {
+namespace scl::details {
 
 /**
  * @brief Convert an int into a field element.

@@ -73,7 +73,7 @@ class Network {
    * local party is connected to itself with a LoopbackChannel, and to everyone
    * else with a TcpChannel.
    */
-  static coro::Task<Network> create(const NetworkConfig& config);
+  static Task<Network> create(const NetworkConfig& config);
 
   /**
    * @brief Create a new network.
@@ -145,7 +145,7 @@ class Network {
    * }
    * @endcode
    */
-  coro::Task<void> send(const Packet& packet) {
+  Task<void> send(const Packet& packet) {
     for (std::size_t i = 0; i < size(); i++) {
       co_await party(i)->send(packet);
     }
@@ -162,26 +162,26 @@ class Network {
    * parties that did not send anything. Thus, the return value will have at
    * least \p t positions with values.
    */
-  coro::Task<std::vector<std::optional<Packet>>> recv(std::size_t t) {
-    std::vector<coro::Task<Packet>> recvs;
+  Task<std::vector<std::optional<Packet>>> recv(std::size_t t) {
+    std::vector<Task<Packet>> recvs;
     recvs.reserve(size());
     for (std::size_t i = 0; i < size(); i++) {
       recvs.emplace_back(party(i)->recv());
     }
-    co_return co_await coro::batch(std::move(recvs), t);
+    co_return co_await batch(std::move(recvs), t);
   }
 
   /**
    * @brief Receive data from all parties on the network.
    * @return list of received packets.
    */
-  coro::Task<std::vector<Packet>> recv() {
-    std::vector<coro::Task<Packet>> recvs;
+  Task<std::vector<Packet>> recv() {
+    std::vector<Task<Packet>> recvs;
     recvs.reserve(size());
     for (std::size_t i = 0; i < size(); i++) {
       recvs.emplace_back(party(i)->recv());
     }
-    co_return co_await coro::batch(std::move(recvs));
+    co_return co_await batch(std::move(recvs));
   }
 
   /**

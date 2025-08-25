@@ -18,15 +18,11 @@
 #ifndef SCL_PROTOCOL_ENV_H
 #define SCL_PROTOCOL_ENV_H
 
-#include <chrono>
 #include <memory>
-#include <ratio>
-#include <thread>
 #include <utility>
 
 #include "scl/net/network.h"
 #include "scl/protocol/clock.h"
-#include "scl/util/time.h"
 
 namespace scl {
 
@@ -41,7 +37,7 @@ struct Env {
   /**
    * @brief The network.
    */
-  net::Network network;
+  Network network;
 
   /**
    * @brief Clock used to tell for how long the protocol has been running.
@@ -57,7 +53,7 @@ struct Env {
  * The returned environemnt uses the RealTimeClock and StlThreadContext for the
  * environment's clock and thread context, respectively.
  */
-inline Env createDefaultEnv(net::Network network) {
+inline Env createDefaultEnv(Network network) {
   return Env{.network = std::move(network),
              .clock = std::make_unique<RealtimeClock>()};
 }

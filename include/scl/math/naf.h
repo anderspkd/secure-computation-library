@@ -21,9 +21,7 @@
 #include <array>
 #include <cstddef>
 
-#include "scl/math/ff.h"
-
-namespace scl::math::details {
+namespace scl::details {
 
 /**
  * @brief Non-adjacent Form encoding of a field element.
@@ -102,6 +100,6 @@ struct NafEncoding {
   std::size_t size;
 };
 
-}  // namespace scl::math::details
+}  // namespace scl::details
 
 #endif  // SCL_MATH_FIELDS_NAF_H

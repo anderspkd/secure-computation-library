@@ -23,7 +23,7 @@
 #include <gmp.h>
 
 #include "scl/serialization.h"
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -66,7 +66,7 @@ class Number final {
    * @param prg a prg for generating the random number.
    * @return a random Number.
    */
-  static Number random(std::size_t bits, util::PRG& prg);
+  static Number random(std::size_t bits, PRG& prg);
 
   /**
    * @brief Generate a random prime.
@@ -74,7 +74,7 @@ class Number final {
    * @param prg a prg for generating the random prime.
    * @return a random prime.
    */
-  static Number randomPrime(std::size_t bits, util::PRG& prg);
+  static Number randomPrime(std::size_t bits, PRG& prg);
 
   /**
    * @brief Read a Number from a string
@@ -453,20 +453,20 @@ class Number final {
 };
 
 /**
- * @brief Serializer specialization for math::Number.
+ * @brief Serializer specialization for Number.
  */
 template <>
-struct Serializer<math::Number> {
+struct Serializer<Number> {
   /**
-   * @brief Get the serialized size of a math::Number.
+   * @brief Get the serialized size of a Number.
    * @param number the number.
-   * @return the serialized size of a math::Number.
+   * @return the serialized size of a Number.
    *
-   * A math::Number is writte as <code>size_and_sign | number</code> where
+   * A Number is writte as <code>size_and_sign | number</code> where
    * <code>size_and_sign</code> is a 4 byte value containing the byte size of
    * the number and its sign.
    */
-  static std::size_t sizeOf(const math::Number& number) {
+  static std::size_t sizeOf(const Number& number) {
     return number.byteSize() + sizeof(std::uint32_t);
   }
 
@@ -476,19 +476,19 @@ struct Serializer<math::Number> {
    * @param buf the buffer.
    * @return the number of bytes written.
    */
-  static std::size_t write(const math::Number& number, unsigned char* buf) {
+  static std::size_t write(const Number& number, unsigned char* buf) {
     number.write(buf);
     return sizeOf(number);
   }
 
   /**
-   * @brief Read a math::Number from a buffer.
+   * @brief Read a Number from a buffer.
    * @param number the number.
    * @param buf the buffer.
    * @return the number of bytes read.
    */
-  static std::size_t read(math::Number& number, const unsigned char* buf) {
-    number = math::Number::read(buf);
+  static std::size_t read(Number& number, const unsigned char* buf) {
+    number = Number::read(buf);
     return sizeOf(number);
   }
 };

@@ -15,10 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/util/sha256.h"
+#include "scl/primitives/sha256.h"
 
 #include <algorithm>
 #include <cstdint>
+
+using namespace scl;
 
 /**
  * SHA-256 implementation based on https://github.com/System-Glitch/SHA256.
@@ -65,7 +67,7 @@ auto choose(uint32_t x, uint32_t y, uint32_t z) {
 
 }  // namespace
 
-void scl::util::Sha256::transform() {
+void Sha256::transform() {
   // round constants.
   static constexpr std::array<uint32_t, 64> k = {
       0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
@@ -110,7 +112,7 @@ void scl::util::Sha256::transform() {
   }
 }
 
-void scl::util::Sha256::pad() {
+void Sha256::pad() {
   auto i = m_chunk_pos;
   const auto end = m_chunk_pos < 56U ? 56U : 64U;
 
@@ -138,7 +140,7 @@ void scl::util::Sha256::pad() {
   transform();
 }
 
-scl::util::Sha256::DigestType scl::util::Sha256::writeDigest() {
+Sha256::DigestType Sha256::writeDigest() {
   Sha256::DigestType digest;
 
   for (std::size_t i = 0; i < 4; ++i) {
@@ -150,7 +152,7 @@ scl::util::Sha256::DigestType scl::util::Sha256::writeDigest() {
   return digest;
 }
 
-void scl::util::Sha256::hash(const unsigned char* bytes, std::size_t nbytes) {
+void Sha256::hash(const unsigned char* bytes, std::size_t nbytes) {
   for (std::size_t i = 0; i < nbytes; ++i) {
     m_chunk[m_chunk_pos++] = bytes[i];
     if (m_chunk_pos == 64) {
@@ -161,7 +163,7 @@ void scl::util::Sha256::hash(const unsigned char* bytes, std::size_t nbytes) {
   }
 }
 
-scl::util::Sha256::DigestType scl::util::Sha256::write() {
+Sha256::DigestType Sha256::write() {
   pad();
   return writeDigest();
 }

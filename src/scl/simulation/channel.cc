@@ -21,27 +21,17 @@
 
 #include "scl/coro/runtime.h"
 #include "scl/simulation/event.h"
-#include "scl/util/time.h"
+#include "scl/time.h"
 
-using namespace scl;
-
-namespace {
-
-std::size_t totalPacketSize(const net::Packet& packet) {
-  return packet.size() + sizeof(net::Packet::SizeType);
-}
-
-}  // namespace
-
-void sim::details::SimulatedChannel::close() {
-  util::Time::Duration elapsed = m_context.elapsedTime();
+void scl::details::SimulatedChannel::close() {
+  Time::Duration elapsed = m_context.elapsedTime();
   m_context.recordEvent(Event::closeChannel(elapsed, m_cid));
   m_context.startClock();
 }
 
-coro::Task<void> sim::details::SimulatedChannel::send(net::Packet&& packet) {
-  util::Time::Duration elapsed = m_context.elapsedTime();
-  const std::size_t nbytes = totalPacketSize(packet);
+scl::Task<void> scl::details::SimulatedChannel::send(scl::Packet&& packet) {
+  Time::Duration elapsed = m_context.elapsedTime();
+  const std::size_t nbytes = packet.size();
   m_context.send(m_cid.remote, elapsed);
 
   m_transport->send(m_cid, std::move(packet));
@@ -51,10 +41,9 @@ coro::Task<void> sim::details::SimulatedChannel::send(net::Packet&& packet) {
   co_return;
 }
 
-coro::Task<void> sim::details::SimulatedChannel::send(
-    const net::Packet& packet) {
-  util::Time::Duration elapsed = m_context.elapsedTime();
-  const std::size_t nbytes = totalPacketSize(packet);
+scl::Task<void> scl::details::SimulatedChannel::send(const Packet& packet) {
+  Time::Duration elapsed = m_context.elapsedTime();
+  const std::size_t nbytes = packet.size();
   m_context.send(m_cid.remote, elapsed);
 
   m_transport->send(m_cid, packet);
@@ -64,8 +53,8 @@ coro::Task<void> sim::details::SimulatedChannel::send(
   co_return;
 }
 
-coro::Task<net::Packet> sim::details::SimulatedChannel::recv() {
-  util::Time::Duration elapsed = m_context.elapsedTime();
+scl::Task<scl::Packet> scl::details::SimulatedChannel::recv() {
+  Time::Duration elapsed = m_context.elapsedTime();
 
   m_context.recvStart(m_cid.remote);
 
@@ -76,16 +65,16 @@ coro::Task<net::Packet> sim::details::SimulatedChannel::recv() {
 
   m_context.recvDone(m_cid.remote);
 
-  elapsed = m_context.recv(m_cid.remote, totalPacketSize(packet), elapsed);
+  elapsed = m_context.recv(m_cid.remote, packet.size(), elapsed);
 
-  const std::size_t nbytes = totalPacketSize(packet);
+  const std::size_t nbytes = packet.size();
   m_context.recordEvent(Event::recvData(elapsed, m_cid, nbytes));
   m_context.startClock();
   co_return packet;
 }
 
-coro::Task<bool> sim::details::SimulatedChannel::hasData() {
-  util::Time::Duration now = m_context.elapsedTime();
+scl::Task<bool> scl::details::SimulatedChannel::hasData() {
+  Time::Duration now = m_context.elapsedTime();
   m_context.recordEvent(Event::hasData(now, m_cid));
 
   auto has_data = m_transport->hasData(m_cid);

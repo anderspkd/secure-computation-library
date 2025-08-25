@@ -18,17 +18,13 @@
 #ifndef SCL_SIMULATION_EVENT_H
 #define SCL_SIMULATION_EVENT_H
 
-#include <chrono>
 #include <cstddef>
 #include <iostream>
 #include <memory>
-#include <optional>
-#include <type_traits>
-#include <utility>
 #include <vector>
 
 #include "scl/simulation/channel_id.h"
-#include "scl/util/time.h"
+#include "scl/time.h"
 
 namespace scl {
 
@@ -111,28 +107,28 @@ struct Event {
    * @brief Create an event indicating the party stopped running.
    * @param timestamp the time the party stopped running at.
    */
-  static std::shared_ptr<Event> stop(util::Time::Duration timestamp);
+  static std::shared_ptr<Event> stop(Time::Duration timestamp);
 
   /**
    * @brief Create an event indicating the party was killed by an exception.
    * @param timestamp the time the party was stopped.
    * @param reason a message describing the reason for the kill.
    */
-  static std::shared_ptr<Event> killed(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> killed(Time::Duration timestamp,
                                        const std::string& reason);
 
   /**
    * @brief Create an event indicating the party was stopped.
    * @param timestamp the time the party was stopped.
    */
-  static std::shared_ptr<Event> cancelled(util::Time::Duration timestamp);
+  static std::shared_ptr<Event> cancelled(Time::Duration timestamp);
 
   /**
    * @brief Create an event indicating that a channel was closed.
    * @param timestamp the time the channel was closed.
    * @param channel_id the ID of the channel.
    */
-  static std::shared_ptr<Event> closeChannel(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> closeChannel(Time::Duration timestamp,
                                              ChannelId channel_id);
 
   /**
@@ -141,7 +137,7 @@ struct Event {
    * @param channel_id the ID of the channel.
    * @param amount the amount of bytes sent.
    */
-  static std::shared_ptr<Event> sendData(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> sendData(Time::Duration timestamp,
                                          ChannelId channel_id,
                                          std::size_t amount);
 
@@ -151,7 +147,7 @@ struct Event {
    * @param channel_id the ID of the channel.
    * @param amount the amount of bytes received.
    */
-  static std::shared_ptr<Event> recvData(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> recvData(Time::Duration timestamp,
                                          ChannelId channel_id,
                                          std::size_t amount);
 
@@ -161,7 +157,7 @@ struct Event {
    * @param timestamp the time of the query.
    * @param channel_id the ID of the channel.
    */
-  static std::shared_ptr<Event> hasData(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> hasData(Time::Duration timestamp,
                                         ChannelId channel_id);
 
   /**
@@ -169,20 +165,20 @@ struct Event {
    * @param timestamp the time the party went to sleep.
    * @param sleep_duration the duration of the sleep.
    */
-  static std::shared_ptr<Event> sleep(util::Time::Duration timestamp,
-                                      util::Time::Duration sleep_duration);
+  static std::shared_ptr<Event> sleep(Time::Duration timestamp,
+                                      Time::Duration sleep_duration);
 
   /**
    * @brief Create an event indicating that the party produced an output.
    */
-  static std::shared_ptr<Event> output(util::Time::Duration timestamp);
+  static std::shared_ptr<Event> output(Time::Duration timestamp);
 
   /**
    * @brief Create an event indicating that a protocol began.
    * @param timestamp the starting time of the protocol.
    * @param protocol_name the name of the protocol.
    */
-  static std::shared_ptr<Event> protocolBegin(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> protocolBegin(Time::Duration timestamp,
                                               const std::string& protocol_name);
 
   /**
@@ -190,13 +186,13 @@ struct Event {
    * @param timestamp the finishing time of the protocol.
    * @param protocol_name the name of the protocol.
    */
-  static std::shared_ptr<Event> protocolEnd(util::Time::Duration timestamp,
+  static std::shared_ptr<Event> protocolEnd(Time::Duration timestamp,
                                             const std::string& protocol_name);
 
   /**
    * @brief Constructor.
    */
-  Event(EventType type, util::Time::Duration timestamp)
+  Event(EventType type, Time::Duration timestamp)
       : type(type), timestamp(timestamp) {}
 
   virtual ~Event() {}
@@ -209,7 +205,7 @@ struct Event {
   /**
    * @brief The event timestamp.
    */
-  util::Time::Duration timestamp;
+  Time::Duration timestamp;
 };
 
 /**
@@ -219,9 +215,7 @@ struct ChannelEvent : public Event {
   /**
    * @brief Constructor
    */
-  ChannelEvent(EventType type,
-               util::Time::Duration timestamp,
-               ChannelId channel_id)
+  ChannelEvent(EventType type, Time::Duration timestamp, ChannelId channel_id)
       : Event(type, timestamp), channel_id(channel_id) {}
 
   ~ChannelEvent() {}
@@ -239,7 +233,7 @@ struct ChannelDataEvent final : public ChannelEvent {
    * @brief Constructor.
    */
   ChannelDataEvent(EventType type,
-                   util::Time::Duration timestamp,
+                   Time::Duration timestamp,
                    ChannelId channel_id,
                    std::size_t amount)
       : ChannelEvent(type, timestamp, channel_id), amount(amount) {}
@@ -258,14 +252,14 @@ struct SleepEvent final : public Event {
    * @brief Constructor.
    */
   SleepEvent(EventType type,
-             util::Time::Duration timestamp,
-             util::Time::Duration sleep_duration)
+             Time::Duration timestamp,
+             Time::Duration sleep_duration)
       : Event(type, timestamp + sleep_duration),
         sleep_duration(sleep_duration) {}
   /**
    * @brief The sleep duration.
    */
-  util::Time::Duration sleep_duration;
+  Time::Duration sleep_duration;
 };
 
 /**
@@ -276,7 +270,7 @@ struct ProtocolEvent final : public Event {
    * @brief Constructor.
    */
   ProtocolEvent(EventType type,
-                util::Time::Duration timestamp,
+                Time::Duration timestamp,
                 const std::string& protocol_name)
       : Event(type, timestamp), protocol_name(protocol_name) {}
   /**
@@ -292,7 +286,7 @@ struct KillEvent final : public Event {
   /**
    * @brief Constructor.
    */
-  KillEvent(util::Time::Duration timestamp, const std::string& reason)
+  KillEvent(Time::Duration timestamp, const std::string& reason)
       : Event(EventType::KILLED, timestamp), reason(reason) {}
 
   /**

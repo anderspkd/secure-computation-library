@@ -23,8 +23,7 @@
 #include <cstring>
 #include <memory>
 
-#include "scl/serialization/serializable.h"
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 
 namespace scl {
 
@@ -71,9 +70,6 @@ class Packet {
       std::free(p);
     }
   };
-
-  // Internal buffer type.
-  using Buffer = std::unique_ptr<unsigned char[], FreeDeleter>;
 
  public:
   /**
@@ -125,10 +121,11 @@ class Packet {
    * util::Serializer. A specialization of util::Serialization for \p T must
    * therefore exist.
    */
-  template <seri::Serializable T>
+  template <typename T>
+    requires Serializable<T>
   T read() {
     T v;
-    const auto sz = seri::Serializer<T>::read(v, get() + m_read_ptr);
+    const auto sz = Serializer<T>::read(v, get() + m_read_ptr);
     m_read_ptr += sz;
     return v;
   }  // LCOV_EXCL_LINE
@@ -141,11 +138,12 @@ class Packet {
    * This function writes \p obj using an util::Serializer. Calling this
    * function may also result in the internal buffer being resized.
    */
-  template <seri::Serializable T>
+  template <typename T>
+    requires Serializable<T>
   std::size_t write(const T& obj) {
-    const auto sz = seri::Serializer<T>::sizeOf(obj);
+    const auto sz = Serializer<T>::sizeOf(obj);
     reserveSpace(sz);
-    seri::Serializer<T>::write(obj, get() + m_write_ptr);
+    Serializer<T>::write(obj, get() + m_write_ptr);
     m_write_ptr += sz;
     return sz;
   }
@@ -156,7 +154,7 @@ class Packet {
    * @return the number of bytes written to this packet.
    */
   std::size_t write(const Packet& obj) {
-    const auto sz = obj.size();
+    const auto sz = obj.dataSize();
     reserveSpace(sz);
     std::copy(obj.get(), obj.get() + sz, get() + m_write_ptr);
     m_write_ptr += sz;
@@ -175,15 +173,22 @@ class Packet {
   /**
    * @brief The size of a packet.
    */
-  SizeType size() const {
+  SizeType dataSize() const {
     return m_write_ptr;
+  }
+
+  /**
+   * @brief The size on the wire of a packet.
+   */
+  SizeType size() const {
+    return dataSize() + sizeof(SizeType);
   }
 
   /**
    * @brief Get the number of unread bytes of this packet.
    */
   SizeType remaining() const {
-    return size() - m_read_ptr;
+    return dataSize() - m_read_ptr;
   }
 
   /**
@@ -249,11 +254,11 @@ class Packet {
    * @return true if the two packets contain the same data, false otherwise.
    */
   friend bool operator==(const Packet& lhs, const Packet& rhs) {
-    if (lhs.size() != rhs.size()) {
+    if (lhs.dataSize() != rhs.dataSize()) {
       return false;
     }
 
-    const std::size_t n = lhs.size();
+    const std::size_t n = lhs.dataSize();
     for (std::size_t i = 0; i < n; i++) {
       if (lhs.m_buffer[i] != rhs.m_buffer[i]) {
         return false;
@@ -276,7 +281,7 @@ class Packet {
   }
 
  private:
-  Buffer m_buffer;
+  std::unique_ptr<unsigned char[], FreeDeleter> m_buffer;
   std::size_t m_cap;
   std::ptrdiff_t m_read_ptr;
   std::ptrdiff_t m_write_ptr;

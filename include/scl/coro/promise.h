@@ -21,16 +21,12 @@
 #include <chrono>
 #include <coroutine>
 #include <exception>
-#include <iostream>
-#include <memory>
-#include <type_traits>
 #include <utility>
 #include <variant>
 
 #include "scl/coro/batch.h"
 #include "scl/coro/future.h"
 #include "scl/coro/sleep_awaiter.h"
-#include "scl/util/time.h"
 
 namespace scl {
 
@@ -226,6 +222,6 @@ class TaskPromise<void> final : public TaskPromiseBase {
 };
 
 }  // namespace details
-}  // namespace scl::coro
+}  // namespace scl
 
 #endif  // SCL_CORO_PROMISE_H

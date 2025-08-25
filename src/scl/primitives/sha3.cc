@@ -15,7 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/util/sha3.h"
+#include "scl/primitives/sha3.h"
+
+using namespace scl;
 
 namespace {
 
@@ -43,7 +45,7 @@ uint64_t RotLeft64(uint64_t x, uint64_t y) {
 
 }  // namespace
 
-void scl::util::keccakf(uint64_t state[25]) {
+void keccakf(uint64_t state[25]) {
   uint64_t t;
   uint64_t bc[5];
 

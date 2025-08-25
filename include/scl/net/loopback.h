@@ -20,7 +20,6 @@
 
 #include <deque>
 #include <memory>
-#include <stdexcept>
 
 #include "scl/coro/task.h"
 #include "scl/net/channel.h"
@@ -86,7 +85,7 @@ class LoopbackChannel final : public Channel {
    *
    * This function will complete immediately once awaited.
    */
-  coro::Task<void> send(Packet&& packet) override {
+  Task<void> send(Packet&& packet) override {
     m_out->emplace_back(packet);
     co_return;
   }
@@ -96,7 +95,7 @@ class LoopbackChannel final : public Channel {
    *
    * This function will complete immediately once awaited.
    */
-  coro::Task<void> send(const Packet& packet) override {
+  Task<void> send(const Packet& packet) override {
     m_out->push_back(packet);
     co_return;
   }
@@ -106,7 +105,7 @@ class LoopbackChannel final : public Channel {
    *
    * This function may suspend if there is no data yet.
    */
-  coro::Task<Packet> recv() override {
+  Task<Packet> recv() override {
     // suspend in case there is no packets yet
     co_await [this]() { return !this->m_in->empty(); };
     auto packet = m_in->front();
@@ -117,7 +116,7 @@ class LoopbackChannel final : public Channel {
   /**
    * @brief Check if there are data available for receiving.
    */
-  coro::Task<bool> hasData() override {
+  Task<bool> hasData() override {
     co_return !m_in->empty();
   }
 
@@ -127,7 +126,7 @@ class LoopbackChannel final : public Channel {
    * This function does not perform any checks on the incoming buffer.
    */
   std::size_t getNextPacketSize() const {
-    return m_in->front().size();
+    return m_in->front().dataSize();
   }
 
  private:

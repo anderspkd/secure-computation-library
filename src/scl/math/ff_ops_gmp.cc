@@ -15,15 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_CORO_COROUTINE_H
-#define SCL_CORO_COROUTINE_H
+#include "scl/math/ff_ops_gmp.h"
 
-#include "scl/coro/runtime.h"
-#include "scl/coro/task.h"
-
-/**
- * @brief Coroutine utilities.
- */
-namespace scl::coro {}  // namespace scl::coro
-
-#endif  // SCL_CORO_COROUTINE_H
+std::size_t scl::details::findFirstNonZero(const std::string& s) {
+  int n = 0;
+  for (const auto c : s) {
+    if (c != '0') {
+      return n;
+    }
+    n++;
+  }
+  return n;
+}

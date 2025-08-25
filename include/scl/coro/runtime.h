@@ -18,10 +18,8 @@
 #ifndef SCL_CORO_RUNTIME_H
 #define SCL_CORO_RUNTIME_H
 
-#include <chrono>
 #include <coroutine>
 #include <functional>
-#include <iostream>
 #include <list>
 
 #include "scl/coro/batch.h"
@@ -29,7 +27,7 @@
 #include "scl/coro/promise.h"
 #include "scl/coro/sleep_awaiter.h"
 #include "scl/coro/task.h"
-#include "scl/util/time.h"
+#include "scl/time.h"
 
 namespace scl {
 
@@ -63,7 +61,7 @@ class Runtime {
    * @param delay a delay.
    */
   virtual void schedule(std::coroutine_handle<> coroutine,
-                        util::Time::Duration delay) = 0;
+                        Time::Duration delay) = 0;
 
   /**
    * @brief Schedule a coroutine for execution immediately.
@@ -142,10 +140,10 @@ class DefaultRuntime final : public Runtime {
   }
 
   void schedule(std::coroutine_handle<> coroutine,
-                util::Time::Duration delay) override {
-    const auto start = util::Time::now();
+                Time::Duration delay) override {
+    const auto start = Time::now();
     schedule(coroutine, [start, delay]() {
-      const auto now = util::Time::now();
+      const auto now = Time::now();
       return now - start >= delay;
     });
   }

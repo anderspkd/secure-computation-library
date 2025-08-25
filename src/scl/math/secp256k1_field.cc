@@ -15,20 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/math/fields/secp256k1_field.h"
+#include "scl/math/secp256k1_field.h"
 
 #include <array>
 #include <sstream>
 
 #include "./secp256k1_helpers.h"
 #include "scl/math/ff.h"
-#include "scl/math/fields/ff_ops.h"
-#include "scl/math/fields/ff_ops_gmp.h"
+#include "scl/math/ff_ops.h"
+#include "scl/math/ff_ops_gmp.h"
 #include "scl/math/number.h"
 
-using namespace scl;
-
-using Field = math::ff::Secp256k1Field;
+using Field = scl::Secp256k1Field;
 using Elem = Field::ValueType;
 
 #define NUM_LIMBS 4
@@ -40,7 +38,7 @@ using Elem = Field::ValueType;
     }                                          \
   } while (0)
 
-static const math::ff::RedParams<NUM_LIMBS> RD = {
+static const scl::details::RedParams<NUM_LIMBS> RD = {
     // Prime
     {
         0xFFFFFFFEFFFFFC2F,  //
@@ -57,7 +55,7 @@ static const math::ff::RedParams<NUM_LIMBS> RD = {
     }};
 
 template <>
-math::Number math::order<math::FF<Field>>() {
+scl::Number scl::order<scl::FF<Field>>() {
   return Number::fromString(
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
 }
@@ -66,42 +64,41 @@ math::Number math::order<math::FF<Field>>() {
 #define PTR(X) (X).data()
 
 template <>
-void math::ff::convertTo<Field>(Elem& out, const int value) {
+void scl::details::convertTo<Field>(Elem& out, const int value) {
   out = {0};
   montyInFromInt<NUM_LIMBS>(PTR(out), value, RD);
 }
 
 template <>
-void math::ff::convertTo<Field>(Elem& out, const std::string& src) {
+void scl::details::convertTo<Field>(Elem& out, const std::string& src) {
   out = {0};
   montyFromString<NUM_LIMBS>(PTR(out), src, RD);
 }
 
 template <>
-void math::ff::add<Field>(Elem& out, const Elem& op) {
+void scl::details::add<Field>(Elem& out, const Elem& op) {
   montyModAdd<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
-void math::ff::subtract<Field>(Elem& out, const Elem& op) {
+void scl::details::subtract<Field>(Elem& out, const Elem& op) {
   montyModSub<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
-void math::ff::negate<Field>(Elem& out) {
+void scl::details::negate<Field>(Elem& out) {
   montyModNeg<NUM_LIMBS>(PTR(out), RD);
 }
 
 template <>
-void math::ff::multiply<Field>(Elem& out, const Elem& op) {
+void scl::details::multiply<Field>(Elem& out, const Elem& op) {
   montyModMul<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
-#define ONE \
-  { 0x1000003D1, 0, 0, 0 }
+#define ONE {0x1000003D1, 0, 0, 0}
 
 template <>
-void math::ff::invert<Field>(Elem& out) {
+void scl::details::invert<Field>(Elem& out) {
   static const mp_limb_t PRIME_MINUS_2[NUM_LIMBS] = {
       0xFFFFFFFEFFFFFC2D,  //
       0xFFFFFFFFFFFFFFFF,  //
@@ -115,31 +112,31 @@ void math::ff::invert<Field>(Elem& out) {
 }
 
 template <>
-bool math::ff::equal<Field>(const Elem& in1, const Elem& in2) {
+bool scl::details::equal<Field>(const Elem& in1, const Elem& in2) {
   return compareValues<NUM_LIMBS>(PTR(in1), PTR(in2)) == 0;
 }
 
 template <>
-void math::ff::fromBytes<Field>(Elem& dest, const unsigned char* src) {
+void scl::details::fromBytes<Field>(Elem& dest, const unsigned char* src) {
   montyFromBytes<NUM_LIMBS>(PTR(dest), src, RD);
 }
 
 template <>
-void math::ff::toBytes<Field>(unsigned char* dest, const Elem& src) {
+void scl::details::toBytes<Field>(unsigned char* dest, const Elem& src) {
   montyToBytes<NUM_LIMBS>(dest, PTR(src), RD);
 }
 
 template <>
-std::string math::ff::toString<Field>(const Elem& in) {
+std::string scl::details::toString<Field>(const Elem& in) {
   return montyToString<NUM_LIMBS>(PTR(in), RD);
 }
 
-bool math::details::isSmaller(const FF<Field>& lhs, const FF<Field>& rhs) {
-  auto c = ff::compareValues<NUM_LIMBS>(PTR(lhs.value()), PTR(rhs.value()));
+bool scl::details::isSmaller(const FF<Field>& lhs, const FF<Field>& rhs) {
+  auto c = compareValues<NUM_LIMBS>(PTR(lhs.value()), PTR(rhs.value()));
   return c <= 0;
 }
 
-math::FF<Field> math::details::sqrt(const FF<Field>& x) {
+scl::FF<Field> scl::details::sqrt(const FF<Field>& x) {
   // (p + 1) / 4. We assume the input is a square mod p, so x^{e} gives a square
   // root of x.
   static const mp_limb_t e[NUM_LIMBS] = {

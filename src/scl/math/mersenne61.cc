@@ -15,16 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/math/fields/mersenne61.h"
+#include "scl/math/mersenne61.h"
 
 #include <cstring>
 #include <string>
 
-#include "./small_ff.h"
-#include "scl/math/fields/ff_ops.h"
-#include "scl/util/str.h"
-
-using namespace scl;
+#include "scl/hex.h"
+#include "scl/math/ff_ops.h"
+#include "scl/math/hex_util.h"
+#include "scl/math/small_ff.h"
 
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
@@ -32,31 +31,31 @@ using u128 = __uint128_t;
 // The prime p = 2^61 - 1
 static const u64 p = 0x1FFFFFFFFFFFFFFF;
 
-using Mersenne61 = scl::math::ff::Mersenne61;
+using Mersenne61 = scl::Mersenne61;
 
 template <>
-void math::ff::convertTo<Mersenne61>(u64& out, const int value) {
+void scl::details::convertTo<Mersenne61>(u64& out, const int value) {
   out = value < 0 ? value + p : value;
 }
 
 template <>
-void math::ff::convertTo<Mersenne61>(u64& out, const std::string& src) {
-  out = util::fromHexString<u64>(src);
+void scl::details::convertTo<Mersenne61>(u64& out, const std::string& src) {
+  out = fromHexString<u64>(src);
   out = out % p;
 }
 
 template <>
-void math::ff::add<Mersenne61>(u64& out, const u64& op) {
-  details::modAdd(out, op, p);
+void scl::details::add<Mersenne61>(u64& out, const u64& op) {
+  modAdd(out, op, p);
 }
 
 template <>
-void math::ff::subtract<Mersenne61>(u64& out, const u64& op) {
-  details::modSub(out, op, p);
+void scl::details::subtract<Mersenne61>(u64& out, const u64& op) {
+  modSub(out, op, p);
 }
 
 template <>
-void math::ff::multiply<Mersenne61>(u64& out, const u64& op) {
+void scl::details::multiply<Mersenne61>(u64& out, const u64& op) {
   u128 z = (u128)out * op;
   u64 a = z >> 61;
   u64 b = (u64)z;
@@ -64,37 +63,37 @@ void math::ff::multiply<Mersenne61>(u64& out, const u64& op) {
   a |= b >> 61;
   b &= p;
 
-  details::modAdd(a, b, p);
+  modAdd(a, b, p);
   out = a;
 }
 
 template <>
-void math::ff::negate<Mersenne61>(u64& out) {
-  details::modNeg(out, p);
+void scl::details::negate<Mersenne61>(u64& out) {
+  modNeg(out, p);
 }
 
 template <>
-void math::ff::invert<Mersenne61>(u64& out) {
-  details::modInv<u64, std::int64_t>(out, out, p);
+void scl::details::invert<Mersenne61>(u64& out) {
+  modInv<u64, std::int64_t>(out, out, p);
 }
 
 template <>
-bool math::ff::equal<Mersenne61>(const u64& in1, const u64& in2) {
+bool scl::details::equal<Mersenne61>(const u64& in1, const u64& in2) {
   return in1 == in2;
 }
 
 template <>
-void math::ff::fromBytes<Mersenne61>(u64& dest, const unsigned char* src) {
+void scl::details::fromBytes<Mersenne61>(u64& dest, const unsigned char* src) {
   dest = *(const u64*)src;
   dest = dest % p;
 }
 
 template <>
-void math::ff::toBytes<Mersenne61>(unsigned char* dest, const u64& src) {
+void scl::details::toBytes<Mersenne61>(unsigned char* dest, const u64& src) {
   std::memcpy(dest, &src, sizeof(u64));
 }
 
 template <>
-std::string math::ff::toString<Mersenne61>(const u64& in) {
-  return util::toHexString(in);
+std::string scl::details::toString<Mersenne61>(const u64& in) {
+  return toHexString(in);
 }

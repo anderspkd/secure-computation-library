@@ -20,9 +20,7 @@
 #include <ostream>
 #include <stdexcept>
 
-using namespace scl;
-
-void sim::ChannelConfig::Builder::validate() const {
+void scl::ChannelConfig::Builder::validate() const {
   if (m_bandwidth.has_value()) {
     if (m_bandwidth.value() == 0) {
       throw std::invalid_argument("bandwidth cannot be 0");
@@ -51,8 +49,8 @@ void sim::ChannelConfig::Builder::validate() const {
   }
 }
 
-std::ostream& sim::operator<<(std::ostream& os, const ChannelConfig& config) {
-  if (config.type() == sim::ChannelConfig::NetworkType::TCP) {
+std::ostream& scl::operator<<(std::ostream& os, const ChannelConfig& config) {
+  if (config.type() == ChannelConfig::NetworkType::TCP) {
     os << "SimulationConfig{";
     os << "Type: TCP, ";
     os << "Bandwidth: " << config.bandwidth() << " bits/s, ";
@@ -67,10 +65,10 @@ std::ostream& sim::operator<<(std::ostream& os, const ChannelConfig& config) {
   return os;
 }
 
-sim::ChannelConfig sim::ChannelConfig::defaultConfig() {
+scl::ChannelConfig scl::ChannelConfig::defaultConfig() {
   return ChannelConfig::Builder{}.build();
 }
 
-sim::ChannelConfig sim::ChannelConfig::loopback() {
+scl::ChannelConfig scl::ChannelConfig::loopback() {
   return ChannelConfig::Builder{}.type(NetworkType::INSTANT).build();
 }

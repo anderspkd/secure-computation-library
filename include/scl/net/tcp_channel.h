@@ -23,9 +23,7 @@
 
 #include <sys/poll.h>
 
-#include "scl/coro/future.h"
 #include "scl/net/channel.h"
-#include "scl/net/config.h"
 #include "scl/net/sys_iface.h"
 #include "scl/net/tcp_utils.h"
 
@@ -41,7 +39,7 @@ class TcpChannel final : public Channel {
    * @brief Create a new TcpChannel.
    * @param socket the socket.
    */
-  TcpChannel(SocketType socket) : m_alive(true), m_socket(socket) {}
+  TcpChannel(int socket) : m_alive(true), m_socket(socket) {}
 
   /**
    * @brief Check if this channel is alive.
@@ -69,7 +67,7 @@ class TcpChannel final : public Channel {
    * this would result in the call blocking, then the function is suspended and
    * scheduled to run later through the supplied scheduler.
    */
-  coro::Task<void> send(Packet&& packet) override;
+  Task<void> send(Packet&& packet) override;
 
   /**
    * @brief Send a packet on this channel.
@@ -79,7 +77,7 @@ class TcpChannel final : public Channel {
    * this would result in the call blocking, then the function is suspended and
    * scheduled to run later through the supplied scheduler.
    */
-  coro::Task<void> send(const Packet& packet) override;
+  Task<void> send(const Packet& packet) override;
 
   /**
    * @brief Recv a packet on this channel.
@@ -88,17 +86,17 @@ class TcpChannel final : public Channel {
    * This function will suspend execution if not enough data is ready yet. To
    * check if it's possible to receive something on the channel, use hasData().
    */
-  coro::Task<Packet> recv() override;
+  Task<Packet> recv() override;
 
   /**
    * @brief Check if this channel has data ready for recovering.
    * @return true if there's data to receive and false otherwise.
    */
-  coro::Task<bool> hasData() override;
+  Task<bool> hasData() override;
 
  private:
   bool m_alive;
-  SocketType m_socket;
+  int m_socket;
 };
 
 template <typename SYS>
@@ -117,14 +115,14 @@ void TcpChannel<SYS>::close() {
 }
 
 template <typename SYS>
-coro::Task<void> TcpChannel<SYS>::send(Packet&& packet) {
+Task<void> TcpChannel<SYS>::send(Packet&& packet) {
   co_await send(packet);
 }
 
 template <typename SYS>
-coro::Task<void> TcpChannel<SYS>::send(const Packet& packet) {
+Task<void> TcpChannel<SYS>::send(const Packet& packet) {
   // Write the packet size to a buffer.
-  const Packet::SizeType packet_size = packet.size();
+  const Packet::SizeType packet_size = packet.dataSize();
   const auto packet_size_size = sizeof(Packet::SizeType);
   unsigned char packet_size_buf[packet_size_size] = {0};
   std::memcpy(packet_size_buf, &packet_size, packet_size_size);
@@ -138,7 +136,7 @@ coro::Task<void> TcpChannel<SYS>::send(const Packet& packet) {
 
   // Write content of packet. This may block, in which case a RetrySend
   // awaitable is created and this coroutine is suspended.
-  std::size_t rem = packet.size();
+  std::size_t rem = packet.dataSize();
   const unsigned char* data = packet.get();
   while (rem > 0) {
     const auto written = SYS::write(m_socket, data, rem);
@@ -164,9 +162,7 @@ namespace details {
 // buffer. If the read would block, then the call is suspended using the
 // provided scheduler.
 template <typename SYS>
-coro::Task<void> recvInto(SocketType socket,
-                          unsigned char* dst,
-                          std::size_t nbytes) {
+Task<void> recvInto(int socket, unsigned char* dst, std::size_t nbytes) {
   std::size_t rem = nbytes;
   while (rem > 0) {
     const auto read = SYS::read(socket, dst, rem);
@@ -188,7 +184,7 @@ coro::Task<void> recvInto(SocketType socket,
 }  // namespace details
 
 template <typename SYS>
-coro::Task<Packet> TcpChannel<SYS>::recv() {
+Task<Packet> TcpChannel<SYS>::recv() {
   unsigned char packet_size_buf[sizeof(Packet::SizeType)] = {0};
 
   // read size of the packet.
@@ -206,7 +202,7 @@ coro::Task<Packet> TcpChannel<SYS>::recv() {
 }
 
 template <typename SYS>
-coro::Task<bool> TcpChannel<SYS>::hasData() {
+Task<bool> TcpChannel<SYS>::hasData() {
   co_return details::pollSocket(m_socket, POLLIN);
 }
 

@@ -18,8 +18,6 @@
 #include "scl/net/config.h"
 
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -39,8 +37,7 @@ void validateIdAndSize(std::size_t id, std::size_t n) {
 
 }  // namespace
 
-net::NetworkConfig net::NetworkConfig::load(std::size_t id,
-                                            const std::string& filename) {
+NetworkConfig NetworkConfig::load(std::size_t id, const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
@@ -72,9 +69,9 @@ net::NetworkConfig net::NetworkConfig::load(std::size_t id,
   return NetworkConfig(id, info);
 }
 
-net::NetworkConfig net::NetworkConfig::localhost(std::size_t id,
-                                                 std::size_t size,
-                                                 std::size_t port_base) {
+NetworkConfig NetworkConfig::localhost(std::size_t id,
+                                       std::size_t size,
+                                       std::size_t port_base) {
   validateIdAndSize(id, size);
 
   std::vector<Party> info;
@@ -86,7 +83,7 @@ net::NetworkConfig net::NetworkConfig::localhost(std::size_t id,
   return NetworkConfig(id, info);
 }
 
-void net::NetworkConfig::validate() {
+void NetworkConfig::validate() {
   auto n = networkSize();
 
   if (static_cast<std::size_t>(id()) >= n) {

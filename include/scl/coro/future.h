@@ -20,8 +20,7 @@
 
 #include <concepts>
 #include <coroutine>
-#include <functional>
-#include <memory>
+#include <utility>
 
 namespace scl {
 

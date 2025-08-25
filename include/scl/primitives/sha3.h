@@ -21,8 +21,8 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "scl/util/digest.h"
-#include "scl/util/iuf_hash.h"
+#include "scl/primitives/digest.h"
+#include "scl/primitives/iuf_hash.h"
 
 namespace scl {
 

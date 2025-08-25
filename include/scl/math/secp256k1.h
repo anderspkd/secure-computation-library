@@ -20,10 +20,9 @@
 
 #include <gmp.h>
 
-#include "scl/math/curves/ec_ops.h"
 #include "scl/math/ff.h"
-#include "scl/math/fields/secp256k1_field.h"
-#include "scl/math/fields/secp256k1_scalar.h"
+#include "scl/math/secp256k1_field.h"
+#include "scl/math/secp256k1_scalar.h"
 
 namespace scl {
 
@@ -36,12 +35,12 @@ struct Secp256k1 {
    * @brief The finite field defined by
    * \f$p=2^{256}-2^{32}-2^{9}-2^{8}-2^{7}-2^{6}-2^{4}-1\f$
    */
-  using Field = ff::Secp256k1Field;
+  using Field = Secp256k1Field;
 
   /**
    * @brief The finite field defined by a large prime order subgroup.
    */
-  using Scalar = ff::Secp256k1Scalar;
+  using Scalar = Secp256k1Scalar;
 
   /**
    * @brief Secp256k1 curve elements are stored in projective coordinates.
@@ -54,6 +53,6 @@ struct Secp256k1 {
   constexpr static const char* NAME = "secp256k1";
 };
 
-}  // namespace scl::math::ec
+}  // namespace scl
 
 #endif  // SCL_MATH_CURVES_SECP256K1_H

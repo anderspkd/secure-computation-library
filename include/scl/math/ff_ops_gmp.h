@@ -27,9 +27,9 @@
 
 #include <gmp.h>
 
-#include "scl/util/str.h"
+#include "scl/math/hex_util.h"
 
-namespace scl {
+namespace scl::details {
 
 #define SCL_BITS_PER_LIMB static_cast<std::size_t>(mp_bits_per_limb)
 #define SCL_BYTES_PER_LIMB sizeof(mp_limb_t)
@@ -390,8 +390,7 @@ void montyFromString(mp_limb_t* out,
     auto beg = s.begin();
     for (int i = 0; i < n && c >= 0; i += m) {
       auto end = std::min(n, i + m);
-      out[c--] =
-          util::fromHexString<mp_limb_t>(std::string(beg + i, beg + end));
+      out[c--] = fromHexString<mp_limb_t>(std::string(beg + i, beg + end));
     }
     montyIn<N>(out, rp);
   }
@@ -400,6 +399,6 @@ void montyFromString(mp_limb_t* out,
 #undef SCL_BITS_PER_LIMB
 #undef SCL_BYTES_PER_LIMB
 
-}  // namespace scl::math::ff
+}  // namespace scl::details
 
 #endif  // SCL_MATH_FIELDS_FF_OPS_GMP_H

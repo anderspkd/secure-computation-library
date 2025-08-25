@@ -18,7 +18,7 @@
 #ifndef SCL_PROTOCOL_CLOCK_H
 #define SCL_PROTOCOL_CLOCK_H
 
-#include "scl/util/time.h"
+#include "scl/time.h"
 
 namespace scl {
 
@@ -31,7 +31,7 @@ struct Clock {
   /**
    * @brief Read the current value of the clock.
    */
-  virtual util::Time::Duration read() const = 0;
+  virtual Time::Duration read() const = 0;
 };
 
 /**
@@ -42,18 +42,18 @@ class RealtimeClock final : public Clock {
   /**
    * @brief Create a new RealtimeClock.
    */
-  RealtimeClock() : m_clock_start(util::Time::now()) {}
+  RealtimeClock() : m_clock_start(Time::now()) {}
 
   /**
    * @brief Read the current value of the clock.
    * @return the amount of time elapsed since this clock was created.
    */
-  util::Time::Duration read() const override {
-    return util::Time::now() - m_clock_start;
+  Time::Duration read() const override {
+    return Time::now() - m_clock_start;
   }
 
  private:
-  util::Time::TimePoint m_clock_start;
+  Time::TimePoint m_clock_start;
 };
 
 }  // namespace scl

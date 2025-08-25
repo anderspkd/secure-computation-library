@@ -19,9 +19,6 @@
 #define SCL_CORO_TASK_H
 
 #include <coroutine>
-#include <ios>
-#include <memory>
-#include <type_traits>
 #include <utility>
 
 #include "scl/coro/batch.h"

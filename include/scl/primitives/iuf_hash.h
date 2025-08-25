@@ -19,13 +19,10 @@
 #define SCL_UTIL_IUF_HASH_H
 
 #include <array>
-#include <cstdint>
-#include <iomanip>
 #include <memory>
-#include <string>
 #include <vector>
 
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 
 namespace scl {
 
@@ -86,11 +83,11 @@ struct IUFHash {
    * @return the updated Hash object.
    */
   template <typename T>
+    requires Serializable<T>
   IUFHash<HASH>& update(const T& data) {
-    using Sr = seri::Serializer<T>;
-    const auto size = Sr::sizeOf(data);
+    const auto size = Serializer<T>::sizeOf(data);
     const auto buf = std::make_unique<unsigned char[]>(size);
-    Sr::write(data, buf.get());
+    Serializer<T>::write(data, buf.get());
     return update(buf.get(), size);
   }
 

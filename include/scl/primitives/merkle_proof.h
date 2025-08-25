@@ -46,13 +46,13 @@ struct MerkleProof {
  * @brief Serializer for MerkleProof.
  */
 template <typename DIGEST>
-struct Serializer<util::MerkleProof<DIGEST>> {
+struct Serializer<MerkleProof<DIGEST>> {
   /**
    * @brief Determines the size in bytes of a merkle proof.
    * @param proof the proof.
    * @return the size of \p proof in bytes.
    */
-  static std::size_t sizeOf(const util::MerkleProof<DIGEST>& proof) {
+  static std::size_t sizeOf(const MerkleProof<DIGEST>& proof) {
     return Serializer<std::vector<DIGEST>>::sizeOf(proof.path) +
            Serializer<util::Bitmap>::sizeOf(proof.direction);
   }
@@ -63,7 +63,7 @@ struct Serializer<util::MerkleProof<DIGEST>> {
    * @param buf the buffer.
    * @return the number of bytes written to \p buf.
    */
-  static std::size_t write(const util::MerkleProof<DIGEST>& proof,
+  static std::size_t write(const MerkleProof<DIGEST>& proof,
                            unsigned char* buf) {
     buf += Serializer<std::vector<DIGEST>>::write(proof.path, buf);
     buf += Serializer<util::Bitmap>::write(proof.direction, buf);
@@ -76,7 +76,7 @@ struct Serializer<util::MerkleProof<DIGEST>> {
    * @param buf the buffer.
    * @return the number of bytes read from \p buf.
    */
-  static std::size_t read(util::MerkleProof<DIGEST>& proof,
+  static std::size_t read(MerkleProof<DIGEST>& proof,
                           const unsigned char* buf) {
     buf += Serializer<std::vector<DIGEST>>::read(proof.path, buf);
     buf += Serializer<util::Bitmap>::read(proof.direction, buf);

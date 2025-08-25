@@ -20,7 +20,7 @@
 
 #include <stdexcept>
 
-namespace scl::math::details {
+namespace scl::details {
 
 /**
  * @brief Compute a modular addition on two simple types.
@@ -63,7 +63,7 @@ void modInv(T& t, const T& v, const T& m) {
 #define SCL_PARALLEL_ASSIGN(v1, v2, q) \
   do {                                 \
     const auto __temp = v2;            \
-    (v2) = (v1) - (q)*__temp;          \
+    (v2) = (v1) - (q) * __temp;        \
     (v1) = __temp;                     \
   } while (0)
 
@@ -91,6 +91,6 @@ void modInv(T& t, const T& v, const T& m) {
   t = static_cast<T>(k);
 }
 
-}  // namespace scl::math::details
+}  // namespace scl::details
 
 #endif  // SCL_MATH_FIELDS_SMALL_FF_H

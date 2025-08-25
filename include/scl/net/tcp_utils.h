@@ -18,11 +18,8 @@
 #ifndef SCL_NET_TCP_UTILS_H
 #define SCL_NET_TCP_UTILS_H
 
-#include <iostream>
-#include <memory>
 #include <stdexcept>
 #include <system_error>
-#include <thread>
 
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -30,14 +27,7 @@
 
 #include "scl/net/sys_iface.h"
 
-namespace scl {
-
-/**
- * @brief Socket type. Probably <code>int</code>.
- */
-using SocketType = int;
-
-namespace details {
+namespace scl::details {
 
 /**
  * @brief A connection.
@@ -46,7 +36,7 @@ struct Connection {
   /**
    * @brief The socket.
    */
-  SocketType socket;
+  int socket;
 
   /**
    * @brief The hostname of the remote peer.
@@ -61,12 +51,12 @@ struct Connection {
  * @param backlog the number of connections to accept
  * @return A socket.
  */
-template <typename Sys = SysIFace>
-SocketType createServerSocket(int port, int backlog) {
-  SocketType ssock = Sys::socket(AF_INET, SOCK_STREAM, 0);
+template <typename SYS = SysIFace>
+int createServerSocket(int port, int backlog) {
+  int ssock = SYS::socket(AF_INET, SOCK_STREAM, 0);
 
   if (ssock < 0) {
-    throw std::system_error(Sys::getError(),
+    throw std::system_error(SYS::getError(),
                             std::generic_category(),
                             "could not acquire server socket");
   }
@@ -74,27 +64,27 @@ SocketType createServerSocket(int port, int backlog) {
   int opt = 1;
   auto options = SO_REUSEADDR | SO_REUSEPORT;
 
-  if (Sys::setSockOpt(ssock, SOL_SOCKET, options, &opt, sizeof(opt)) < 0) {
-    throw std::system_error(Sys::getError(),
+  if (SYS::setSockOpt(ssock, SOL_SOCKET, options, &opt, sizeof(opt)) < 0) {
+    throw std::system_error(SYS::getError(),
                             std::generic_category(),
                             "could not set socket options");
   }
 
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = Sys::hostToNet(INADDR_ANY);
-  addr.sin_port = Sys::hostToNet(port);
+  addr.sin_addr.s_addr = SYS::hostToNet(INADDR_ANY);
+  addr.sin_port = SYS::hostToNet(port);
 
   struct sockaddr* addr_ptr = (struct sockaddr*)&addr;
 
-  if (Sys::bind(ssock, addr_ptr, sizeof(addr)) < 0) {
-    throw std::system_error(Sys::getError(),
+  if (SYS::bind(ssock, addr_ptr, sizeof(addr)) < 0) {
+    throw std::system_error(SYS::getError(),
                             std::generic_category(),
                             "could not bind socket");
   }
 
-  if (Sys::listen(ssock, backlog)) {
-    throw std::system_error(Sys::getError(),
+  if (SYS::listen(ssock, backlog)) {
+    throw std::system_error(SYS::getError(),
                             std::generic_category(),
                             "could not listen on socket");
   }
@@ -108,20 +98,20 @@ SocketType createServerSocket(int port, int backlog) {
  * @param server_socket a socket obtained from CreateServerSocket
  * @return An accepted connection
  */
-template <typename Sys = SysIFace>
-Connection acceptConnection(SocketType server_socket) {
+template <typename SYS = SysIFace>
+Connection acceptConnection(int server_socket) {
   struct sockaddr sa;
   auto addrsize = sizeof(struct sockaddr_in);
-  SocketType sock = Sys::accept(server_socket, &sa, (socklen_t*)&addrsize);
+  int sock = SYS::accept(server_socket, &sa, (socklen_t*)&addrsize);
 
   if (sock < 0) {
-    throw std::system_error(Sys::getError(),
+    throw std::system_error(SYS::getError(),
                             std::generic_category(),
                             "could not accept connection");
   }
 
   const auto* p = (struct sockaddr_in*)&sa;
-  std::string hostname = Sys::netToAddr(p->sin_addr);
+  std::string hostname = SYS::netToAddr(p->sin_addr);
 
   return {sock, hostname};
 }
@@ -134,10 +124,10 @@ Connection acceptConnection(SocketType server_socket) {
  * @return A socket.
  */
 template <typename SYS = SysIFace>
-SocketType connectAsClient(const std::string& hostname, int port) {
+int connectAsClient(const std::string& hostname, int port) {
   using namespace std::chrono_literals;
 
-  SocketType sock = SYS::socket(AF_INET, SOCK_STREAM, 0);
+  int sock = SYS::socket(AF_INET, SOCK_STREAM, 0);
 
   if (sock < 0) {
     throw std::system_error(SYS::getError(),
@@ -165,7 +155,7 @@ SocketType connectAsClient(const std::string& hostname, int port) {
 }
 
 template <typename SYS = SysIFace>
-void markSocketNonBlocking(SocketType socket) {
+void markSocketNonBlocking(int socket) {
   auto flags = SYS::fcntl(socket, F_GETFL, 0);
   if (flags == -1) {
     throw std::system_error(SYS::getError(),
@@ -181,7 +171,7 @@ void markSocketNonBlocking(SocketType socket) {
 }
 
 template <typename SYS = SysIFace>
-bool pollSocket(SocketType socket, short event) {
+bool pollSocket(int socket, short event) {
   struct pollfd fds{socket, POLLIN, 0};
 
   auto r = SYS::poll(&fds, 1, 0);
@@ -195,7 +185,6 @@ bool pollSocket(SocketType socket, short event) {
   return r > 0 && fds.revents == event;
 }
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::details
 
 #endif  // SCL_NET_TCP_UTILS_H

@@ -18,14 +18,8 @@
 #include "scl/net/network.h"
 
 #include <cstdint>
-#include <exception>
-#include <ios>
 #include <memory>
-#include <system_error>
-#include <thread>
 
-#include "scl/coro/coroutine.h"
-#include "scl/coro/future.h"
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
 #include "scl/net/loopback.h"
@@ -33,19 +27,18 @@
 #include "scl/net/tcp_channel.h"
 #include "scl/net/tcp_utils.h"
 
-using namespace scl;
 using namespace std::chrono_literals;
 
 namespace {
 
 template <typename SYS>
-coro::Task<void> writePartyId(net::SocketType socket, std::uint32_t party_id) {
+scl::Task<void> writePartyId(int socket, std::uint32_t party_id) {
   SYS::write(socket, &party_id, sizeof(std::uint32_t));
   co_return;
 }
 
 template <typename SYS>
-coro::Task<std::uint32_t> readPartyId(net::SocketType socket) {
+scl::Task<std::uint32_t> readPartyId(int socket) {
   std::uint32_t party_id;
   while (true) {
     auto read = SYS::read(socket, &party_id, sizeof(std::uint32_t));
@@ -53,7 +46,7 @@ coro::Task<std::uint32_t> readPartyId(net::SocketType socket) {
       const auto err = SYS::getError();
       if (err == EAGAIN || err == EWOULDBLOCK) {
         co_await [sock = socket]() {
-          return net::details::pollSocket(sock, POLLIN);
+          return scl::details::pollSocket(sock, POLLIN);
         };
       }
     } else {
@@ -64,16 +57,16 @@ coro::Task<std::uint32_t> readPartyId(net::SocketType socket) {
 }
 
 struct SocketAndId {
-  net::SocketType socket;
+  int socket;
   std::size_t id;
 };
 
 template <typename SYS>
-coro::Task<SocketAndId> acceptConnection(net::SocketType server_socket) {
+scl::Task<SocketAndId> acceptConnection(int server_socket) {
   while (true) {
-    if (net::details::pollSocket(server_socket, POLLIN)) {
-      auto conn = net::details::acceptConnection(server_socket);
-      net::details::markSocketNonBlocking(conn.socket);
+    if (scl::details::pollSocket(server_socket, POLLIN)) {
+      auto conn = scl::details::acceptConnection(server_socket);
+      scl::details::markSocketNonBlocking(conn.socket);
 
       auto id = co_await readPartyId<SYS>(conn.socket);
 
@@ -85,14 +78,14 @@ coro::Task<SocketAndId> acceptConnection(net::SocketType server_socket) {
 }
 
 template <typename SYS>
-coro::Task<SocketAndId> establishConnection(net::Party party,
-                                            std::size_t my_id) {
+scl::Task<SocketAndId> establishConnection(scl::Party party,
+                                           std::size_t my_id) {
   std::size_t attempts = 100;  // max attempts.
 
   while (attempts > 0) {
-    net::SocketType socket = -1;
+    int socket = -1;
 
-    socket = net::details::connectAsClient(party.hostname, (int)party.port);
+    socket = scl::details::connectAsClient(party.hostname, (int)party.port);
     // TODO: What errors to retry on?
 
     attempts--;
@@ -100,7 +93,7 @@ coro::Task<SocketAndId> establishConnection(net::Party party,
     if (socket == -1) {
       co_await 100ms;
     } else {
-      net::details::markSocketNonBlocking(socket);
+      scl::details::markSocketNonBlocking(socket);
       co_await writePartyId<SYS>(socket, my_id);
       co_return {socket, party.id};
     }
@@ -111,7 +104,7 @@ coro::Task<SocketAndId> establishConnection(net::Party party,
 
 }  // namespace
 
-coro::Task<net::Network> net::Network::create(const NetworkConfig& config) {
+scl::Task<scl::Network> scl::Network::create(const NetworkConfig& config) {
   std::vector<std::shared_ptr<Channel>> channels(config.networkSize());
 
   const std::size_t id = config.id();
@@ -119,7 +112,7 @@ coro::Task<net::Network> net::Network::create(const NetworkConfig& config) {
 
   channels[id] = LoopbackChannel::create();
 
-  std::vector<coro::Task<SocketAndId>> tasks;
+  std::vector<Task<SocketAndId>> tasks;
 
   const auto me = config.party(id);
   auto server_socket = details::createServerSocket((int)me.port, 128);
@@ -133,7 +126,7 @@ coro::Task<net::Network> net::Network::create(const NetworkConfig& config) {
     }
   }
 
-  std::vector<SocketAndId> sais = co_await coro::batch(std::move(tasks));
+  std::vector<SocketAndId> sais = co_await batch(std::move(tasks));
 
   details::SysIFace::close(server_socket);
 

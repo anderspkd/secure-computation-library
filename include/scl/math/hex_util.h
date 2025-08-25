@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <stdexcept>
 
-namespace scl {
+namespace scl::details {
 
 #define SCL_TO_HEX(v, c)                                                \
   do {                                                                  \
@@ -45,6 +45,6 @@ T fromHexString(const std::string& s) {
 
 #undef SCL_TO_HEX
 
-}  // namespace scl
+}  // namespace scl::details
 
 #endif  // SCL_MATH_HEX_UTIL_H

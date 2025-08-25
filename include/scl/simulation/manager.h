@@ -20,7 +20,6 @@
 
 #include <any>
 #include <cstddef>
-#include <stdexcept>
 #include <utility>
 
 #include "scl/protocol/base.h"
@@ -92,7 +91,7 @@ class Manager {
    * important that objects returned by this function are independent of objects
    * previously returned by calling this function.
    */
-  virtual std::vector<std::unique_ptr<proto::Protocol>> protocol() = 0;
+  virtual std::vector<std::unique_ptr<scl::Protocol>> protocol() = 0;
 
   /**
    * @brief Handle the output of a simulation.
@@ -165,7 +164,7 @@ class Manager {
   }
 
  private:
-  friend void simulate(std::unique_ptr<sim::Manager> manager);
+  friend void simulate(std::unique_ptr<Manager> manager);
   std::vector<TriggerAndHook> m_hooks;
 };
 
