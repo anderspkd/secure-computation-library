@@ -36,8 +36,6 @@
 
 namespace scl {
 
-struct MockNetwork;
-
 /**
  * @brief A Network.
  *

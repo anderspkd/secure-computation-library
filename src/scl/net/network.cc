@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "./syscalls.h"
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
 #include "scl/net/loopback.h"
@@ -31,19 +32,17 @@ using namespace std::chrono_literals;
 
 namespace {
 
-template <typename SYS>
 scl::Task<void> writePartyId(int socket, std::uint32_t party_id) {
-  SYS::write(socket, &party_id, sizeof(std::uint32_t));
+  scl::details::write(socket, &party_id, sizeof(std::uint32_t));
   co_return;
 }
 
-template <typename SYS>
 scl::Task<std::uint32_t> readPartyId(int socket) {
   std::uint32_t party_id;
   while (true) {
-    auto read = SYS::read(socket, &party_id, sizeof(std::uint32_t));
+    auto read = scl::details::read(socket, &party_id, sizeof(std::uint32_t));
     if (read < 0) {
-      const auto err = SYS::getError();
+      const auto err = scl::details::getError();
       if (err == EAGAIN || err == EWOULDBLOCK) {
         co_await [sock = socket]() {
           return scl::details::pollSocket(sock, POLLIN);
@@ -61,14 +60,13 @@ struct SocketAndId {
   std::size_t id;
 };
 
-template <typename SYS>
 scl::Task<SocketAndId> acceptConnection(int server_socket) {
   while (true) {
     if (scl::details::pollSocket(server_socket, POLLIN)) {
       auto conn = scl::details::acceptConnection(server_socket);
       scl::details::markSocketNonBlocking(conn.socket);
 
-      auto id = co_await readPartyId<SYS>(conn.socket);
+      auto id = co_await readPartyId(conn.socket);
 
       co_return {conn.socket, id};
     } else {
@@ -77,7 +75,6 @@ scl::Task<SocketAndId> acceptConnection(int server_socket) {
   }
 }
 
-template <typename SYS>
 scl::Task<SocketAndId> establishConnection(scl::Party party,
                                            std::size_t my_id) {
   std::size_t attempts = 100;  // max attempts.
@@ -94,7 +91,7 @@ scl::Task<SocketAndId> establishConnection(scl::Party party,
       co_await 100ms;
     } else {
       scl::details::markSocketNonBlocking(socket);
-      co_await writePartyId<SYS>(socket, my_id);
+      co_await writePartyId(socket, my_id);
       co_return {socket, party.id};
     }
   }
@@ -119,10 +116,9 @@ scl::Task<scl::Network> scl::Network::create(const NetworkConfig& config) {
   details::markSocketNonBlocking(server_socket);
   for (std::size_t i = 0; i < n; ++i) {
     if (i < id) {
-      tasks.emplace_back(
-          establishConnection<details::SysIFace>(config.party(i), me.id));
+      tasks.emplace_back(establishConnection(config.party(i), me.id));
     } else if (i > id) {
-      tasks.emplace_back(acceptConnection<details::SysIFace>(server_socket));
+      tasks.emplace_back(acceptConnection(server_socket));
     }
   }
 
