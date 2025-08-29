@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-namespace scl::details {
+namespace scl::details::sys_call {
 
 inline auto getError() {
   return errno;
@@ -78,6 +78,6 @@ inline auto write(int sockfd, const void* buf, size_t count) {
   return ::write(sockfd, buf, count);
 }
 
-}  // namespace scl::details
+}  // namespace scl::details::sys_call
 
 #endif  // SCL_NET_SYSCALLS

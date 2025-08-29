@@ -21,28 +21,28 @@
 #include <memory>
 
 #include "./syscalls.h"
+#include "./tcp_utils.h"
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
 #include "scl/net/loopback.h"
-#include "scl/net/sys_iface.h"
 #include "scl/net/tcp_channel.h"
-#include "scl/net/tcp_utils.h"
 
 using namespace std::chrono_literals;
 
 namespace {
 
 scl::Task<void> writePartyId(int socket, std::uint32_t party_id) {
-  scl::details::write(socket, &party_id, sizeof(std::uint32_t));
+  scl::details::sys_call::write(socket, &party_id, sizeof(std::uint32_t));
   co_return;
 }
 
 scl::Task<std::uint32_t> readPartyId(int socket) {
   std::uint32_t party_id;
   while (true) {
-    auto read = scl::details::read(socket, &party_id, sizeof(std::uint32_t));
+    auto read =
+        scl::details::sys_call::read(socket, &party_id, sizeof(std::uint32_t));
     if (read < 0) {
-      const auto err = scl::details::getError();
+      const auto err = scl::details::sys_call::getError();
       if (err == EAGAIN || err == EWOULDBLOCK) {
         co_await [sock = socket]() {
           return scl::details::pollSocket(sock, POLLIN);
@@ -124,10 +124,10 @@ scl::Task<scl::Network> scl::Network::create(const NetworkConfig& config) {
 
   std::vector<SocketAndId> sais = co_await batch(std::move(tasks));
 
-  details::SysIFace::close(server_socket);
+  details::sys_call::close(server_socket);
 
   for (const SocketAndId& sai : sais) {
-    channels[sai.id] = std::make_shared<TcpChannel<>>(sai.socket);
+    channels[sai.id] = std::make_shared<TcpChannel>(sai.socket);
   }
 
   co_return Network{channels, config.id()};

@@ -75,16 +75,18 @@ set(SCL_SOURCE_FILES
 
   src/scl/coro/runtime.cc
 
+  src/scl/net/tcp_utils.cc
+  src/scl/net/tcp_channel.cc
   src/scl/net/config.cc
   src/scl/net/network.cc
 
-  src/scl/simulation/event.cc
-  src/scl/simulation/context.cc
-  src/scl/simulation/config.cc
-  src/scl/simulation/transport.cc
-  src/scl/simulation/channel.cc
-  src/scl/simulation/simulator.cc
-  src/scl/simulation/runtime.cc
+  # src/scl/simulation/event.cc
+  # src/scl/simulation/context.cc
+  # src/scl/simulation/config.cc
+  # src/scl/simulation/transport.cc
+  # src/scl/simulation/channel.cc
+  # src/scl/simulation/simulator.cc
+  # src/scl/simulation/runtime.cc
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ${SCL_EXPORT_COMPILE_COMMANDS})

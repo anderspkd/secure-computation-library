@@ -19,20 +19,13 @@
 #define SCL_NET_NETWORK_H
 
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <thread>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
-#include "scl/net/loopback.h"
-#include "scl/net/sys_iface.h"
-#include "scl/net/tcp_channel.h"
-#include "scl/net/tcp_utils.h"
 
 namespace scl {
 
