@@ -16,28 +16,21 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
-#include <vector>
 
 #include "scl/coro/batch.h"
-#include "scl/coro/coroutine.h"
-#include "scl/math/fp.h"
-#include "scl/math/vector.h"
+#include "scl/coro/runtime.h"
+#include "scl/coro/task.h"
 #include "scl/net/loopback.h"
-#include "scl/util/prg.h"
-#include "util.h"
 
 using namespace scl;
 
 TEST_CASE("Loopback to self close", "[net]") {
-  auto channel = net::LoopbackChannel::create();
+  auto channel = LoopbackChannel::create();
 
-  net::Packet p;
+  Packet p;
   p << 1 << 2 << 3;
 
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
 
   rt->run(channel->send(p));
   auto received = rt->run(channel->recv());
@@ -48,14 +41,14 @@ TEST_CASE("Loopback to self close", "[net]") {
 }
 
 TEST_CASE("Loopback send/recv", "[net]") {
-  auto channels = net::LoopbackChannel::createPaired();
+  auto channels = LoopbackChannel::createPaired();
   auto chl0 = channels[0];
   auto chl1 = channels[1];
 
-  net::Packet p;
+  Packet p;
   p << 1 << 2 << 3;
 
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
 
   rt->run(chl0->send(p));
   auto received = rt->run(chl1->recv());

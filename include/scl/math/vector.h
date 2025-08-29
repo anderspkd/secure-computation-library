@@ -24,8 +24,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "scl/primitives/prg.h"
 #include "scl/serialization.h"
-#include "scl/util/prg.h"
 
 namespace scl {
 
@@ -94,7 +94,7 @@ class Vector final {
    * @param prg a PRG used to generate random elements
    * @return a Vec with random elements.
    */
-  static Vector<ELEMENT> random(std::size_t n, util::PRG& prg);
+  static Vector<ELEMENT> random(std::size_t n, PRG& prg);
 
   /**
    * @brief Create a vector with values in a range.
@@ -502,7 +502,7 @@ Vector<ELEMENT> Vector<ELEMENT>::range(std::size_t start, std::size_t end) {
 }
 
 template <typename ELEMENT>
-Vector<ELEMENT> Vector<ELEMENT>::random(std::size_t n, util::PRG& prg) {
+Vector<ELEMENT> Vector<ELEMENT>::random(std::size_t n, PRG& prg) {
   auto buf = std::make_unique<unsigned char[]>(n * ELEMENT::byteSize());
   prg.next(buf.get(), n * ELEMENT::byteSize());
 

@@ -16,18 +16,20 @@
  */
 
 #include "../gf7.h"
-#include "scl/math/fields/secp256k1_field.h"
-#include "scl/math/fields/secp256k1_scalar.h"
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
+#include "scl/math/mersenne127.h"
+#include "scl/math/mersenne61.h"
+#include "scl/math/secp256k1_field.h"
+#include "scl/math/secp256k1_scalar.h"
 
 namespace scl::test {
 
-using Mersenne61 = math::Fp<61>;
-using Mersenne127 = math::Fp<127>;
-using GF7 = math::FF<GaloisField7>;
+using Mersenne61 = FF<Mersenne61>;
+using Mersenne127 = FF<Mersenne127>;
+using GF7 = FF<GaloisField7>;
 
-using Secp256k1_Field = math::FF<math::ff::Secp256k1Field>;
-using Secp256k1_Order = math::FF<math::ff::Secp256k1Scalar>;
+using Secp256k1_Field = FF<Secp256k1Field>;
+using Secp256k1_Order = FF<Secp256k1Scalar>;
 
 }  // namespace scl::test
 

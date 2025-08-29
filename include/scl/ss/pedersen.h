@@ -18,14 +18,11 @@
 #ifndef SCL_SS_PEDERSEN_H
 #define SCL_SS_PEDERSEN_H
 
-#include <utility>
-
 #include "scl/math/array.h"
 #include "scl/math/lagrange.h"
-#include "scl/math/poly.h"
 #include "scl/math/vector.h"
+#include "scl/primitives/prg.h"
 #include "scl/ss/shamir.h"
-#include "scl/util/prg.h"
 
 namespace scl {
 
@@ -128,7 +125,7 @@ PedersenSharing<T> pedersenSecretShare(
     const typename PedersenSharing<T>::Field& secret,
     std::size_t t,
     std::size_t n,
-    util::PRG& prg,
+    PRG& prg,
     const typename PedersenSharing<T>::Group& h,
     const typename PedersenSharing<T>::Field& randomness) {
   using F = typename PedersenSharing<T>::Field;
@@ -162,7 +159,7 @@ PedersenSharing<GROUP> pedersenSecretShare(
     const typename PedersenSharing<GROUP>::Field& secret,
     std::size_t t,
     std::size_t n,
-    util::PRG& prg,
+    PRG& prg,
     const typename PedersenSharing<GROUP>::Group& h) {
   using F = typename PedersenSharing<GROUP>::Field;
   const auto rand = F::random(prg);

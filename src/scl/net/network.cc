@@ -22,6 +22,7 @@
 
 #include "./syscalls.h"
 #include "./tcp_utils.h"
+#include "scl/coro/runtime.h"
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
 #include "scl/net/loopback.h"

@@ -25,7 +25,7 @@ using namespace scl;
 
 namespace {
 
-coro::Task<void> voidTask(bool& r) {
+Task<void> voidTask(bool& r) {
   r = true;
   co_return;
 }
@@ -34,7 +34,7 @@ coro::Task<void> voidTask(bool& r) {
 
 TEST_CASE("void task", "[coro]") {
   bool set = false;
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
 
   // Tasks are cold start, so not run before being executed by a runtime.
   auto void_task = voidTask(set);
@@ -47,25 +47,25 @@ TEST_CASE("void task", "[coro]") {
 
 namespace {
 
-coro::Task<int> intTask() {
+Task<int> intTask() {
   co_return 42;
 }
 
 }  // namespace
 
 TEST_CASE("int task", "[coro]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
   auto r = rt->run(intTask());
   REQUIRE(r == 42);
 }
 
 namespace {
 
-coro::Task<int> anotherIntTask() {
+Task<int> anotherIntTask() {
   co_return co_await intTask() + 1;
 }
 
-coro::Task<int> adder() {
+Task<int> adder() {
   auto v0 = co_await intTask();
   auto v1 = co_await anotherIntTask();
   co_return v0 + v1;
@@ -74,7 +74,7 @@ coro::Task<int> adder() {
 }  // namespace
 
 TEST_CASE("adder task", "[coro]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
   // runs until the coroutine returns, even if it awaits.
   auto r = rt->run(adder());
   REQUIRE(r == 42 + 43);
@@ -82,15 +82,15 @@ TEST_CASE("adder task", "[coro]") {
 
 namespace {
 
-coro::Task<void> throws() {
+Task<void> throws() {
   throw std::runtime_error("oops");
 }
 
-coro::Task<void> voidThrows() {
+Task<void> voidThrows() {
   co_await throws();
 }
 
-coro::Task<int> nonVoidThrows() {
+Task<int> nonVoidThrows() {
   co_await throws();
   co_return 42;
 }
@@ -98,14 +98,14 @@ coro::Task<int> nonVoidThrows() {
 }  // namespace
 
 TEST_CASE("task throws void", "[coro]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
   REQUIRE_THROWS_MATCHES(rt->run(voidThrows()),
                          std::runtime_error,
                          Catch::Matchers::Message("oops"));
 }
 
 TEST_CASE("task throws non-void", "[coro]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
   REQUIRE_THROWS_MATCHES(rt->run(nonVoidThrows()),
                          std::runtime_error,
                          Catch::Matchers::Message("oops"));

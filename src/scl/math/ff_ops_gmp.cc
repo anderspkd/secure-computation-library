@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/math/ff_ops_gmp.h"
+#include "./ff_ops_gmp.h"
 
 std::size_t scl::details::findFirstNonZero(const std::string& s) {
   int n = 0;

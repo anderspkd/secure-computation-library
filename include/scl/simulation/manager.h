@@ -119,7 +119,7 @@ class Manager {
    *
    * The default is to return a SimpleNetworkConfig instance.
    */
-  virtual std::unique_ptr<NetworkConfig> networkConfiguration() const {
+  virtual std::unique_ptr<NetworkDefinition> networkConfiguration() const {
     return std::make_unique<SimpleNetworkConfig>();
   }
 

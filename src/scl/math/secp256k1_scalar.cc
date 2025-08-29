@@ -22,10 +22,10 @@
 
 #include <gmp.h>
 
+#include "./ff_ops_gmp.h"
 #include "./secp256k1_helpers.h"
 #include "scl/math/ff.h"
 #include "scl/math/ff_ops.h"
-#include "scl/math/ff_ops_gmp.h"
 
 using Field = scl::Secp256k1Scalar;
 using Elem = Field::ValueType;

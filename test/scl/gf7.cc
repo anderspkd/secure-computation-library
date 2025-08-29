@@ -17,25 +17,28 @@
 
 #include "./gf7.h"
 
-#include "scl/math/fields/ff_ops.h"
+#include <sstream>
+#include <stdexcept>
+
+#include "scl/math/ff_ops.h"
 
 using namespace scl;
 
 using GF7 = test::GaloisField7;
 
 template <>
-void math::ff::convertTo<GF7>(unsigned char& out, int v) {
+void details::convertTo<GF7>(unsigned char& out, int v) {
   auto r = v % 7;
   out = r < 0 ? 7 + r : r;
 }
 
 template <>
-void math::ff::add<GF7>(unsigned char& out, const unsigned char& op) {
+void details::add<GF7>(unsigned char& out, const unsigned char& op) {
   out = (out + op) % 7;
 }
 
 template <>
-void math::ff::subtract<GF7>(unsigned char& out, const unsigned char& op) {
+void details::subtract<GF7>(unsigned char& out, const unsigned char& op) {
   if (out < op) {
     out = 7 + out - op;
   } else {
@@ -44,17 +47,17 @@ void math::ff::subtract<GF7>(unsigned char& out, const unsigned char& op) {
 }
 
 template <>
-void math::ff::multiply<GF7>(unsigned char& out, const unsigned char& op) {
+void details::multiply<GF7>(unsigned char& out, const unsigned char& op) {
   out = (out * op) % 7;
 }
 
 template <>
-void math::ff::negate<GF7>(unsigned char& out) {
+void details::negate<GF7>(unsigned char& out) {
   out = (7 - out) % 7;
 }
 
 template <>
-void math::ff::invert<GF7>(unsigned char& out) {
+void details::invert<GF7>(unsigned char& out) {
   unsigned char inv;
   switch (out) {
     case 1:
@@ -80,23 +83,23 @@ void math::ff::invert<GF7>(unsigned char& out) {
 }
 
 template <>
-bool math::ff::equal<GF7>(const unsigned char& in1, const unsigned char& in2) {
+bool details::equal<GF7>(const unsigned char& in1, const unsigned char& in2) {
   return in1 == in2;
 }
 
 template <>
-void math::ff::fromBytes<GF7>(unsigned char& dest, const unsigned char* src) {
+void details::fromBytes<GF7>(unsigned char& dest, const unsigned char* src) {
   dest = *src;
   dest = dest % 7;
 }
 
 template <>
-void math::ff::toBytes<GF7>(unsigned char* dest, const unsigned char& src) {
+void details::toBytes<GF7>(unsigned char* dest, const unsigned char& src) {
   *dest = src;
 }
 
 template <>
-std::string math::ff::toString<GF7>(const unsigned char& in) {
+std::string details::toString<GF7>(const unsigned char& in) {
   std::stringstream ss;
   ss << (int)in;
   return ss.str();

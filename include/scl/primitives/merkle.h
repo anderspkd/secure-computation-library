@@ -20,9 +20,8 @@
 
 #include <vector>
 
-#include "scl/util/bitmap.h"
-#include "scl/util/digest.h"
-#include "scl/util/merkle_proof.h"
+#include "scl/bitmap.h"
+#include "scl/primitives/merkle_proof.h"
 
 namespace scl {
 
@@ -30,6 +29,7 @@ namespace scl {
  * @brief Merkle hash tree.
  * @tparam H a hash function.
  * @tparam T the leaf data type.
+ * @TODO: Switch LEAF and HASH; Default Hash to scl::Hash<256>.
  */
 template <typename HASH, typename LEAF>
 struct MerkleTree {

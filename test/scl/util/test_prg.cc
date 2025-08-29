@@ -23,7 +23,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
 using namespace scl;
 
@@ -47,9 +47,9 @@ bool looksUniform(const unsigned char* p, std::size_t len) {
 }  // namespace
 
 TEST_CASE("PRG construction", "[misc]") {
-  REQUIRE(util::PRG::seedSize() == 16);
+  REQUIRE(PRG::seedSize() == 16);
 
-  auto zprg = util::PRG::create();
+  auto zprg = PRG::create();
 
   // Number arrived at somewhat by trial-and-error
   const auto n = 300000;
@@ -63,8 +63,8 @@ TEST_CASE("PRG construction", "[misc]") {
 
 TEST_CASE("PRG predictable", "[misc]") {
   unsigned char seed[] = "1234567890abcde";
-  auto prg0 = util::PRG::create(seed, 15);
-  auto prg1 = util::PRG::create(seed, 15);
+  auto prg0 = PRG::create(seed, 15);
+  auto prg1 = PRG::create(seed, 15);
 
   REQUIRE(prg0.Seed() == prg1.Seed());
 
@@ -79,7 +79,7 @@ TEST_CASE("PRG predictable", "[misc]") {
 }
 
 TEST_CASE("PRG generate random bytes", "[misc]") {
-  auto prg = util::PRG::create();
+  auto prg = PRG::create();
 
   std::vector<unsigned char> buffer(100, 0);
   prg.next(buffer, 50);
@@ -104,7 +104,7 @@ TEST_CASE("PRG generate random bytes", "[misc]") {
 }
 
 TEST_CASE("PRG invalid calls", "[misc]") {
-  auto prg = util::PRG::create();
+  auto prg = PRG::create();
   std::vector<unsigned char> buf(10);
 
   REQUIRE_THROWS_MATCHES(prg.next(buf, 11),
@@ -115,8 +115,8 @@ TEST_CASE("PRG invalid calls", "[misc]") {
 TEST_CASE("PRG truncate seed on create", "[misc]") {
   // Seeds are truncated if they exceed PRG::SeedSize() length.
 
-  auto prg0 = util::PRG::create("0123456789abcdef_bar");
-  auto prg1 = util::PRG::create("0123456789abcdef_foo");
+  auto prg0 = PRG::create("0123456789abcdef_bar");
+  auto prg1 = PRG::create("0123456789abcdef_foo");
 
   auto bytes0 = prg0.next(100);
   auto bytes1 = prg1.next(100);

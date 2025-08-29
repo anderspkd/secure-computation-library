@@ -18,8 +18,6 @@
 #ifndef SCL_TESTS_PROTOCOL_BEAVER_H
 #define SCL_TESTS_PROTOCOL_BEAVER_H
 
-#include <optional>
-
 #include "./triple.h"
 #include "scl/coro/task.h"
 #include "scl/protocol/base.h"
@@ -29,13 +27,13 @@
 namespace scl::test {
 
 template <typename SHARE>
-class BeaverMul final : public proto::Protocol {
+class BeaverMul final : public Protocol {
  public:
   BeaverMul(SHARE x, SHARE y, Triple<SHARE> triple)
       : m_x(x), m_y(y), m_triple(triple) {}
 
-  coro::Task<proto::ProtocolResult> run(proto::Env& env) const override {
-    net::Packet packet;
+  Task<ProtocolResult> run(Env& env) const override {
+    Packet packet;
 
     packet << m_x - m_triple.a;  // [e] = [x] - [a]
     packet << m_y - m_triple.b;  // [d] = [y] - [b]
@@ -43,8 +41,8 @@ class BeaverMul final : public proto::Protocol {
     co_await env.network.party(0)->send(packet);
     co_await env.network.party(1)->send(packet);
 
-    net::Packet packet0 = co_await env.network.party(0)->recv();
-    net::Packet packet1 = co_await env.network.party(1)->recv();
+    Packet packet0 = co_await env.network.party(0)->recv();
+    Packet packet1 = co_await env.network.party(1)->recv();
 
     const auto e0 = packet0.read<SHARE>();
     const auto d0 = packet0.read<SHARE>();
@@ -60,7 +58,7 @@ class BeaverMul final : public proto::Protocol {
       z += e * d;
     }
 
-    co_return proto::ProtocolResult::done(z);
+    co_return ProtocolResult::done(z);
   }
 
  private:

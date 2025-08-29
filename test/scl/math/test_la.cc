@@ -19,46 +19,45 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include "../gf7.h"
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
 #include "scl/math/matrix.h"
+#include "scl/math/vector.h"
 
 using namespace scl;
 
-using FF = math::FF<test::GaloisField7>;
-using Matrix = math::Matrix<FF>;
-using Vector = math::Vector<FF>;
+using Elem = FF<test::GaloisField7>;
 
-const auto zero = FF::zero();
-const auto one = FF::one();
+const auto zero = Elem::zero();
+const auto one = Elem::one();
 
 TEST_CASE("LinAlg GetPivot", "[math][la]") {
   // [1 0 1]
   // [0 1 0]
   // [0 0 0]
   // clang-format off
-  Matrix A = Matrix::fromVector(3, 3,
+  Matrix A = Matrix<Elem>::fromVector(3, 3,
                                 {one, zero, one,
                                  zero, one, zero,
                                  zero, zero, zero});
   // clang-format on
-  REQUIRE(math::getPivotInColumn(A, 2) == -1);
-  REQUIRE(math::getPivotInColumn(A, 1) == 1);
-  REQUIRE(math::getPivotInColumn(A, 0) == 0);
+  REQUIRE(getPivotInColumn(A, 2) == -1);
+  REQUIRE(getPivotInColumn(A, 1) == 1);
+  REQUIRE(getPivotInColumn(A, 0) == 0);
   A(2, 2) = one;
-  REQUIRE(math::getPivotInColumn(A, 2) == 2);
+  REQUIRE(getPivotInColumn(A, 2) == 2);
 
-  Matrix B(2, 2);
-  REQUIRE(math::getPivotInColumn(B, 0) == -1);
+  Matrix<Elem> B(2, 2);
+  REQUIRE(getPivotInColumn(B, 0) == -1);
 }
 
 TEST_CASE("LinAlg FindFirstNonZeroRow", "[math][la]") {
-  Matrix A =
-      Matrix::fromVector(3,
-                         3,
-                         {one, zero, one, zero, one, zero, zero, zero, zero});
-  REQUIRE(math::findFirstNonZeroRow(A) == 1);
+  Matrix A = Matrix<Elem>::fromVector(
+      3,
+      3,
+      {one, zero, one, zero, one, zero, zero, zero, zero});
+  REQUIRE(findFirstNonZeroRow(A) == 1);
   A(2, 1) = one;
-  REQUIRE(math::findFirstNonZeroRow(A) == 2);
+  REQUIRE(findFirstNonZeroRow(A) == 2);
 }
 
 TEST_CASE("LinAlg ExtractSolution", "[math][la]") {
@@ -66,65 +65,65 @@ TEST_CASE("LinAlg ExtractSolution", "[math][la]") {
   // [0 1 0 5]
   // [0 0 1 2]
   // clang-format off
-  Matrix A = Matrix::fromVector(3, 4,
-                               {one, zero, zero, FF(3),
-                                zero, one, zero, FF(5),
-                                zero, zero, one, FF(2)}
+  Matrix A = Matrix<Elem>::fromVector(3, 4,
+                               {one, zero, zero, Elem(3),
+                                zero, one, zero, Elem(5),
+                                zero, zero, one, Elem(2)}
     );
   // clang-format-on
-  auto x = math::extractSolution(A);
-  REQUIRE(x.equals(Vector{FF(3), FF(5), FF(2)}));
+  auto x = extractSolution(A);
+  REQUIRE(x.equals(Vector{Elem(3), Elem(5), Elem(2)}));
 
   // [1 3 1 2]
   // [0 0 1 4]
   // [0 0 0 0]
   // clang-format off
-  Matrix B = Matrix::fromVector(3, 4,
-                                {FF(1), FF(3), FF(1), FF(2),
-                                 FF(0), FF(0), FF(1), FF(4),
-                                 FF(0), FF(0), FF(0), FF(0)});
+  Matrix B = Matrix<Elem>::fromVector(3, 4,
+                                {Elem(1), Elem(3), Elem(1), Elem(2),
+                                 Elem(0), Elem(0), Elem(1), Elem(4),
+                                 Elem(0), Elem(0), Elem(0), Elem(0)});
   // clang-format on
-  auto y = math::extractSolution(B);
-  REQUIRE(y.equals(Vector{FF(4), FF(4), FF(0)}));
+  auto y = extractSolution(B);
+  REQUIRE(y.equals(Vector{Elem(4), Elem(4), Elem(0)}));
 
   // [0 0 0 0]
   // [2 0 0 0]
   // [0 0 0 0]
-  Matrix C(3, 4);
-  C(1, 0) = FF(2);
-  auto z = math::extractSolution(C);
+  Matrix<Elem> C(3, 4);
+  C(1, 0) = Elem(2);
+  auto z = extractSolution(C);
   REQUIRE(z.equals(Vector{zero, one, zero}));
 }
 
 TEST_CASE("LinAlg Solve random", "[math][la]") {
   auto n = 10;
-  auto prg = util::PRG::create();
+  auto prg = PRG::create();
 
-  Matrix A = Matrix::random(n, n, prg);
-  Vector b = Vector::random(n, prg);
-  Vector x(n);
-  math::solveLinearSystem(x, A, b);
+  Matrix A = Matrix<Elem>::random(n, n, prg);
+  Vector b = Vector<Elem>::random(n, prg);
+  Vector<Elem> x(n);
+  solveLinearSystem(x, A, b);
 
   REQUIRE(A.multiply(x.toColumnMatrix()).equals(b.toColumnMatrix()));
 }
 
 TEST_CASE("LinAlg malformed systems", "[math][la]") {
-  Vector x;
-  Matrix A(2, 2);
-  Vector b(3);
+  Vector<Elem> x;
+  Matrix<Elem> A(2, 2);
+  Vector<Elem> b(3);
   REQUIRE_THROWS_MATCHES(
-      math::solveLinearSystem(x, A, b),
+      solveLinearSystem(x, A, b),
       std::invalid_argument,
       Catch::Matchers::Message("malformed system of equations"));
 }
 
 TEST_CASE("LinAlg HasSolution", "[math][la]") {
-  Matrix A(2, 3);
+  Matrix<Elem> A(2, 3);
   // Has an all zero row, so no unique solution is possible
-  REQUIRE_FALSE(math::hasSolution(A, true));
+  REQUIRE_FALSE(hasSolution(A, true));
   // An all zero row implies a free variable, so many solutions exist
-  REQUIRE(math::hasSolution(A, false));
+  REQUIRE(hasSolution(A, false));
 
-  A(0, 2) = FF(1);
-  REQUIRE_FALSE(math::hasSolution(A, false));
+  A(0, 2) = Elem(1);
+  REQUIRE_FALSE(hasSolution(A, false));
 }

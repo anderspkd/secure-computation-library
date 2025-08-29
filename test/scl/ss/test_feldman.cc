@@ -16,49 +16,48 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
-#include <stdexcept>
 
-#include "scl/math/curves/secp256k1.h"
 #include "scl/math/ec.h"
+#include "scl/math/secp256k1.h"
+#include "scl/primitives/prg.h"
 #include "scl/ss/feldman.h"
 #include "scl/ss/shamir.h"
-#include "scl/util/prg.h"
 
 using namespace scl;
 
-using EC = math::EC<math::ec::Secp256k1>;
-using FF = EC::ScalarField;
+using Curve = EC<Secp256k1>;
+using Field = Curve::ScalarField;
 
 TEST_CASE("Feldman", "[ss]") {
-  auto prg = util::PRG::create("feldman");
+  auto prg = PRG::create("feldman");
   std::size_t t = 4;
 
-  auto secret = FF(123);
-  auto sb = ss::feldmanSecretShare<EC>(secret, 4, 24, prg);
-  REQUIRE(sb.commitments[0] == secret * EC::generator());
+  auto secret = Field(123);
+  auto sb = feldmanSecretShare<Curve>(secret, 4, 24, prg);
+  REQUIRE(sb.commitments[0] == secret * Curve::generator());
   REQUIRE(sb.shares.size() == 24);
   REQUIRE(sb.commitments.size() == t + 1);
-  REQUIRE(ss::feldmanVerify<EC>({secret, sb.commitments}, 0));
-  REQUIRE(ss::feldmanVerify<EC>(secret, sb.commitments, 0));
-  REQUIRE(ss::feldmanVerify(sb.getShare(22), 23));
-  REQUIRE(ss::shamirRecoverP(sb.shares.subVector(5)) == secret);
+  REQUIRE(feldmanVerify<Curve>({secret, sb.commitments}, 0));
+  REQUIRE(feldmanVerify<Curve>(secret, sb.commitments, 0));
+  REQUIRE(feldmanVerify(sb.getShare(22), 23));
+  REQUIRE(shamirRecoverP(sb.shares.subVector(5)) == secret);
 }
 
 TEST_CASE("Feldman hom", "[ss]") {
-  auto prg = util::PRG::create("feldman hom");
+  auto prg = PRG::create("feldman hom");
   std::size_t t = 4;
 
-  auto s0 = FF(123);
-  auto s1 = FF(44);
+  auto s0 = Field(123);
+  auto s1 = Field(44);
 
-  auto ss0 = ss::feldmanSecretShare<EC>(s0, t, 10, prg);
-  auto ss1 = ss::feldmanSecretShare<EC>(s1, t, 10, prg);
+  auto ss0 = feldmanSecretShare<Curve>(s0, t, 10, prg);
+  auto ss1 = feldmanSecretShare<Curve>(s1, t, 10, prg);
 
   auto ss2 = ss0.shares.add(ss1.shares);
   auto com2 = ss0.commitments.add(ss1.commitments);
 
   // Check that new commitment works for the sum of the secrets.
-  REQUIRE(ss::feldmanVerify<EC>({s0 + s1, com2}, 0));
+  REQUIRE(feldmanVerify<Curve>({s0 + s1, com2}, 0));
   // Check that new commitment works for an individual share.
-  REQUIRE(ss::feldmanVerify<EC>({ss2[5], com2}, 6));
+  REQUIRE(feldmanVerify<Curve>({ss2[5], com2}, 6));
 }

@@ -17,7 +17,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
-#include <thread>
 
 #include "scl/coro/batch.h"
 #include "scl/coro/runtime.h"
@@ -27,17 +26,17 @@ using namespace scl;
 
 namespace {
 
-coro::Task<int> task() {
+Task<int> task() {
   co_return 42;
 }
 
-coro::Task<void> batch() {
-  std::vector<coro::Task<int>> tasks;
+Task<void> batch() {
+  std::vector<Task<int>> tasks;
   tasks.emplace_back(task());
   tasks.emplace_back(task());
   tasks.emplace_back(task());
 
-  auto rs = co_await coro::batch(std::move(tasks));
+  auto rs = co_await batch(std::move(tasks));
   REQUIRE(rs.size() == 3);
   REQUIRE(rs[0] == 42);
   REQUIRE(rs[1] == 42);
@@ -47,25 +46,25 @@ coro::Task<void> batch() {
 }  // namespace
 
 TEST_CASE("Simple batch", "[coro]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
   rt->run(batch());
 }
 
 namespace {
 
-coro::Task<int> sleeps() {
+Task<int> sleeps() {
   using namespace std::chrono_literals;
   co_await 100h;
   co_return 42;
 }
 
-coro::Task<void> partialBatch() {
-  std::vector<coro::Task<int>> tasks;
+Task<void> partialBatch() {
+  std::vector<Task<int>> tasks;
   tasks.emplace_back(task());
   tasks.emplace_back(sleeps());
   tasks.emplace_back(task());
 
-  auto rs = co_await coro::batch(std::move(tasks), 2);
+  auto rs = co_await batch(std::move(tasks), 2);
   REQUIRE(rs.size() == 3);
   REQUIRE(rs[0].has_value());
   REQUIRE_FALSE(rs[1].has_value());
@@ -78,6 +77,6 @@ coro::Task<void> partialBatch() {
 }  // namespace
 
 TEST_CASE("Partial batch execution", "[coro]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
   rt->run(partialBatch());
 }

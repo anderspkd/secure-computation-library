@@ -17,37 +17,38 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "scl/math/fp.h"
-#include "scl/util/digest.h"
-#include "scl/util/hash.h"
+#include "scl/math/ff.h"
+#include "scl/math/mersenne61.h"
+#include "scl/primitives/digest.h"
+#include "scl/primitives/hash.h"
 
 using namespace scl;
 
 TEST_CASE("Sha3 empty hash", "[misc]") {
-  static const util::Digest<256> SHA3_256_empty = {
+  static const Digest<256> SHA3_256_empty = {
       0xa7, 0xff, 0xc6, 0xf8, 0xbf, 0x1e, 0xd7, 0x66, 0x51, 0xc1, 0x47,
       0x56, 0xa0, 0x61, 0xd6, 0x62, 0xf5, 0x80, 0xff, 0x4d, 0xe4, 0x3b,
       0x49, 0xfa, 0x82, 0xd8, 0x0a, 0x4b, 0x80, 0xf8, 0x43, 0x4a};
 
-  util::Hash<256> hash;
+  Hash<256> hash;
   auto digest = hash.finalize();
   REQUIRE(digest == SHA3_256_empty);
 }
 
 TEST_CASE("Sha3 abc hash", "[misc]") {
-  static const util::Digest<256> SHA3_256_abc = {
+  static const Digest<256> SHA3_256_abc = {
       0x3a, 0x98, 0x5d, 0xa7, 0x4f, 0xe2, 0x25, 0xb2, 0x04, 0x5c, 0x17,
       0x2d, 0x6b, 0xd3, 0x90, 0xbd, 0x85, 0x5f, 0x08, 0x6e, 0x3e, 0x9d,
       0x52, 0x5b, 0x46, 0xbf, 0xe2, 0x45, 0x11, 0x43, 0x15, 0x32};
 
-  util::Hash<256> hash;
+  Hash<256> hash;
   unsigned char abc[] = "abc";
   auto digest = hash.update(abc, 3).finalize();
   REQUIRE(digest == SHA3_256_abc);
 }
 
 TEST_CASE("Sha3-256 reference", "[misc]") {
-  static const util::Digest<256> SHA3_256_0xa3_200_times = {
+  static const Digest<256> SHA3_256_0xa3_200_times = {
       0x79, 0xf3, 0x8a, 0xde, 0xc5, 0xc2, 0x03, 0x07, 0xa9, 0x8e, 0xf7,
       0x6e, 0x83, 0x24, 0xaf, 0xbf, 0xd4, 0x6c, 0xfd, 0x81, 0xb2, 0x2e,
       0x39, 0x73, 0xc6, 0x5f, 0xa1, 0xbd, 0x9d, 0xe3, 0x17, 0x87};
@@ -58,11 +59,11 @@ TEST_CASE("Sha3-256 reference", "[misc]") {
     buf[i] = byte;
   }
 
-  util::Hash<256> hash0;
+  Hash<256> hash0;
   auto digest = hash0.update(buf, 200).finalize();
   REQUIRE(digest == SHA3_256_0xa3_200_times);
 
-  util::Hash<256> hash1;
+  Hash<256> hash1;
   for (std::size_t i = 0; i < 200; ++i) {
     hash1.update(&byte, 1);
   }
@@ -70,7 +71,7 @@ TEST_CASE("Sha3-256 reference", "[misc]") {
 }
 
 TEST_CASE("Sha3-384 reference", "[misc]") {
-  static const util::Digest<384> SHA3_384_0xa3_200_times = {
+  static const Digest<384> SHA3_384_0xa3_200_times = {
       0x18, 0x81, 0xde, 0x2c, 0xa7, 0xe4, 0x1e, 0xf9, 0x5d, 0xc4, 0x73, 0x2b,
       0x8f, 0x5f, 0x00, 0x2b, 0x18, 0x9c, 0xc1, 0xe4, 0x2b, 0x74, 0x16, 0x8e,
       0xd1, 0x73, 0x26, 0x49, 0xce, 0x1d, 0xbc, 0xdd, 0x76, 0x19, 0x7a, 0x31,
@@ -82,12 +83,12 @@ TEST_CASE("Sha3-384 reference", "[misc]") {
     buf[i] = byte;
   }
 
-  util::Hash<384> hash0;
+  Hash<384> hash0;
   auto digest = hash0.update(buf, 200).finalize();
   REQUIRE(digest.size() == 48);
   REQUIRE(digest == SHA3_384_0xa3_200_times);
 
-  util::Hash<384> hash1;
+  Hash<384> hash1;
   for (std::size_t i = 0; i < 200; ++i) {
     hash1.update(&byte, 1);
   }
@@ -109,12 +110,12 @@ TEST_CASE("Sha3-512 reference", "[misc]") {
     buf[i] = byte;
   }
 
-  util::Hash<512> hash0;
+  Hash<512> hash0;
   auto digest = hash0.update(buf, 200).finalize();
   REQUIRE(digest.size() == 64);
   REQUIRE(digest == SHA3_512_0xa3_200_times);
 
-  util::Hash<512> hash1;
+  Hash<512> hash1;
   for (std::size_t i = 0; i < 200; ++i) {
     hash1.update(&byte, 1);
   }
@@ -123,10 +124,10 @@ TEST_CASE("Sha3-512 reference", "[misc]") {
 
 TEST_CASE("Sha3 hash vector", "[misc]") {
   unsigned char ref_buf[] = "hello, world";
-  util::Hash<256> hash_ref;
+  Hash<256> hash_ref;
   auto ref = hash_ref.update(ref_buf, 12).finalize();
 
-  util::Hash<256> hash1;
+  Hash<256> hash1;
   std::vector<unsigned char> v =
       {'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd'};
   auto from_vec = hash1.update(v).finalize();
@@ -136,16 +137,16 @@ TEST_CASE("Sha3 hash vector", "[misc]") {
 TEST_CASE("Sha3 hash array", "[misc]") {
   unsigned char abc[] = "abc";
   std::array<unsigned char, 3> abc_arr = {'a', 'b', 'c'};
-  auto ref = util::Hash<256>{}.update(abc, 3).finalize();
-  auto act = util::Hash<256>{}.update(abc_arr).finalize();
+  auto ref = Hash<256>{}.update(abc, 3).finalize();
+  auto act = Hash<256>{}.update(abc_arr).finalize();
   REQUIRE(ref == act);
 }
 
 TEST_CASE("Sha3 field elements", "[misc]") {
-  math::Fp<61> x(123);
-  math::Fp<61> y(555);
+  FF<Mersenne61> x(123);
+  FF<Mersenne61> y(555);
 
-  auto hx = util::Hash<256>{}.update(x).finalize();
-  auto hy = util::Hash<256>{}.update(y).finalize();
+  auto hx = Hash<256>{}.update(x).finalize();
+  auto hy = Hash<256>{}.update(y).finalize();
   REQUIRE(hx != hy);
 }

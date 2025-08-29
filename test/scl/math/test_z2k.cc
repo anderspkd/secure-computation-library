@@ -21,13 +21,13 @@
 #include <sstream>
 
 #include "scl/math/z2k.h"
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
 using namespace scl;
 
 // use sizes that ensure masking is needed
-using Small = math::Z2k<62>;
-using Big = math::Z2k<123>;
+using Small = Z2k<62>;
+using Big = Z2k<123>;
 
 #define RING_DEFS Big, Small
 
@@ -49,7 +49,7 @@ TEST_CASE("Z2k small size", "[math][ring]") {
 
 TEMPLATE_TEST_CASE("Z2k addition", "[math][ring]", RING_DEFS) {
   using Ring = TestType;
-  auto prg = util::PRG::create("Z2k addition");
+  auto prg = PRG::create("Z2k addition");
 
   auto a = Ring::random(prg);
   auto b = Ring::random(prg);
@@ -64,7 +64,7 @@ TEMPLATE_TEST_CASE("Z2k addition", "[math][ring]", RING_DEFS) {
 
 TEMPLATE_TEST_CASE("Z2k negation", "[math][ring]", RING_DEFS) {
   using Ring = TestType;
-  auto prg = util::PRG::create("Z2k negation");
+  auto prg = PRG::create("Z2k negation");
 
   auto a = Ring::random(prg);
   auto a_negated = a.negated();
@@ -77,7 +77,7 @@ TEMPLATE_TEST_CASE("Z2k negation", "[math][ring]", RING_DEFS) {
 
 TEMPLATE_TEST_CASE("Z2k subtraction", "[math][ring]", RING_DEFS) {
   using Ring = TestType;
-  auto prg = util::PRG::create("Z2k subtraction");
+  auto prg = PRG::create("Z2k subtraction");
 
   auto a = Ring::random(prg);
   auto b = Ring::random(prg);
@@ -91,7 +91,7 @@ TEMPLATE_TEST_CASE("Z2k subtraction", "[math][ring]", RING_DEFS) {
 
 TEMPLATE_TEST_CASE("Z2k multiplication", "[math][ring]", RING_DEFS) {
   using Ring = TestType;
-  auto prg = util::PRG::create("Z2k multiplication");
+  auto prg = PRG::create("Z2k multiplication");
 
   auto a = Ring::random(prg);
   auto b = Ring::random(prg);
@@ -107,7 +107,7 @@ TEMPLATE_TEST_CASE("Z2k multiplication", "[math][ring]", RING_DEFS) {
 namespace {
 
 template <typename RING>
-RING randomInvertible(util::PRG& prg) {
+RING randomInvertible(PRG& prg) {
   RING z;
   while (z.lsb() == 0) {
     z = RING::random(prg);
@@ -118,7 +118,7 @@ RING randomInvertible(util::PRG& prg) {
 
 TEMPLATE_TEST_CASE("Z2k inverses", "[math][ring]", RING_DEFS) {
   using Ring = TestType;
-  auto prg = util::PRG::create("Z2k inverses");
+  auto prg = PRG::create("Z2k inverses");
 
   auto a = randomInvertible<Ring>(prg);
   auto a_inverse = a.inverse();
@@ -131,7 +131,7 @@ TEMPLATE_TEST_CASE("Z2k inverses", "[math][ring]", RING_DEFS) {
 
 TEMPLATE_TEST_CASE("Z2k division", "[math][ring]", RING_DEFS) {
   using Ring = TestType;
-  auto prg = util::PRG::create("Z2k division");
+  auto prg = PRG::create("Z2k division");
 
   auto a = randomInvertible<Ring>(prg);
   auto b = randomInvertible<Ring>(prg);
@@ -145,7 +145,7 @@ TEMPLATE_TEST_CASE("Z2k division", "[math][ring]", RING_DEFS) {
 
 TEMPLATE_TEST_CASE("Z2k serialization", "[math][ring]", RING_DEFS) {
   using Ring = TestType;
-  auto prg = util::PRG::create("Z2k serialization");
+  auto prg = PRG::create("Z2k serialization");
 
   auto a = Ring::random(prg);
   unsigned char buffer[TestType::byteSize()];
@@ -165,7 +165,7 @@ TEMPLATE_TEST_CASE("Z2k to string", "[math][ring]", RING_DEFS) {
 }
 
 TEST_CASE("Z2k truncation", "[math]") {
-  using Z2k = math::Z2k<32>;
+  using Z2k = Z2k<32>;
 
   Z2k a(0x34abcdef11);
   Z2k b(0x00abcdef11);

@@ -17,14 +17,15 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
+#include "scl/math/mersenne61.h"
 #include "scl/math/number.h"
 #include "scl/serialization.h"
 
 using namespace scl;
 
 TEST_CASE("Serialization simple types", "[misc]") {
-  using Sint = util::Serializer<int>;
+  using Sint = Serializer<int>;
   const auto int_size = sizeof(int);
   unsigned char buf[4 * int_size];
 
@@ -53,7 +54,7 @@ struct SomeStruct {
 };
 
 TEST_CASE("Serialization simple types struct", "[misc]") {
-  using Sss = util::Serializer<SomeStruct>;
+  using Sss = Serializer<SomeStruct>;
 
   SomeStruct s{1, true, 2.5};
   unsigned char buf[sizeof(SomeStruct)];
@@ -70,10 +71,11 @@ TEST_CASE("Serialization simple types struct", "[misc]") {
   REQUIRE(s.vd == sr.vd);
 }
 
-constexpr std::size_t VEC_OVERHEAD = sizeof(seri::StlVecSizeType);
+constexpr std::size_t VEC_OVERHEAD =
+    sizeof(Serializer<std::vector<bool>>::VecSizeType);
 
 TEST_CASE("Serialization vector", "[misc]") {
-  using Sv = util::Serializer<std::vector<int>>;
+  using Sv = Serializer<std::vector<int>>;
   std::vector<int> v = {1, 2, 3, 4};
 
   REQUIRE(Sv::sizeOf(v) == 4 * sizeof(int) + VEC_OVERHEAD);
@@ -88,7 +90,7 @@ TEST_CASE("Serialization vector", "[misc]") {
 }
 
 TEST_CASE("Serialization vector vector", "[misc]") {
-  using Sv = util::Serializer<std::vector<std::vector<int>>>;
+  using Sv = Serializer<std::vector<std::vector<int>>>;
   std::vector<std::vector<int>> v = {{1, 2, 3}, {2, 3}, {5, 6, 7}};
 
   const auto expected_size = 8 * sizeof(int) + 4 * VEC_OVERHEAD;
@@ -104,47 +106,45 @@ TEST_CASE("Serialization vector vector", "[misc]") {
 }
 
 TEST_CASE("Serialization Vec", "[misc]") {
-  using Fp = math::Fp<61>;
-  using Sv = util::Serializer<std::vector<Fp>>;
+  using Field = FF<Mersenne61>;
+  using Sv = Serializer<std::vector<Field>>;
 
-  std::vector<Fp> v = {Fp(1), Fp(2), Fp(3)};
-  const auto expected_size = VEC_OVERHEAD + Fp::byteSize() * 3;
+  std::vector<Field> v = {Field(1), Field(2), Field(3)};
+  const auto expected_size = VEC_OVERHEAD + Field::byteSize() * 3;
   REQUIRE(Sv::sizeOf(v) == expected_size);
 
   unsigned char buf[expected_size];
 
   Sv::write(v, buf);
 
-  std::vector<Fp> w;
+  std::vector<Field> w;
   Sv::read(w, buf);
 
   REQUIRE(v == w);
 }
 
 TEST_CASE("Serialization number", "[misc]") {
-  using Sn = util::Serializer<math::Number>;
+  using Sn = Serializer<Number>;
 
-  math::Number a(1234);
+  Number a(1234);
   auto buf = std::make_unique<unsigned char[]>(Sn::sizeOf(a));
 
   Sn::write(a, buf.get());
-  math::Number b;
+  Number b;
   Sn::read(b, buf.get());
 
   REQUIRE(a == b);
 }
 
 TEST_CASE("Serialization number vector", "[misc]") {
-  using Sn = util::Serializer<std::vector<math::Number>>;
+  using Sn = Serializer<std::vector<Number>>;
 
-  std::vector<math::Number> nums = {math::Number(22222123),
-                                    math::Number(123),
-                                    math::Number(-10)};
+  std::vector<Number> nums = {Number(22222123), Number(123), Number(-10)};
 
   auto buf = std::make_unique<unsigned char[]>(Sn::sizeOf(nums));
   Sn::write(nums, buf.get());
 
-  std::vector<math::Number> r;
+  std::vector<Number> r;
   Sn::read(r, buf.get());
 
   REQUIRE(nums == r);

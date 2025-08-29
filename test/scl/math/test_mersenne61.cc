@@ -19,11 +19,12 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <sstream>
 
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
+#include "scl/math/mersenne61.h"
 
 using namespace scl;
 
-using Field = math::Fp<61>;
+using Field = FF<Mersenne61>;
 
 TEST_CASE("Mersenne61 defs", "[math][ff]") {
   REQUIRE(std::string(Field::name()) == "Mersenne61");

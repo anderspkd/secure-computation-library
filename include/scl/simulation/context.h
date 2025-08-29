@@ -49,7 +49,7 @@ struct GlobalContext {
    * @param hooks the hooks that should be run when an event is created.
    */
   static GlobalContext create(std::size_t number_of_parties,
-                              std::unique_ptr<NetworkConfig> network_config,
+                              std::unique_ptr<NetworkDefinition> network_config,
                               std::vector<TriggerAndHook> hooks);
 
   /**
@@ -60,7 +60,7 @@ struct GlobalContext {
   /**
    * @brief The network configuration for the simulation.
    */
-  std::unique_ptr<NetworkConfig> network_config;
+  std::unique_ptr<NetworkDefinition> network_config;
 
   /**
    * @brief The simulation traces.

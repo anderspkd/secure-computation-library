@@ -19,18 +19,16 @@
 #define SCL_SIMULATION_RUNTIME_H
 
 #include <list>
-#include <memory>
 
 #include "scl/coro/runtime.h"
 #include "scl/simulation/context.h"
-#include "scl/simulation/event.h"
 
 namespace scl::details {
 
 /**
  * @brief Runtime implementation used in the simulator.
  */
-class SimulatorRuntime final : public coro::Runtime {
+class SimulatorRuntime final : public scl::Runtime {
   constexpr static std::size_t MANAGER_PID = -1;
 
   struct Coro {
@@ -48,7 +46,7 @@ class SimulatorRuntime final : public coro::Runtime {
 
   ~SimulatorRuntime() {}
 
-  using coro::Runtime::schedule;
+  using scl::Runtime::schedule;
 
   /**
    * @brief Schedule a coroutine to run for a particular party.
@@ -68,7 +66,7 @@ class SimulatorRuntime final : public coro::Runtime {
                 std::function<bool()>&& predicate) override;
 
   void schedule(std::coroutine_handle<> coroutine,
-                util::Time::Duration delay) override;
+                Time::Duration delay) override;
 
   void deschedule(std::coroutine_handle<> coroutine) override;
 

@@ -21,7 +21,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "scl/util/cmdline.h"
+#include "scl/cmdline.h"
 
 using namespace scl;
 
@@ -50,10 +50,10 @@ using namespace scl;
 TEST_CASE("Cmdline print help", "[util]") {
   const char* argv[] = {"program", "-help"};
 
-  auto p = util::ProgramOptions::Parser("Program description.")
-               .add(util::ProgramArg::optional("x", "y", "default"))
-               .add(util::ProgramArg::required("a", "b", "arg description"))
-               .add(util::ProgramFlag("w", "flag description"));
+  auto p = ProgramOptions::Parser("Program description.")
+               .add(ProgramArg::optional("x", "y", "default"))
+               .add(ProgramArg::required("a", "b", "arg description"))
+               .add(ProgramFlag("w", "flag description"));
 
   CAPTURE_START;
 
@@ -103,7 +103,7 @@ TEST_CASE("Cmdline print help", "[util]") {
 TEST_CASE("Cmdline parse with error", "[util]") {
   const char* argv[] = {"program", "-x"};
 
-  auto p = util::ProgramOptions::Parser{};
+  auto p = ProgramOptions::Parser{};
 
   CAPTURE_START;
   WITH_EXIT_1(p.parse(2, (char**)argv, false));
@@ -115,8 +115,7 @@ TEST_CASE("Cmdline parse with error", "[util]") {
 
 TEST_CASE("Cmdline parse missing required", "[util]") {
   const char* argv[] = {"program"};
-  auto p =
-      util::ProgramOptions::Parser{}.add(util::ProgramArg::required("x", "y"));
+  auto p = ProgramOptions::Parser{}.add(ProgramArg::required("x", "y"));
 
   CAPTURE_START;
   WITH_EXIT_1(p.parse(1, (char**)argv, false));
@@ -127,8 +126,7 @@ TEST_CASE("Cmdline parse missing required", "[util]") {
 
 TEST_CASE("Cmdline parse invalid argument", "[util]") {
   const char* argv[] = {"program", "-x"};
-  auto p =
-      util::ProgramOptions::Parser{}.add(util::ProgramArg::required("x", "y"));
+  auto p = ProgramOptions::Parser{}.add(ProgramArg::required("x", "y"));
 
   CAPTURE_START;
   WITH_EXIT_1(p.parse(2, (char**)argv, false));
@@ -139,8 +137,7 @@ TEST_CASE("Cmdline parse invalid argument", "[util]") {
 
 TEST_CASE("Cmdline parse invalid argument name", "[util]") {
   const char* argv[] = {"program", "x"};
-  auto p =
-      util::ProgramOptions::Parser{}.add(util::ProgramArg::required("x", "y"));
+  auto p = ProgramOptions::Parser{}.add(ProgramArg::required("x", "y"));
 
   CAPTURE_START;
   WITH_EXIT_1(p.parse(2, (char**)argv, false));
@@ -150,9 +147,9 @@ TEST_CASE("Cmdline parse invalid argument name", "[util]") {
 }
 
 TEST_CASE("Cmdline duplicate arg definition", "[util]") {
-  auto p = util::ProgramOptions::Parser{}
-               .add(util::ProgramArg::required("x", "int"))
-               .add(util::ProgramArg::required("x", "int"));
+  auto p = ProgramOptions::Parser{}
+               .add(ProgramArg::required("x", "int"))
+               .add(ProgramArg::required("x", "int"));
 
   const char* argv[] = {"program", "-x", "1 "};
   CAPTURE_START;
@@ -163,9 +160,7 @@ TEST_CASE("Cmdline duplicate arg definition", "[util]") {
 }
 
 TEST_CASE("Cmdline duplicate flag definition", "[util]") {
-  auto p = util::ProgramOptions::Parser{}
-               .add(util::ProgramFlag("x"))
-               .add(util::ProgramFlag("x"));
+  auto p = ProgramOptions::Parser{}.add(ProgramFlag("x")).add(ProgramFlag("x"));
 
   const char* argv[] = {"program", "-x"};
   CAPTURE_START;
@@ -177,19 +172,19 @@ TEST_CASE("Cmdline duplicate flag definition", "[util]") {
 
 TEST_CASE("Cmdline parse duplicate arg", "[misc]") {
   const char* argv[] = {"program", "-x", "1", "-x", "2"};
-  auto p = util::ProgramOptions::Parser{}
-               .add(util::ProgramArg::required("x", "int"))
+  auto p = ProgramOptions::Parser{}
+               .add(ProgramArg::required("x", "int"))
                .parse(5, (char**)argv, false);
   REQUIRE(p.get("x") == "2");
 }
 
 TEST_CASE("Cmdline arg", "[util]") {
   const char* argv[] = {"program", "-x", "100", "-w", "600", "-b", "true"};
-  auto p = util::ProgramOptions::Parser{}
-               .add(util::ProgramArg::required("x", "int"))
-               .add(util::ProgramArg::required("w", "ulong"))
-               .add(util::ProgramArg::required("b", "bool"))
-               .add(util::ProgramArg::optional("y", "long", "100"))
+  auto p = ProgramOptions::Parser{}
+               .add(ProgramArg::required("x", "int"))
+               .add(ProgramArg::required("w", "ulong"))
+               .add(ProgramArg::required("b", "bool"))
+               .add(ProgramArg::optional("y", "long", "100"))
                .parse(7, (char**)argv, false);
 
   REQUIRE(p.has("x"));
@@ -211,9 +206,9 @@ TEST_CASE("Cmdline arg", "[util]") {
 
 TEST_CASE("Cmdline flag", "[util]") {
   const char* argv[] = {"program", "-f"};
-  auto p = util::ProgramOptions::Parser{}
-               .add(util::ProgramFlag("f"))
-               .add(util::ProgramFlag("h"))
+  auto p = ProgramOptions::Parser{}
+               .add(ProgramFlag("f"))
+               .add(ProgramFlag("h"))
                .parse(2, (char**)argv, false);
 
   REQUIRE(p.flagSet("f"));

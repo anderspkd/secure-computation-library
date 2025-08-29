@@ -43,7 +43,7 @@ std::vector<scl::Bitmap> initBitmaps(std::size_t number_of_parties) {
 }  // namespace
 
 GlobalCtx GlobalCtx::create(std::size_t number_of_parties,
-                            std::unique_ptr<NetworkConfig> network_config,
+                            std::unique_ptr<NetworkDefinition> network_config,
                             std::vector<TriggerAndHook> hooks) {
   std::vector<SimulationTrace> traces(number_of_parties);
 

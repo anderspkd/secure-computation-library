@@ -18,31 +18,32 @@
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 
-#include "scl/math/curves/secp256k1.h"
-#include "scl/util/hash.h"
-#include "scl/util/sign.h"
+#include "scl/math/ec.h"
+#include "scl/math/secp256k1.h"
+#include "scl/primitives/hash.h"
+#include "scl/primitives/sign.h"
 
 using namespace scl;
 
 TEST_CASE("ECDSA derive", "[util]") {
-  auto prg = util::PRG::create("ecdsa derive");
-  const auto sk = util::ECDSA::SecretKey::random(prg);
-  const auto pk = util::ECDSA::derive(sk);
-  REQUIRE(pk == sk * math::EC<math::ec::Secp256k1>::generator());
+  auto prg = PRG::create("ecdsa derive");
+  const auto sk = ECDSA::SecretKey::random(prg);
+  const auto pk = ECDSA::derive(sk);
+  REQUIRE(pk == sk * EC<Secp256k1>::generator());
 }
 
 TEST_CASE("ECDSA sign", "[util]") {
-  auto prg = util::PRG::create("ecdsa sign");
-  const auto m = util::Hash<256>{}.update("message").finalize();
-  const auto sk = util::ECDSA::SecretKey::random(prg);
-  const auto sig = util::ECDSA::Sign(sk, m, prg);
+  auto prg = PRG::create("ecdsa sign");
+  const auto m = Hash<256>{}.update("message").finalize();
+  const auto sk = ECDSA::SecretKey::random(prg);
+  const auto sig = ECDSA::Sign(sk, m, prg);
 
-  const auto pk = util::ECDSA::derive(sk);
-  REQUIRE(util::ECDSA::verify(pk, sig, m));
+  const auto pk = ECDSA::derive(sk);
+  REQUIRE(ECDSA::verify(pk, sig, m));
 
   const std::array<unsigned char, 3> m_small = {1, 2, 3};
-  const auto sig_small = util::ECDSA::Sign(sk, m_small, prg);
-  REQUIRE(util::ECDSA::verify(pk, sig_small, m_small));
+  const auto sig_small = ECDSA::Sign(sk, m_small, prg);
+  REQUIRE(ECDSA::verify(pk, sig_small, m_small));
 
-  REQUIRE_FALSE(util::ECDSA::verify(pk, sig_small, m));
+  REQUIRE_FALSE(ECDSA::verify(pk, sig_small, m));
 }

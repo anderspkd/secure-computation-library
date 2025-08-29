@@ -18,8 +18,7 @@
 #ifndef TEST_SCL_GF7_H
 #define TEST_SCL_GF7_H
 
-#include <iostream>
-#include <sstream>
+#include <cstddef>
 
 namespace scl::test {
 

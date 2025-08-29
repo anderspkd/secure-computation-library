@@ -257,11 +257,11 @@ class ChannelConfig::Builder {
 /**
  * @brief Interface describing the network wide configuration.
  */
-struct NetworkConfig {
+struct NetworkDefinition {
   /**
    * @brief Destructor.
    */
-  virtual ~NetworkConfig() {}
+  virtual ~NetworkDefinition() {}
 
   /**
    * @brief Returns the configuration of a particular channel.
@@ -277,7 +277,7 @@ struct NetworkConfig {
  * being channels that are self-connecting (i.e., from a party to itself). These
  * channels are configured according to ChannelConfig::Loopback.
  */
-struct SimpleNetworkConfig final : public NetworkConfig {
+struct SimpleNetworkConfig final : public NetworkDefinition {
   ChannelConfig get(ChannelId channel_id) override {
     static auto config = ChannelConfig::defaultConfig();
     static auto lo = ChannelConfig::loopback();

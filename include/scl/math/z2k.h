@@ -19,9 +19,11 @@
 #define SCL_MATH_Z2K_H
 
 #include <cstdint>
+#include <stdexcept>
 
-#include "scl/math/z2k/z2k_ops.h"
-#include "scl/util/prg.h"
+#include "scl/hex.h"
+#include "scl/math/hex_util.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -43,6 +45,8 @@ class Z2k final {
    */
   using ValueType =
       std::conditional_t<(BITS <= 64), std::uint64_t, __uint128_t>;
+
+  constexpr static auto MASK = ((static_cast<ValueType>(1) << BITS)) - 1;
 
   /**
    * @brief The number of bytes needed to store a ring element.
@@ -70,14 +74,15 @@ class Z2k final {
    */
   static Z2k read(const unsigned char* src) {
     Z2k e;
-    fromBytes<ValueType, bitSize()>(e.m_value, src);
+    e.m_value = *(const ValueType*)src;
+    e.m_value &= MASK;
     return e;
   }
 
   /**
    * @brief Create a random element.
    */
-  static Z2k random(util::PRG& prg) {
+  static Z2k random(PRG& prg) {
     unsigned char buffer[byteSize()];
     prg.next(buffer, byteSize());
     return read(buffer);
@@ -88,9 +93,9 @@ class Z2k final {
    */
   static Z2k fromString(const std::string& str) {
     Z2k e;
-    convertIn<ValueType, bitSize()>(e.m_value, str);
+    e.m_value = details::fromHexString<ValueType>(str);
     return e;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Get the additive identity of this ring.
@@ -127,7 +132,7 @@ class Z2k final {
    * @brief Add another element to this.
    */
   Z2k& operator+=(const Z2k& other) {
-    add(m_value, other.m_value);
+    m_value += other.m_value;
     return *this;
   }
 
@@ -159,7 +164,7 @@ class Z2k final {
    * @brief Subtract another element from this.
    */
   Z2k& operator-=(const Z2k& other) {
-    subtract(m_value, other.m_value);
+    m_value -= other.m_value;
     return *this;
   }
 
@@ -191,7 +196,7 @@ class Z2k final {
    * @brief Multiply another element to this.
    */
   Z2k& operator*=(const Z2k& other) {
-    multiply(m_value, other.m_value);
+    m_value *= other.m_value;
     return *this;
   }
 
@@ -208,8 +213,7 @@ class Z2k final {
    * @throws std::invalid_argument if \p other is not invertible.
    */
   Z2k& operator/=(const Z2k& other) {
-    multiply(m_value, other.inverse().m_value);
-    return *this;
+    return *this *= other.inverse();
   }
 
   /**
@@ -225,7 +229,7 @@ class Z2k final {
    * @brief Negates this element.
    */
   Z2k& negate() {
-    negate(m_value);
+    m_value = -m_value;
     return *this;
   }
 
@@ -249,7 +253,18 @@ class Z2k final {
    * @throws std::invalid_argument if this element is not invertible.
    */
   Z2k& invert() {
-    invert<ValueType, bitSize()>(m_value);
+    if ((m_value & 1) == 0) {
+      throw std::invalid_argument("value not invertible modulo 2^K");
+    }
+
+    std::size_t inverted_bits = 5;
+    auto z = m_value;
+    while (inverted_bits < BITS) {
+      z *= 2 - m_value * z;
+      inverted_bits *= 2;
+    }
+
+    m_value = z;
     return *this;
   }
 
@@ -266,14 +281,14 @@ class Z2k final {
    * @brief Return the least significant bit of this element.
    */
   unsigned lsb() const {
-    return lsb(m_value);
+    return m_value & 1;
   }
 
   /**
    * @brief Check if this element is equal to another element.
    */
   bool equal(const Z2k& other) const {
-    return equal<ValueType, BITS>(m_value, other.m_value);
+    return (m_value & MASK) == (other.m_value & MASK);
   }
 
   /**
@@ -294,7 +309,8 @@ class Z2k final {
    * @brief Return a string representation of this element.
    */
   std::string toString() const {
-    return toString<ValueType, bitSize()>(m_value);
+    const auto w = m_value & MASK;
+    return toHexString(w);
   }
 
   /**
@@ -307,8 +323,9 @@ class Z2k final {
   /**
    * @brief Write this element to a buffer.
    */
-  void write(unsigned char* dest) const {
-    toBytes<ValueType, bitSize()>(m_value, dest);
+  void write(unsigned char* dst) const {
+    const auto w = m_value & MASK;
+    std::memcpy(dst, (unsigned char*)w, (BITS - 1) / 8 + 1);
   }
 
  private:

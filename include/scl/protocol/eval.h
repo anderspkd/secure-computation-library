@@ -38,9 +38,9 @@ namespace scl {
  * the protocol produces to @p output_callback.
  */
 template <typename CALLBACK>
-coro::Task<void> evaluate(std::unique_ptr<Protocol> protocol,
-                          Env& env,
-                          CALLBACK output_callback) {
+Task<void> evaluate(std::unique_ptr<Protocol> protocol,
+                    Env& env,
+                    CALLBACK output_callback) {
   while (protocol) {
     ProtocolResult result = co_await protocol->run(env);
 
@@ -69,7 +69,7 @@ coro::Task<void> evaluate(std::unique_ptr<Protocol> protocol,
  * <code>RESULT</code>, then an error is thrown.
  */
 template <typename RESULT>
-coro::Task<RESULT> evaluate(std::unique_ptr<Protocol> protocol, Env& env) {
+Task<RESULT> evaluate(std::unique_ptr<Protocol> protocol, Env& env) {
   while (protocol) {
     ProtocolResult result = co_await protocol->run(env);
 
@@ -91,7 +91,7 @@ coro::Task<RESULT> evaluate(std::unique_ptr<Protocol> protocol, Env& env) {
  * @param env the environment to use.
  */
 template <>
-inline coro::Task<void> evaluate(std::unique_ptr<Protocol> protocol, Env& env) {
+inline Task<void> evaluate(std::unique_ptr<Protocol> protocol, Env& env) {
   while (protocol) {
     ProtocolResult result = co_await protocol->run(env);
     protocol = std::move(result.next_protocol);

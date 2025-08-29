@@ -17,13 +17,10 @@
 
 #include "scl/math/secp256k1_field.h"
 
-#include <array>
-#include <sstream>
-
+#include "./ff_ops_gmp.h"
 #include "./secp256k1_helpers.h"
 #include "scl/math/ff.h"
 #include "scl/math/ff_ops.h"
-#include "scl/math/ff_ops_gmp.h"
 #include "scl/math/number.h"
 
 using Field = scl::Secp256k1Field;

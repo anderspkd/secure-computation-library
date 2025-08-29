@@ -22,7 +22,7 @@
 #include <ostream>
 #include <string>
 
-#include "scl/math/curves/ec_ops.h"
+#include "scl/math/ec_ops.h"
 #include "scl/math/ff.h"
 #include "scl/math/number.h"
 
@@ -75,7 +75,7 @@ class EC final {
    */
   constexpr static EC generator() {
     EC g;
-    setGenerator<CURVE>(g.m_value);
+    details::setGenerator<CURVE>(g.m_value);
     return g;
   }
 
@@ -84,7 +84,7 @@ class EC final {
    */
   static EC read(const unsigned char* src) {
     EC e;
-    fromBytes<CURVE>(e.m_value, src);
+    details::fromBytes<CURVE>(e.m_value, src);
     return e;
   }
 
@@ -93,7 +93,7 @@ class EC final {
    */
   static EC fromAffine(const Field& x, const Field& y) {
     EC e;
-    setAffine<CURVE>(e.m_value, x, y);
+    details::setAffine<CURVE>(e.m_value, x, y);
     return e;
   }
 
@@ -108,7 +108,7 @@ class EC final {
    * @brief Create a new point equal to the point at infinity.
    */
   EC() {
-    setPointAtInfinity<CURVE>(m_value);
+    details::setPointAtInfinity<CURVE>(m_value);
   }
 
   /**
@@ -120,7 +120,7 @@ class EC final {
    * @brief Add another EC point to this.
    */
   EC& operator+=(const EC& other) {
-    add<CURVE>(m_value, other.m_value);
+    details::add<CURVE>(m_value, other.m_value);
     return *this;
   }
 
@@ -136,7 +136,7 @@ class EC final {
    * @brief Double this point.
    */
   EC& doublePointInPlace() {
-    dbl<CURVE>(m_value);
+    details::dbl<CURVE>(m_value);
     return *this;
   }
 
@@ -152,7 +152,7 @@ class EC final {
    * @brief Subtract another point from this.
    */
   EC& operator-=(const EC& other) {
-    subtract<CURVE>(m_value, other.m_value);
+    details::subtract<CURVE>(m_value, other.m_value);
     return *this;
   }
 
@@ -168,7 +168,7 @@ class EC final {
    * @brief Perform a scalar multiplication.
    */
   EC& operator*=(const Number& scalar) {
-    scalarMultiply<CURVE>(m_value, scalar);
+    details::scalarMultiply<CURVE>(m_value, scalar);
     return *this;
   }
 
@@ -176,7 +176,7 @@ class EC final {
    * @brief Perform a scalar multiplication.
    */
   EC& operator*=(const ScalarField& scalar) {
-    scalarMultiply<CURVE>(m_value, scalar);
+    details::scalarMultiply<CURVE>(m_value, scalar);
     return *this;
   }
 
@@ -214,7 +214,7 @@ class EC final {
    * @brief Negate this point.
    */
   EC& negate() {
-    negate<CURVE>(m_value);
+    details::negate<CURVE>(m_value);
     return *this;
   }
 
@@ -230,8 +230,8 @@ class EC final {
    * @brief Check if this EC point is equal to another EC point.
    */
   bool equal(const EC& other) const {
-    return equal<CURVE>(m_value, other.m_value);
-  }  // LCOV_EXCL_LINE
+    return details::equal<CURVE>(m_value, other.m_value);
+  }
 
   /**
    * @brief Operator == for curve points.
@@ -251,7 +251,7 @@ class EC final {
    * @brief Check if this point is equal to the point at inifity.
    */
   bool isPointAtInfinity() const {
-    return isPointAtInfinity<CURVE>(m_value);
+    return details::isPointAtInfinity<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
@@ -260,7 +260,7 @@ class EC final {
    * Only well-defined if the point is not the point at infinity.
    */
   std::array<Field, 2> toAffine() const {
-    return toAffine<CURVE>(m_value);
+    return details::toAffine<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
@@ -268,10 +268,10 @@ class EC final {
    */
   void normalize() {
     if (isPointAtInfinity()) {
-      setPointAtInfinity<CURVE>(m_value);
+      details::setPointAtInfinity<CURVE>(m_value);
     } else {
       const auto afp = toAffine();
-      setAffine<CURVE>(m_value, afp[0], afp[1]);
+      details::setAffine<CURVE>(m_value, afp[0], afp[1]);
     }
   }
 
@@ -279,7 +279,7 @@ class EC final {
    * @brief Output this point as a string.
    */
   std::string toString() const {
-    return toString<CURVE>(m_value);
+    return details::toString<CURVE>(m_value);
   }  // LCOV_EXCL_LINE
 
   /**
@@ -293,7 +293,7 @@ class EC final {
    * @brief Write this point to a buffer.
    */
   void write(unsigned char* dest, bool compress) const {
-    toBytes<CURVE>(dest, m_value, compress);
+    details::toBytes<CURVE>(dest, m_value, compress);
   }  // LCOV_EXCL_LINE
 
  private:

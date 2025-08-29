@@ -18,23 +18,23 @@
 #include <catch2/catch_test_macros.hpp>
 #include <sstream>
 
-#include "scl/serialization/serializer.h"
-#include "scl/util/bitmap.h"
+#include "scl/bitmap.h"
+#include "scl/serialization.h"
 
 using namespace scl;
 
 TEST_CASE("Bitmap construct", "[util]") {
-  util::Bitmap bm(10);
+  Bitmap bm(10);
   REQUIRE(bm.numberOfBlocks() == 2);
   REQUIRE(bm.count() == 0);
 
-  util::Bitmap bm0;
+  Bitmap bm0;
   REQUIRE(bm0.numberOfBlocks() == 1);
   REQUIRE(bm0.count() == 0);
 }
 
 TEST_CASE("Bitmap get/set", "[util]") {
-  util::Bitmap bm(10);
+  Bitmap bm(10);
 
   bm.set(0, true);
   bm.set(7, true);
@@ -54,8 +54,8 @@ TEST_CASE("Bitmap get/set", "[util]") {
 }
 
 TEST_CASE("Bitmap XOR", "[util]") {
-  util::Bitmap bm0(10);
-  util::Bitmap bm1(10);
+  Bitmap bm0(10);
+  Bitmap bm1(10);
 
   bm0.set(0, true);
   bm1.set(0, true);
@@ -73,8 +73,8 @@ TEST_CASE("Bitmap XOR", "[util]") {
 }
 
 TEST_CASE("Bitmap AND", "[util]") {
-  util::Bitmap bm0(10);
-  util::Bitmap bm1(10);
+  Bitmap bm0(10);
+  Bitmap bm1(10);
 
   bm0.set(0, true);
   bm1.set(0, true);
@@ -92,8 +92,8 @@ TEST_CASE("Bitmap AND", "[util]") {
 }
 
 TEST_CASE("Bitmap OR", "[util]") {
-  util::Bitmap bm0(10);
-  util::Bitmap bm1(10);
+  Bitmap bm0(10);
+  Bitmap bm1(10);
 
   bm0.set(0, true);
   bm1.set(0, true);
@@ -111,7 +111,7 @@ TEST_CASE("Bitmap OR", "[util]") {
 }
 
 TEST_CASE("Bitmap NEG", "[util]") {
-  util::Bitmap bm0(10);
+  Bitmap bm0(10);
 
   bm0.set(0, true);
   bm0.set(4, true);
@@ -124,8 +124,8 @@ TEST_CASE("Bitmap NEG", "[util]") {
 }
 
 TEST_CASE("Bitmap equal", "[util]") {
-  util::Bitmap bm0(10);
-  util::Bitmap bm1(10);
+  Bitmap bm0(10);
+  Bitmap bm1(10);
 
   REQUIRE(bm0 == bm1);
 
@@ -135,7 +135,7 @@ TEST_CASE("Bitmap equal", "[util]") {
 }
 
 TEST_CASE("Bitmap print", "[util]") {
-  util::Bitmap bm(10);
+  Bitmap bm(10);
 
   bm.set(2, true);
   bm.set(9, true);
@@ -146,7 +146,7 @@ TEST_CASE("Bitmap print", "[util]") {
 }
 
 TEST_CASE("Bitmap serialization", "[util]") {
-  util::Bitmap bm(10);
+  Bitmap bm(10);
 
   bm.set(3, true);
   bm.set(2, true);
@@ -154,15 +154,16 @@ TEST_CASE("Bitmap serialization", "[util]") {
 
   REQUIRE(bm.numberOfBlocks() == 2);
 
-  constexpr std::size_t overhead = sizeof(seri::StlVecSizeType);
+  constexpr std::size_t overhead =
+      sizeof(Serializer<std::vector<int>>::VecSizeType);
   unsigned char buf[2 + overhead];
 
-  REQUIRE(seri::Serializer<util::Bitmap>::sizeOf(bm) == 2 + overhead);
+  REQUIRE(Serializer<Bitmap>::sizeOf(bm) == 2 + overhead);
 
-  REQUIRE(seri::Serializer<util::Bitmap>::write(bm, buf) == 2 + overhead);
+  REQUIRE(Serializer<Bitmap>::write(bm, buf) == 2 + overhead);
 
-  util::Bitmap b;
-  REQUIRE(seri::Serializer<util::Bitmap>::read(b, buf) == 2 + overhead);
+  Bitmap b;
+  REQUIRE(Serializer<Bitmap>::read(b, buf) == 2 + overhead);
 
   REQUIRE(b == bm);
 }

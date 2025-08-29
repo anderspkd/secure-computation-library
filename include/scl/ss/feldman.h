@@ -19,14 +19,11 @@
 #define SCL_SS_FELDMAN_H
 
 #include <cstddef>
-#include <iterator>
-#include <stdexcept>
-#include <type_traits>
 
 #include "scl/math/lagrange.h"
 #include "scl/math/vector.h"
+#include "scl/primitives/prg.h"
 #include "scl/ss/shamir.h"
-#include "scl/util/prg.h"
 
 namespace scl {
 
@@ -109,7 +106,7 @@ FeldmanSharing<GROUP> feldmanSecretShare(
     const typename FeldmanSharing<GROUP>::Field& secret,
     std::size_t t,
     std::size_t n,
-    util::PRG& prg) {
+    PRG& prg) {
   const auto shares = shamirSecretShare(secret, t, n, prg);
 
   std::vector<GROUP> comm;

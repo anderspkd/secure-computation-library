@@ -18,9 +18,7 @@
 #ifndef SCL_UTIL_SIGN_H
 #define SCL_UTIL_SIGN_H
 
-#include <memory>
-
-#include "scl/math/curves/secp256k1.h"
+#include "scl/math/secp256k1.h"
 #include "scl/math/ec.h"
 #include "scl/math/ff.h"
 

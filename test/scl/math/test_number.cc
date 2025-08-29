@@ -21,7 +21,7 @@
 #include <stdexcept>
 
 #include "scl/math/number.h"
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
 #ifndef SCl_NUMBER_TEST_REPETITIONS
 #define SCl_NUMBER_TEST_REPETITIONS 50
@@ -29,12 +29,10 @@
 
 using namespace scl;
 
-using Number = math::Number;
-
 #define REPEAT for (std::size_t i = 0; i < SCl_NUMBER_TEST_REPETITIONS; ++i)
 
 TEST_CASE("Number create", "[math]") {
-  auto prg = util::PRG::create();
+  auto prg = PRG::create();
   Number n0(27);
   REQUIRE(n0.toString() == "Number{1b}");
   Number n1(-42);
@@ -68,7 +66,7 @@ TEST_CASE("Number from string", "[math]") {
 }
 
 TEST_CASE("Number assignment", "[math]") {
-  auto prg = util::PRG::create("Number assignment");
+  auto prg = PRG::create("Number assignment");
   auto x = Number::random(100, prg);
   auto y = Number::random(100, prg);
   REQUIRE(x != y);
@@ -102,7 +100,7 @@ TEST_CASE("Number addition", "[math]") {
   REQUIRE(a + b == Number(55 + 32));
 
   Number zero(0);
-  auto prg = util::PRG::create("Number addition");
+  auto prg = PRG::create("Number addition");
   REPEAT {
     auto x = Number::random(100, prg);
     auto y = Number::random(100, prg);
@@ -125,7 +123,7 @@ TEST_CASE("Number subtraction", "[math]") {
   REQUIRE(a - b == Number(123 - 555));
 
   Number zero;
-  auto prg = util::PRG::create("Number subtraction");
+  auto prg = PRG::create("Number subtraction");
   REPEAT {
     auto x = Number::random(100, prg);
     auto y = Number::random(100, prg);
@@ -155,7 +153,7 @@ TEST_CASE("Number multiplication", "[math]") {
 
   Number one(1);
   Number zero;
-  auto prg = util::PRG::create("Number multiplication");
+  auto prg = PRG::create("Number multiplication");
   REPEAT {
     auto x = Number::random(100, prg);
     auto y = Number::random(100, prg);
@@ -185,7 +183,7 @@ TEST_CASE("Number division", "[math]") {
   REQUIRE(a / b == Number(123 / 43));
 
   Number one(1);
-  auto prg = util::PRG::create("Number division");
+  auto prg = PRG::create("Number division");
   REPEAT {
     auto x = Number::random(100, prg);
     auto y = Number::random(85, prg);
@@ -235,7 +233,7 @@ TEST_CASE("Number xor", "[math]") {
   Number b(5545);
   REQUIRE((a ^ b) == Number(2231 ^ 5545));
 
-  auto prg = util::PRG::create("Number xor");
+  auto prg = PRG::create("Number xor");
   REPEAT {
     auto x = Number::random(100, prg);
     auto y = Number::random(100, prg);
@@ -256,7 +254,7 @@ TEST_CASE("Number or", "[math]") {
   Number b(5545);
   REQUIRE((a | b) == Number(2231 | 5545));
 
-  auto prg = util::PRG::create("Number or");
+  auto prg = PRG::create("Number or");
   REPEAT {
     auto x = Number::random(100, prg);
     auto y = Number::random(100, prg);
@@ -277,7 +275,7 @@ TEST_CASE("Number and", "[math]") {
   Number b(5545);
   REQUIRE((a & b) == Number(2231 & 5545));
 
-  auto prg = util::PRG::create("Number and");
+  auto prg = PRG::create("Number and");
   REPEAT {
     auto x = Number::random(100, prg);
     auto y = Number::random(100, prg);
@@ -314,11 +312,11 @@ TEST_CASE("Number test bit", "[math]") {
 
 TEST_CASE("Number mod inverse invalid", "[math]") {
   Number a(10);
-  REQUIRE_THROWS_MATCHES(math::modInverse(a, Number(0)),
+  REQUIRE_THROWS_MATCHES(modInverse(a, Number(0)),
                          std::invalid_argument,
                          Catch::Matchers::Message("modulus cannot be 0"));
 
-  REQUIRE_THROWS_MATCHES(math::modInverse(a, Number(2)),
+  REQUIRE_THROWS_MATCHES(modInverse(a, Number(2)),
                          std::logic_error,
                          Catch::Matchers::Message("number not invertible"));
 }
@@ -335,7 +333,7 @@ TEST_CASE("Number read/write", "[math]") {
   a.write(buf.get());
   REQUIRE(a == Number::read(buf.get()));
 
-  auto prg = util::PRG::create("rw");
+  auto prg = PRG::create("rw");
   REPEAT {
     const auto x = Number::random(100, prg);
     auto bufx =
@@ -346,24 +344,24 @@ TEST_CASE("Number read/write", "[math]") {
 }
 
 TEST_CASE("Number RSA example", "[math]") {
-  auto prg = util::PRG::create("rsa");
+  auto prg = PRG::create("rsa");
   const auto p = Number::randomPrime(512, prg);
   const auto q = Number::randomPrime(512, prg);
   REQUIRE(p != q);
   const auto n = p * q;
-  const auto lm = math::lcm(p - Number(1), q - Number(1));
+  const auto lm = lcm(p - Number(1), q - Number(1));
 
   const auto e = Number(0x10001);
-  REQUIRE(math::gcd(e, lm) == Number(1));
+  REQUIRE(gcd(e, lm) == Number(1));
 
-  const auto d = math::modInverse(e, lm);
+  const auto d = modInverse(e, lm);
   REQUIRE((d * e) % lm == Number(1));
 
   Number msg(1234);
 
-  const auto ctxt = math::modExp(msg, e, n);
+  const auto ctxt = modExp(msg, e, n);
   REQUIRE(ctxt != msg);
 
-  const auto ptxt = math::modExp(ctxt, d, n);
+  const auto ptxt = modExp(ctxt, d, n);
   REQUIRE(ptxt == msg);
 }

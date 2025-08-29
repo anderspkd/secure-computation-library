@@ -22,8 +22,8 @@
 #include <cstddef>
 #include <sstream>
 
+#include "scl/primitives/prg.h"
 #include "scl/serialization.h"
-#include "scl/util/prg.h"
 
 namespace scl {
 
@@ -88,7 +88,7 @@ class Array final {
   /**
    * @brief Create an array filled with random elements.
    */
-  static Array<T, N> random(util::PRG& prg)
+  static Array<T, N> random(PRG& prg)
     requires requires() { T::random(prg); }
   {
     Array<T, N> p;

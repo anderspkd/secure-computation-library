@@ -26,7 +26,7 @@ using namespace scl;
 
 TEST_CASE("Config read from file", "[net]") {
   const auto* filename = SCL_TEST_DATA_DIR "3_parties.txt";
-  auto cfg = net::NetworkConfig::load(0, filename);
+  auto cfg = NetworkConfig::load(0, filename);
 
   REQUIRE(cfg.networkSize() == 3);
   REQUIRE(cfg.id() == 0);
@@ -39,29 +39,29 @@ TEST_CASE("Config read from file", "[net]") {
   REQUIRE(parties[2].port == 3000);
 
   std::string invalid_empty = SCL_TEST_DATA_DIR "invalid_no_entries.txt";
-  REQUIRE_THROWS_MATCHES(net::NetworkConfig::load(0, invalid_empty),
+  REQUIRE_THROWS_MATCHES(NetworkConfig::load(0, invalid_empty),
                          std::invalid_argument,
                          Catch::Matchers::Message("n cannot be zero"));
 
   std::string valid = SCL_TEST_DATA_DIR "3_parties.txt";
-  REQUIRE_THROWS_MATCHES(net::NetworkConfig::load(4, valid),
+  REQUIRE_THROWS_MATCHES(NetworkConfig::load(4, valid),
                          std::invalid_argument,
                          Catch::Matchers::Message("invalid id"));
 
   std::string invalid_entry = SCL_TEST_DATA_DIR "invalid_entry.txt";
   REQUIRE_THROWS_MATCHES(
-      net::NetworkConfig::load(0, invalid_entry),
+      NetworkConfig::load(0, invalid_entry),
       std::invalid_argument,
       Catch::Matchers::Message("invalid entry in config file"));
 
   std::string invalid_non_existing_file;
-  REQUIRE_THROWS_MATCHES(net::NetworkConfig::load(0, invalid_non_existing_file),
+  REQUIRE_THROWS_MATCHES(NetworkConfig::load(0, invalid_non_existing_file),
                          std::invalid_argument,
                          Catch::Matchers::Message("could not open file"));
 }
 
 TEST_CASE("Config configure all parties local", "[net]") {
-  auto cfg = net::NetworkConfig::localhost(0, 5);
+  auto cfg = NetworkConfig::localhost(0, 5);
   REQUIRE(cfg.id() == 0);
   REQUIRE(cfg.networkSize() == 5);
   std::size_t i = 0;
@@ -73,17 +73,17 @@ TEST_CASE("Config configure all parties local", "[net]") {
 
 TEST_CASE("Config validation", "[net]") {
   REQUIRE_THROWS_MATCHES(
-      net::NetworkConfig(2, {{0, "1.2.3.4", 123}, {1, "4.4.4.4", 444}}),
+      NetworkConfig(2, {{0, "1.2.3.4", 123}, {1, "4.4.4.4", 444}}),
       std::invalid_argument,
       Catch::Matchers::Message("my ID is invalid in config"));
 
   REQUIRE_THROWS_MATCHES(
-      net::NetworkConfig(1, {{2, "1.2.3.4", 123}, {1, "4.4.4.4", 444}}),
+      NetworkConfig(1, {{2, "1.2.3.4", 123}, {1, "4.4.4.4", 444}}),
       std::invalid_argument,
       Catch::Matchers::Message("invalid ID in config"));
 
   REQUIRE_THROWS_MATCHES(
-      net::NetworkConfig(1, {{0, "1.2.3.4", 123}, {0, "4.4.4.4", 444}}),
+      NetworkConfig(1, {{0, "1.2.3.4", 123}, {0, "4.4.4.4", 444}}),
       std::invalid_argument,
       Catch::Matchers::Message("config has duplicate party ids"));
 }

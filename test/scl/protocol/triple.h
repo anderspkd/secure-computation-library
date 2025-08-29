@@ -20,14 +20,14 @@
 
 #include <vector>
 
+#include "scl/primitives/prg.h"
 #include "scl/ss/additive.h"
-#include "scl/util/prg.h"
 
 namespace scl::test {
 
 template <typename FIELD>
 struct Triple {
-  Triple(FIELD a, FIELD b, FIELD c) : a(a), b(b), c(c){};
+  Triple(FIELD a, FIELD b, FIELD c) : a(a), b(b), c(c) {};
 
   FIELD a;
   FIELD b;
@@ -35,14 +35,14 @@ struct Triple {
 };
 
 template <typename FIELD>
-std::vector<Triple<FIELD>> randomTriple2(util::PRG& prg) {
+std::vector<Triple<FIELD>> randomTriple2(PRG& prg) {
   auto a = FIELD::random(prg);
   auto b = FIELD::random(prg);
   auto c = a * b;
 
-  auto as = ss::additiveShare(a, 2, prg);
-  auto bs = ss::additiveShare(b, 2, prg);
-  auto cs = ss::additiveShare(c, 2, prg);
+  auto as = additiveShare(a, 2, prg);
+  auto bs = additiveShare(b, 2, prg);
+  auto cs = additiveShare(c, 2, prg);
 
   return {{as[0], bs[0], cs[0]}, {as[1], bs[1], cs[1]}};
 }

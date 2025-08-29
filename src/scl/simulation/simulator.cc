@@ -17,14 +17,12 @@
 
 #include "scl/simulation/simulator.h"
 
-#include <algorithm>
 #include <coroutine>
 #include <exception>
 
 #include <bits/ranges_algo.h>
 
-#include "scl/coro/coroutine.h"
-#include "scl/net/loopback.h"
+#include "scl/coro/task.h"
 #include "scl/simulation/cancellation.h"
 #include "scl/simulation/channel.h"
 #include "scl/simulation/context.h"
@@ -36,26 +34,26 @@ using namespace scl;
 
 namespace {
 
-std::shared_ptr<net::Channel> createChannel(
+std::shared_ptr<Channel> createChannel(
     std::size_t i,
     std::size_t j,
-    sim::details::GlobalContext& ctx,
-    std::shared_ptr<sim::details::Transport> transport) {
-  sim::ChannelId cid{i, j};
-  return std::make_shared<sim::details::SimulatedChannel>(cid,
-                                                          ctx.view(i),
-                                                          transport);
+    details::GlobalContext& ctx,
+    std::shared_ptr<details::Transport> transport) {
+  ChannelId cid{i, j};
+  return std::make_shared<details::SimulatedChannel>(cid,
+                                                     ctx.view(i),
+                                                     transport);
 }
 
 // creates the networks used in this simulation.
-std::vector<net::Network> createNetworks(std::size_t n,
-                                         sim::details::GlobalContext& ctx) {
-  auto transport = std::make_shared<sim::details::Transport>();
-  std::vector<net::Network> networks;
+std::vector<Network> createNetworks(std::size_t n,
+                                    details::GlobalContext& ctx) {
+  auto transport = std::make_shared<details::Transport>();
+  std::vector<Network> networks;
   networks.reserve(n);
 
   for (std::size_t i = 0; i < n; i++) {
-    std::vector<std::shared_ptr<net::Channel>> channels;
+    std::vector<std::shared_ptr<Channel>> channels;
     channels.reserve(n);
     for (std::size_t j = 0; j < n; j++) {
       channels.emplace_back(createChannel(i, j, ctx, transport));
@@ -66,44 +64,42 @@ std::vector<net::Network> createNetworks(std::size_t n,
   return networks;
 }
 
-struct ClockImpl final : public proto::Clock {
-  ClockImpl(const sim::details::GlobalContext::LocalContext& view)
-      : view(view) {}
+struct ClockImpl final : public Clock {
+  ClockImpl(const details::GlobalContext::LocalContext& view) : view(view) {}
 
-  util::Time::Duration read() const override {
+  Time::Duration read() const override {
     return view.elapsedTime();
   }
 
-  sim::details::GlobalContext::LocalContext view;
+  details::GlobalContext::LocalContext view;
 };
 
-auto createClock(const sim::details::GlobalContext::LocalContext& view) {
+auto createClock(const details::GlobalContext::LocalContext& view) {
   return std::make_unique<ClockImpl>(view);
 }
 
 struct EnvAndCtx {
-  proto::Env env;
-  sim::details::GlobalContext::LocalContext view;
+  Env env;
+  details::GlobalContext::LocalContext view;
 };
 
-std::vector<EnvAndCtx> createEnvs(sim::details::GlobalContext& global_ctx) {
+std::vector<EnvAndCtx> createEnvs(details::GlobalContext& global_ctx) {
   const std::size_t n = global_ctx.number_of_parties;
   auto networks = createNetworks(n, global_ctx);
   std::vector<EnvAndCtx> envs;
   envs.reserve(n);
   for (std::size_t i = 0; i < n; i++) {
     auto view = global_ctx.view(i);
-    envs.emplace_back(
-        EnvAndCtx{proto::Env{networks[i], createClock(view)}, view});
+    envs.emplace_back(EnvAndCtx{Env{networks[i], createClock(view)}, view});
   }
 
   return envs;
 }
 
-coro::Task<void> runProtocol(std::size_t id,
-                             sim::Manager* manager,
-                             std::unique_ptr<proto::Protocol> protocol,
-                             EnvAndCtx&& env) {
+Task<void> runProtocol(std::size_t id,
+                       Manager* manager,
+                       std::unique_ptr<Protocol> protocol,
+                       EnvAndCtx&& env) {
   // A protocol is run for as long as all of the following is true:
   //  - it's output result contains another protocol to run;
   //  - it does not produce an uncaught exception;
@@ -128,13 +124,12 @@ coro::Task<void> runProtocol(std::size_t id,
   auto& view = env.view;
 
   try {
-    view.recordEvent(sim::Event::start());
+    view.recordEvent(Event::start());
 
     while (protocol) {
       const auto name = protocol->name();
 
-      view.recordEvent(
-          sim::Event::protocolBegin(view.lastEventTimestamp(), name));
+      view.recordEvent(Event::protocolBegin(view.lastEventTimestamp(), name));
 
       // start the clock of the party. This ensures that any time spent
       // book-keeping does not go towards the total running time of the party.
@@ -145,38 +140,37 @@ coro::Task<void> runProtocol(std::size_t id,
 
       if (next.result.has_value()) {
         manager->handleProtocolOutput(id, next.result);
-        view.recordEvent(sim::Event::output(et));
+        view.recordEvent(Event::output(et));
       }
 
-      view.recordEvent(sim::Event::protocolEnd(et, name));
+      view.recordEvent(Event::protocolEnd(et, name));
 
       protocol = std::move(next.next_protocol);
     }
 
-    view.recordEvent(sim::Event::stop(view.lastEventTimestamp()));
+    view.recordEvent(Event::stop(view.lastEventTimestamp()));
 
     // We could keep running, however by suspending here we can allow a
     // different party to run. This is especially important if the protocol we
     // are running does not contain any suspension points.
     co_await []() { return true; };
 
-  } catch (sim::details::CancellationException& /* ignored */) {
+  } catch (details::CancellationException& /* ignored */) {
     // the simulation was cancelled by this party, so we just stop here.
-    view.recordEvent(sim::Event::cancelled(view.lastEventTimestamp()));
+    view.recordEvent(Event::cancelled(view.lastEventTimestamp()));
   } catch (std::exception& e) {
     // something went wrong, so we mark the protocol as dead and stop.
-    view.recordEvent(sim::Event::killed(view.lastEventTimestamp(), e.what()));
+    view.recordEvent(Event::killed(view.lastEventTimestamp(), e.what()));
   }
 
   co_return;
 }
 
 // Helper class that runs the protocols we are simulating. This class behaves
-// very similar to sim::Batch, but with a specialized await_suspend.
+// very similar to Batch, but with a specialized await_suspend.
 class SimBatch final {
  public:
-  SimBatch(std::vector<coro::Task<void>>&& tasks,
-           sim::details::GlobalContext& gctx)
+  SimBatch(std::vector<Task<void>>&& tasks, details::GlobalContext& gctx)
       : m_tasks(std::move(tasks)), m_gctx(gctx) {}
 
   bool await_ready() const noexcept {
@@ -191,8 +185,8 @@ class SimBatch final {
   }
 
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> coroutine) {
-    sim::details::SimulatorRuntime* srt =
-        dynamic_cast<sim::details::SimulatorRuntime*>(m_runtime);
+    details::SimulatorRuntime* srt =
+        dynamic_cast<details::SimulatorRuntime*>(m_runtime);
     for (std::size_t i = 0; i < m_tasks.size(); i++) {
       m_tasks[i].setRuntime(m_runtime);
       srt->scheduleWithId(m_tasks[i].m_handle, i);
@@ -209,22 +203,21 @@ class SimBatch final {
     }
   }
 
-  void setRuntime(coro::Runtime* runtime) noexcept {
+  void setRuntime(Runtime* runtime) noexcept {
     m_runtime = runtime;
   }
 
  private:
-  std::vector<coro::Task<void>> m_tasks;
-  sim::details::GlobalContext& m_gctx;
+  std::vector<Task<void>> m_tasks;
+  details::GlobalContext& m_gctx;
 
-  coro::Runtime* m_runtime;
+  Runtime* m_runtime;
 };
 
-coro::Task<void> runProtocols(
-    std::vector<std::unique_ptr<proto::Protocol>>&& protocols,
-    sim::details::GlobalContext& global_ctx,
-    sim::Manager* manager) {
-  std::vector<coro::Task<void>> protocol_runs;
+Task<void> runProtocols(std::vector<std::unique_ptr<Protocol>>&& protocols,
+                        details::GlobalContext& global_ctx,
+                        Manager* manager) {
+  std::vector<Task<void>> protocol_runs;
 
   std::vector<EnvAndCtx> envs = createEnvs(global_ctx);
   for (std::size_t i = 0; i < protocols.size(); i++) {
@@ -236,7 +229,7 @@ coro::Task<void> runProtocols(
 
 }  // namespace
 
-void sim::simulate(std::unique_ptr<sim::Manager> manager) {
+void simulate(std::unique_ptr<Manager> manager) {
   auto protocol = manager->protocol();
 
   // do nothing in case the caller (for whatever reason) wanted to simulate an

@@ -20,23 +20,23 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "scl/math/curves/secp256k1.h"
 #include "scl/math/ec.h"
 #include "scl/math/number.h"
-#include "scl/util/digest.h"
-#include "scl/util/hash.h"
-#include "scl/util/prg.h"
+#include "scl/math/secp256k1.h"
+#include "scl/primitives/digest.h"
+#include "scl/primitives/hash.h"
+#include "scl/primitives/prg.h"
 
 using namespace scl;
 
-using Curve = math::EC<math::ec::Secp256k1>;
+using Curve = EC<Secp256k1>;
 using Scalar = Curve::ScalarField;
 using Field = Curve::Field;
 
 namespace {
 
-Curve randomPoint(util::PRG& prg) {
-  auto r = math::Number::random(100, prg);
+Curve randomPoint(PRG& prg) {
+  auto r = Number::random(100, prg);
   return Curve::generator() * r;
 }
 }  // namespace
@@ -60,7 +60,7 @@ TEST_CASE("Secp256k1 defs", "[math][ff]") {
 TEST_CASE("Secp256k1 field to string", "[math][ff]") {
   REQUIRE(Field(0).toString() == "0");
 
-  auto prg = util::PRG::create("Secp256k1 field");
+  auto prg = PRG::create("Secp256k1 field");
   auto x = Field::random(prg);
   REQUIRE(x.toString() ==
           "62883be8479ee8f4a3367086d0044440bc7505bc2a2b099e3f71f131eedd42d7");
@@ -128,12 +128,12 @@ TEST_CASE("Secp256k1 generator", "[math][ec]") {
   ss << g;
   REQUIRE(ss.str() == g.toString());
 
-  auto ord = math::order<Scalar>();
+  auto ord = order<Scalar>();
 
   REQUIRE(!g.isPointAtInfinity());
   auto poi = g * ord;
   REQUIRE(poi.isPointAtInfinity());
-  auto not_poi = g * (ord - math::Number(1));
+  auto not_poi = g * (ord - Number(1));
   REQUIRE(poi != not_poi);
   REQUIRE(!not_poi.isPointAtInfinity());
 
@@ -141,7 +141,7 @@ TEST_CASE("Secp256k1 generator", "[math][ec]") {
 }
 
 TEST_CASE("Secp256k1 addition", "[math][ec]") {
-  auto prg = util::PRG::create("Secp256k1 addition");
+  auto prg = PRG::create("Secp256k1 addition");
 
   auto a = randomPoint(prg);
   auto b = randomPoint(prg);
@@ -165,7 +165,7 @@ TEST_CASE("Secp256k1 addition", "[math][ec]") {
 }
 
 TEST_CASE("Secp256k1 negation", "[math][ec]") {
-  auto prg = util::PRG::create("Secp256k1 negation");
+  auto prg = PRG::create("Secp256k1 negation");
 
   auto a = randomPoint(prg);
   auto b = -a;
@@ -173,7 +173,7 @@ TEST_CASE("Secp256k1 negation", "[math][ec]") {
 }
 
 TEST_CASE("Secp256k1 scalar multiplication", "[math][ec]") {
-  auto prg = util::PRG::create("Secp256k1 scalar-mul");
+  auto prg = PRG::create("Secp256k1 scalar-mul");
 
   auto a = randomPoint(prg);
   auto p_minus_1 = Scalar(-1);
@@ -197,7 +197,7 @@ TEST_CASE("Secp256k1 scalar multiplication", "[math][ec]") {
 
   REQUIRE(P == Q);
 
-  auto n = math::Number::fromString("06");
+  auto n = Number::fromString("06");
   REQUIRE(n * G == w * G);
   REQUIRE(n * G == G * n);
 }
@@ -209,7 +209,7 @@ TEST_CASE("Secp256k1 negation special case", "[math][ec]") {
 }
 
 TEST_CASE("Secp256k1 serialization", "[math][ec]") {
-  auto prg = util::PRG::create();
+  auto prg = PRG::create();
 
   REQUIRE(Curve::byteSize(false) == 32 + 32 + 1);
   REQUIRE(Curve::byteSize(true) == 32 + 1);
@@ -260,22 +260,22 @@ TEST_CASE("Secp256k1 serialization", "[math][ec]") {
 }
 
 TEST_CASE("Secp256k1 order", "[math]") {
-  auto ord = math::order<Field>();
+  auto ord = order<Field>();
   REQUIRE(
       ord ==
-      math::Number::fromString(
+      Number::fromString(
           "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"));
 }
 
 TEST_CASE("Secp256k1 hashing", "[math]") {
-  util::Hash<256> hgen;
+  Hash<256> hgen;
 
   const auto digest_gen = hgen.update(Curve::generator()).finalize();
-  REQUIRE(util::digestToString(digest_gen) ==
+  REQUIRE(digestToString(digest_gen) ==
           "3f0db2047deb5c2c92e336aecdd4ba1d745fcfd0e77a5f8592dda348a3ff5707");
 
-  util::Hash<256> hpoi;
+  Hash<256> hpoi;
   const auto digest_poi = hpoi.update(Curve{}).finalize();
-  REQUIRE(util::digestToString(digest_poi) ==
+  REQUIRE(digestToString(digest_poi) ==
           "4fdfe4c2be45edb360dab48435c14be84e087c162cbb421d8c91a3c99e31a82f");
 }

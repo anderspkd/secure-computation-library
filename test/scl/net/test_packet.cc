@@ -18,20 +18,21 @@
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
-#include "scl/math/fields/secp256k1_field.h"
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
 #include "scl/math/matrix.h"
+#include "scl/math/mersenne61.h"
 #include "scl/math/number.h"
+#include "scl/math/secp256k1_field.h"
 #include "scl/net/packet.h"
-#include "scl/serialization/serializer.h"
+#include "scl/serialization.h"
 
 using namespace scl;
 
-using SmallObj = math::Fp<61>;
-using LargeObj = math::FF<math::ff::Secp256k1Field>;
+using SmallObj = FF<Mersenne61>;
+using LargeObj = FF<Secp256k1Field>;
 
 TEST_CASE("Packet read/write different types", "[net]") {
-  net::Packet p;
+  Packet p;
   p << LargeObj(1234) << SmallObj(33) << LargeObj(5);
 
   REQUIRE(p.read<LargeObj>() == LargeObj(1234));
@@ -40,7 +41,7 @@ TEST_CASE("Packet read/write different types", "[net]") {
 }
 
 TEST_CASE("Packet read/write many", "[net]") {
-  net::Packet p;
+  Packet p;
 
   for (std::size_t i = 0; i < 10000; ++i) {
     p << SmallObj((int)i);
@@ -57,13 +58,13 @@ TEST_CASE("Packet read/write many", "[net]") {
 }
 
 TEST_CASE("Packet read/write matrix", "[net]") {
-  net::Packet p;
+  Packet p;
 
-  auto prg = util::PRG::create("packet mat");
-  const auto m = math::Matrix<SmallObj>::random(10, 3, prg);
+  auto prg = PRG::create("packet mat");
+  const auto m = Matrix<SmallObj>::random(10, 3, prg);
 
   p << m;
-  auto mm = p.read<math::Matrix<SmallObj>>();
+  auto mm = p.read<Matrix<SmallObj>>();
 
   REQUIRE(mm.rows() == m.rows());
   REQUIRE(mm.cols() == m.cols());
@@ -71,17 +72,17 @@ TEST_CASE("Packet read/write matrix", "[net]") {
 }
 
 TEST_CASE("Packet read/write vec", "[net]") {
-  net::Packet p;
+  Packet p;
 
-  auto prg = util::PRG::create("packet vec");
-  const auto v = math::Vector<LargeObj>::random(10, prg);
+  auto prg = PRG::create("packet vec");
+  const auto v = Vector<LargeObj>::random(10, prg);
 
   p << v;
-  REQUIRE(p.read<math::Vector<LargeObj>>() == v);
+  REQUIRE(p.read<Vector<LargeObj>>() == v);
 }
 
 TEST_CASE("Packet read/write pointers", "[net]") {
-  net::Packet p;
+  Packet p;
 
   p << 1 << 2 << 3 << 4;
 
@@ -98,15 +99,15 @@ TEST_CASE("Packet read/write pointers", "[net]") {
 }
 
 TEST_CASE("Packet Write", "[net]") {
-  net::Packet p;
+  Packet p;
 
   const auto w = p.write((int)123);
-  REQUIRE(w == seri::Serializer<int>::sizeOf(0));
+  REQUIRE(w == Serializer<int>::sizeOf(0));
 }
 
 TEST_CASE("Packet concat", "[net]") {
-  net::Packet p0;
-  net::Packet p1;
+  Packet p0;
+  Packet p1;
 
   p0 << 1 << 2 << LargeObj(44);
   p1 << 3 << SmallObj(55) << 4;
@@ -126,7 +127,7 @@ TEST_CASE("Packet concat", "[net]") {
 }
 
 TEST_CASE("Packet remaining", "[net]") {
-  net::Packet p;
+  Packet p;
 
   p << 1 << 2 << 3;
 
@@ -140,8 +141,8 @@ TEST_CASE("Packet remaining", "[net]") {
 }
 
 TEST_CASE("Packet eq", "[net]") {
-  net::Packet p0;
-  net::Packet p1;
+  Packet p0;
+  Packet p1;
 
   REQUIRE(p0 == p1);
 

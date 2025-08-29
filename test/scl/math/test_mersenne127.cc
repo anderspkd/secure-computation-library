@@ -18,11 +18,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <sstream>
 
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
+#include "scl/math/mersenne127.h"
 
 using namespace scl;
 
-using Field = math::Fp<127>;
+using Field = FF<Mersenne127>;
 using u128 = __uint128_t;
 
 TEST_CASE("Mersenne127 defs", "[math][ff]") {

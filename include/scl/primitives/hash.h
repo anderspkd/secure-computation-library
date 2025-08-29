@@ -20,8 +20,7 @@
 
 #include <cstddef>
 
-#include "scl/util/digest.h"
-#include "scl/util/sha3.h"
+#include "scl/primitives/sha3.h"
 
 namespace scl {
 

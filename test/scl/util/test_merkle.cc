@@ -17,24 +17,24 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "scl/serialization/serializer.h"
-#include "scl/util/bitmap.h"
-#include "scl/util/hash.h"
-#include "scl/util/merkle.h"
+#include "scl/bitmap.h"
+#include "scl/primitives/hash.h"
+#include "scl/primitives/merkle.h"
+#include "scl/serialization.h"
 
 using namespace scl;
 
-using Mrkl = util::MerkleTree<util::Hash<256>, std::string_view>;
+using Mrkl = MerkleTree<Hash<256>, std::string_view>;
 
 namespace {
 
-util::Hash<256>::DigestType hash(std::string_view data) {
-  return util::Hash<256>{}.update(data).finalize();
+Hash<256>::DigestType hash(std::string_view data) {
+  return Hash<256>{}.update(data).finalize();
 }
 
-util::Hash<256>::DigestType hash(util::Hash<256>::DigestType left,
-                                 util::Hash<256>::DigestType right) {
-  return util::Hash<256>{}.update(left).update(right).finalize();
+Hash<256>::DigestType hash(Hash<256>::DigestType left,
+                           Hash<256>::DigestType right) {
+  return Hash<256>{}.update(left).update(right).finalize();
 }
 
 }  // namespace
@@ -62,7 +62,7 @@ TEST_CASE("Merkle hash", "[misc]") {
 }
 
 TEST_CASE("Merkle hash odd size input", "[misc]") {
-  util::Hash<256>::DigestType z_digest;
+  Hash<256>::DigestType z_digest;
   z_digest.fill(0);
   // clang-format off
   auto h_abc = hash(
@@ -95,7 +95,7 @@ TEST_CASE("Merkle prove", "[misc]") {
   REQUIRE(proof.path.size() == 3);
 
   REQUIRE(proof.direction ==
-          util::Bitmap::fromStdVecBool(std::vector<bool>{true, true, false}));
+          Bitmap::fromStdVecBool(std::vector<bool>{true, true, false}));
 
   REQUIRE(proof.path[0] == hash("c"));
   REQUIRE(proof.path[1] == h_ab);
@@ -103,13 +103,14 @@ TEST_CASE("Merkle prove", "[misc]") {
 
   REQUIRE(Mrkl::verify("d", root, proof));
 
-  using Sr = seri::Serializer<Mrkl::Proof>;
+  using Sr = Serializer<Mrkl::Proof>;
+  const auto vec_t_size = sizeof(Serializer<std::vector<bool>>::VecSizeType);
 
   // two vectors. One with three digests, and one with 3 bits that fit into one
   // byte.
-  REQUIRE(Sr::sizeOf(proof) == 2 * sizeof(seri::StlVecSizeType) + 3L * 32 + 1);
+  REQUIRE(Sr::sizeOf(proof) == 2 * vec_t_size + 3L * 32 + 1);
 
-  unsigned char buf[2 * sizeof(seri::StlVecSizeType) + 3L * 32 + 1];
+  unsigned char buf[2 * vec_t_size + 3L * 32 + 1];
   Sr::write(proof, buf);
 
   Mrkl::Proof p;

@@ -20,8 +20,8 @@
 
 #include <vector>
 
-#include "scl/serialization/serializer.h"
-#include "scl/util/bitmap.h"
+#include "scl/bitmap.h"
+#include "scl/serialization.h"
 
 namespace scl {
 
@@ -54,7 +54,7 @@ struct Serializer<MerkleProof<DIGEST>> {
    */
   static std::size_t sizeOf(const MerkleProof<DIGEST>& proof) {
     return Serializer<std::vector<DIGEST>>::sizeOf(proof.path) +
-           Serializer<util::Bitmap>::sizeOf(proof.direction);
+           Serializer<Bitmap>::sizeOf(proof.direction);
   }
 
   /**
@@ -66,7 +66,7 @@ struct Serializer<MerkleProof<DIGEST>> {
   static std::size_t write(const MerkleProof<DIGEST>& proof,
                            unsigned char* buf) {
     buf += Serializer<std::vector<DIGEST>>::write(proof.path, buf);
-    buf += Serializer<util::Bitmap>::write(proof.direction, buf);
+    buf += Serializer<Bitmap>::write(proof.direction, buf);
     return sizeOf(proof);
   }
 
@@ -79,7 +79,7 @@ struct Serializer<MerkleProof<DIGEST>> {
   static std::size_t read(MerkleProof<DIGEST>& proof,
                           const unsigned char* buf) {
     buf += Serializer<std::vector<DIGEST>>::read(proof.path, buf);
-    buf += Serializer<util::Bitmap>::read(proof.direction, buf);
+    buf += Serializer<Bitmap>::read(proof.direction, buf);
     return sizeOf(proof);
   }
 };

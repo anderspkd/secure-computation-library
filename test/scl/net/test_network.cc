@@ -20,7 +20,8 @@
 #include <thread>
 
 #include "scl/coro/batch.h"
-#include "scl/coro/coroutine.h"
+#include "scl/coro/runtime.h"
+#include "scl/coro/task.h"
 #include "scl/net/config.h"
 #include "scl/net/network.h"
 #include "scl/net/tcp_channel.h"
@@ -28,43 +29,42 @@
 using namespace scl;
 
 TEST_CASE("Network one party", "[net]") {
-  auto rt = coro::DefaultRuntime::create();
-  auto network =
-      rt->run(net::Network::create(net::NetworkConfig::localhost(0, 1)));
+  auto rt = DefaultRuntime::create();
+  auto network = rt->run(Network::create(NetworkConfig::localhost(0, 1)));
   REQUIRE(network.size() == 1);
 }
 
 namespace {
 
-coro::Task<std::vector<net::Network>> connect3() {
-  std::vector<coro::Task<net::Network>> networks;
-  auto conf0 = net::NetworkConfig::localhost(0, 3);
-  networks.emplace_back(net::Network::create(conf0));
+Task<std::vector<Network>> connect3() {
+  std::vector<Task<Network>> networks;
+  auto conf0 = NetworkConfig::localhost(0, 3);
+  networks.emplace_back(Network::create(conf0));
 
-  auto conf1 = net::NetworkConfig::localhost(1, 3);
-  networks.emplace_back(net::Network::create(conf1));
+  auto conf1 = NetworkConfig::localhost(1, 3);
+  networks.emplace_back(Network::create(conf1));
 
-  auto conf2 = net::NetworkConfig::localhost(2, 3);
-  networks.emplace_back(net::Network::create(conf2));
+  auto conf2 = NetworkConfig::localhost(2, 3);
+  networks.emplace_back(Network::create(conf2));
 
-  co_return co_await coro::batch(std::move(networks));
+  co_return co_await batch(std::move(networks));
 }
 
-coro::Task<void> send(net::Channel* channel, int v) {
-  net::Packet p;
+Task<void> send(Channel* channel, int v) {
+  Packet p;
   p << v;
   co_await channel->send(p);
 }
 
-coro::Task<int> recv(net::Channel* channel) {
-  net::Packet p = co_await channel->recv();
+Task<int> recv(Channel* channel) {
+  Packet p = co_await channel->recv();
   co_return p.read<int>();
 }
 
 }  // namespace
 
 TEST_CASE("Network TCP", "[net]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
 
   auto networks = rt->run(connect3());
 

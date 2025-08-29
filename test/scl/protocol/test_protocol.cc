@@ -21,50 +21,49 @@
 #include "./beaver.h"
 #include "./triple.h"
 #include "scl/coro/runtime.h"
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
+#include "scl/math/mersenne61.h"
 #include "scl/net/loopback.h"
 #include "scl/net/network.h"
-#include "scl/protocol/base.h"
 #include "scl/protocol/env.h"
 #include "scl/protocol/eval.h"
 #include "scl/ss/additive.h"
 
 using namespace scl;
 
-using FF = math::Fp<61>;
+using Elem = FF<Mersenne61>;
 
-auto prg = util::PRG::create();
-auto x = FF(42);
-auto y = FF(11);
-auto xs = ss::additiveShare(x, 2, prg);
-auto ys = ss::additiveShare(y, 2, prg);
-auto ts = test::randomTriple2<FF>(prg);
+auto prg = PRG::create();
+auto x = Elem(42);
+auto y = Elem(11);
+auto xs = additiveShare(x, 2, prg);
+auto ys = additiveShare(y, 2, prg);
+auto ts = test::randomTriple2<Elem>(prg);
 
 namespace {
 
-std::array<proto::Env, 2> createEnvs() {
-  auto p0p0 = net::LoopbackChannel::create();
-  auto p1p1 = net::LoopbackChannel::create();
-  auto p0p1 = net::LoopbackChannel::createPaired();
+std::array<Env, 2> createEnvs() {
+  auto p0p0 = LoopbackChannel::create();
+  auto p1p1 = LoopbackChannel::create();
+  auto p0p1 = LoopbackChannel::createPaired();
 
-  return {proto::createDefaultEnv(net::Network({p0p0, p0p1[0]}, 0)),
-          proto::createDefaultEnv(net::Network({p1p1, p0p1[1]}, 1))};
+  return {createDefaultEnv(Network({p0p0, p0p1[0]}, 0)),
+          createDefaultEnv(Network({p1p1, p0p1[1]}, 1))};
 }
 
-coro::Task<FF> runBeaverMulTwoParties() {
+Task<Elem> runBeaverMulTwoParties() {
   auto envs = createEnvs();
 
-  auto beaver0 = std::make_unique<test::BeaverMul<FF>>(xs[0], ys[0], ts[0]);
-  auto beaver1 = std::make_unique<test::BeaverMul<FF>>(xs[1], ys[1], ts[1]);
+  auto beaver0 = std::make_unique<test::BeaverMul<Elem>>(xs[0], ys[0], ts[0]);
+  auto beaver1 = std::make_unique<test::BeaverMul<Elem>>(xs[1], ys[1], ts[1]);
 
-  std::vector<coro::Task<FF>> protocol_evaluations;
+  std::vector<Task<Elem>> protocol_evaluations;
   protocol_evaluations.emplace_back(
-      proto::evaluate<FF>(std::move(beaver0), envs[0]));
+      evaluate<Elem>(std::move(beaver0), envs[0]));
   protocol_evaluations.emplace_back(
-      proto::evaluate<FF>(std::move(beaver1), envs[1]));
+      evaluate<Elem>(std::move(beaver1), envs[1]));
 
-  std::vector<FF> shares =
-      co_await coro::batch(std::move(protocol_evaluations));
+  std::vector<Elem> shares = co_await batch(std::move(protocol_evaluations));
 
   co_return shares[0] + shares[1];
 }
@@ -72,7 +71,7 @@ coro::Task<FF> runBeaverMulTwoParties() {
 }  // namespace
 
 TEST_CASE("Beaver multiplication protocol", "[proto]") {
-  auto rt = coro::DefaultRuntime::create();
+  auto rt = DefaultRuntime::create();
   auto z = rt->run(runBeaverMulTwoParties());
   REQUIRE(z == x * y);
 }

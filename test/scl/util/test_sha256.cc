@@ -16,12 +16,10 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
-#include <iostream>
 
-#include "scl/math/curves/secp256k1.h"
 #include "scl/math/ec.h"
-#include "scl/util/digest.h"
-#include "scl/util/sha256.h"
+#include "scl/math/secp256k1.h"
+#include "scl/primitives/sha256.h"
 
 using namespace scl;
 
@@ -31,7 +29,7 @@ TEST_CASE("Sha256 empty hash", "[misc]") {
       0xc8, 0x99, 0x6f, 0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b,
       0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55};
 
-  util::Sha256 hash;
+  Sha256 hash;
   auto digest = hash.finalize();
   REQUIRE(digest.size() == 32);
   REQUIRE(digest == SHA256_empty);
@@ -43,13 +41,13 @@ TEST_CASE("Sha256 abc hash", "[misc]") {
       0xde, 0x5d, 0xae, 0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17,
       0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad};
 
-  util::Sha256 hash;
+  Sha256 hash;
   hash.update({'a', 'b', 'c'});
   auto digest = hash.finalize();
   REQUIRE(digest.size() == 32);
   REQUIRE(digest == SHA256_abc);
 
-  util::Sha256 hash_;
+  Sha256 hash_;
   hash_.update({'a', 'b'});
   hash_.update({'c'});
   auto digest_ = hash_.finalize();
@@ -64,7 +62,7 @@ TEST_CASE("Sha256 hash almost complete chunk", "[misc]") {
       0xd1, 0x3b, 0xb7, 0x45, 0x38, 0x1b, 0x23, 0x5a, 0x17, 0x85};
 
   const unsigned char data[57] = {0};
-  util::Sha256 hash;
+  Sha256 hash;
   hash.update(data, 57);
   REQUIRE(hash.finalize() == digest);
 }
@@ -73,14 +71,14 @@ TEST_CASE("Sha256 bouncycastle reference", "[misc]") {
   // Reference test showing that serialization + hashing is the same as
   // bouncycastle in Java.
 
-  using Curve = math::EC<math::ec::Secp256k1>;
-  auto pk = Curve::generator() * math::Number::fromString("a");
+  using Curve = EC<Secp256k1>;
+  auto pk = Curve::generator() * Number::fromString("a");
 
   const auto n = Curve::byteSize(false);
   unsigned char buf[n] = {0};
   pk.write(buf, false);
 
-  util::Sha256 hash;
+  Sha256 hash;
   hash.update(buf, n);
 
   auto d = hash.finalize();

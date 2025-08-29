@@ -21,17 +21,15 @@
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
-#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "scl/math/ff.h"
 #include "scl/math/lagrange.h"
 #include "scl/math/vector.h"
-#include "scl/serialization/serializer.h"
-#include "scl/util/prg.h"
+#include "scl/serialization.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -44,7 +42,7 @@ class Vector;
 template <typename ELEMENT>
 class Matrix final {
  public:
-  friend struct seri::Serializer<Matrix<ELEMENT>>;
+  friend struct Serializer<Matrix<ELEMENT>>;
 
   /**
    * @brief The type of the matrix elements.
@@ -58,7 +56,7 @@ class Matrix final {
    * @param prg the prg used to generate random elements
    * @return a Matrix with random elements.
    */
-  static Matrix<ELEMENT> random(std::size_t n, std::size_t m, util::PRG& prg);
+  static Matrix<ELEMENT> random(std::size_t n, std::size_t m, PRG& prg);
 
   /**
    * @brief Create an N-by-M Vandermonde matrix.
@@ -435,7 +433,7 @@ class Matrix final {
 template <typename ELEMENT>
 Matrix<ELEMENT> Matrix<ELEMENT>::random(std::size_t n,
                                         std::size_t m,
-                                        util::PRG& prg) {
+                                        PRG& prg) {
   std::size_t nelements = n * m;
   return Matrix(n, m, Vector<ELEMENT>::random(nelements, prg).toStlVector());
 }

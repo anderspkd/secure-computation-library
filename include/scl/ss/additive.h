@@ -18,10 +18,8 @@
 #ifndef SCL_SS_ADDITIVE_H
 #define SCL_SS_ADDITIVE_H
 
-#include <stdexcept>
-
 #include "scl/math/vector.h"
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
 namespace scl {
 
@@ -50,7 +48,7 @@ Vector<T> additiveShare(const T& secret, std::size_t n, PRG& prg) {
   }
   shares.emplace_back(secret - sum);
   return shares;
-}  // LCOV_EXCL_LINE
+}
 
 }  // namespace scl
 

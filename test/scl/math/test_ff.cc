@@ -21,14 +21,14 @@
 #include <stdexcept>
 
 #include "fields.h"
-#include "scl/util/prg.h"
+#include "scl/primitives/prg.h"
 
 using namespace scl;
 
 namespace {
 
 template <typename T>
-T randomNonZero(util::PRG& prg) {
+T randomNonZero(PRG& prg) {
   auto a = T::random(prg);
   for (std::size_t i = 0; i < 10; ++i) {
     if (a == T::zero()) {
@@ -45,7 +45,7 @@ T randomNonZero(util::PRG& prg) {
 // Specialization for the very small field since it's apparently possible to hit
 // zero 10 times in a row...
 template <>
-test::GF7 randomNonZero<test::GF7>(util::PRG& prg) {
+test::GF7 randomNonZero<test::GF7>(PRG& prg) {
   auto a = test::GF7::random(prg);
   if (a != test::GF7(6)) {
     return a + test::GF7(1);
@@ -64,7 +64,7 @@ test::GF7 randomNonZero<test::GF7>(util::PRG& prg) {
 TEMPLATE_TEST_CASE("FF Random", "[math][ff]", FIELD_DEFS) {
   using FF = TestType;
 
-  auto prg = util::PRG::create();
+  auto prg = PRG::create();
   auto zero = FF::zero();
 
   auto nz = randomNonZero<FF>(prg);
@@ -75,7 +75,7 @@ TEMPLATE_TEST_CASE("FF Addition", "[math][ff]", FIELD_DEFS) {
   using FF = TestType;
 
   auto zero = FF::zero();
-  auto prg = util::PRG::create("FF addition");
+  auto prg = PRG::create("FF addition");
   REPEAT {
     auto a = randomNonZero<FF>(prg);
     auto b = randomNonZero<FF>(prg);
@@ -104,7 +104,7 @@ TEMPLATE_TEST_CASE("FF Negation", "[math][ff]", FIELD_DEFS) {
   auto zero = FF::zero();
   REQUIRE(zero == -zero);
 
-  auto prg = util::PRG::create("FF negation");
+  auto prg = PRG::create("FF negation");
   REPEAT {
     auto a = randomNonZero<FF>(prg);
     auto a_negated = a.negated();
@@ -121,7 +121,7 @@ TEMPLATE_TEST_CASE("FF Subtraction", "[math][ff]", FIELD_DEFS) {
   using FF = TestType;
 
   auto zero = FF::zero();
-  auto prg = util::PRG::create("FF subtraction");
+  auto prg = PRG::create("FF subtraction");
   REPEAT {
     auto a = randomNonZero<FF>(prg);
     auto b = randomNonZero<FF>(prg);
@@ -145,7 +145,7 @@ TEMPLATE_TEST_CASE("FF Multiplication", "[math][ff]", FIELD_DEFS) {
   using FF = TestType;
 
   auto zero = FF::zero();
-  auto prg = util::PRG::create("FF multiplication");
+  auto prg = PRG::create("FF multiplication");
   REPEAT {
     auto a = randomNonZero<FF>(prg);
     auto b = randomNonZero<FF>(prg);
@@ -170,7 +170,7 @@ TEMPLATE_TEST_CASE("FF Inversion", "[math][ff]", FIELD_DEFS) {
       std::logic_error,
       Catch::Matchers::Message("0 not invertible modulo prime"));
 
-  auto prg = util::PRG::create("FF inversion");
+  auto prg = PRG::create("FF inversion");
   REPEAT {
     auto a = randomNonZero<FF>(prg);
     auto a_inverse = a.inverse();
@@ -184,7 +184,7 @@ TEMPLATE_TEST_CASE("FF Division", "[math][ff]", FIELD_DEFS) {
   using FF = TestType;
 
   auto zero = FF::zero();
-  auto prg = util::PRG::create("FF division");
+  auto prg = PRG::create("FF division");
   REPEAT {
     auto a = randomNonZero<FF>(prg);
     auto b = randomNonZero<FF>(prg);
@@ -200,7 +200,7 @@ TEMPLATE_TEST_CASE("FF Division", "[math][ff]", FIELD_DEFS) {
 TEMPLATE_TEST_CASE("FF serialization", "[math][ff]", FIELD_DEFS) {
   using FF = TestType;
 
-  auto prg = util::PRG::create("FF serialization");
+  auto prg = PRG::create("FF serialization");
   REPEAT {
     auto a = randomNonZero<FF>(prg);
     unsigned char buf[FF::byteSize()] = {0};
@@ -214,7 +214,7 @@ TEMPLATE_TEST_CASE("FF serialization", "[math][ff]", FIELD_DEFS) {
 TEMPLATE_TEST_CASE("FF Exp", "[math][ff]", FIELD_DEFS) {
   using FF = TestType;
 
-  auto prg = util::PRG::create("FF exp");
+  auto prg = PRG::create("FF exp");
 
   auto a = randomNonZero<FF>(prg);
 

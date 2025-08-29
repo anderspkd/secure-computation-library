@@ -23,22 +23,20 @@
 
 using namespace scl;
 
-void sim::details::SimulatorRuntime::schedule(
-    std::coroutine_handle<> coroutine,
-    std::function<bool()>&& predicate) {
+void details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
+                                         std::function<bool()>&& predicate) {
   m_tq.emplace_back(coroutine, std::move(predicate), m_current_pid);
 }
 
-void sim::details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
-                                              util::Time::Duration delay) {
+void details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
+                                         Time::Duration delay) {
   auto view = m_ctx.view(m_current_pid);
   const auto last = view.lastEventTimestamp();
   view.recordEvent(Event::sleep(last, delay));
   this->schedule(coroutine);
 }
 
-void sim::details::SimulatorRuntime::deschedule(
-    std::coroutine_handle<> coroutine) {
+void details::SimulatorRuntime::deschedule(std::coroutine_handle<> coroutine) {
   m_tq.remove_if(
       [&coroutine](const Coro& coro) { return coro.coroutine == coroutine; });
 }
@@ -55,7 +53,7 @@ void sim::details::SimulatorRuntime::deschedule(
 //   }
 // }
 
-std::coroutine_handle<> sim::details::SimulatorRuntime::next() {
+std::coroutine_handle<> details::SimulatorRuntime::next() {
   auto b = m_tq.begin();
   const auto e = m_tq.end();
 

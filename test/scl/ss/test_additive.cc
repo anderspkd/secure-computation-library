@@ -17,24 +17,25 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "scl/math/fp.h"
+#include "scl/math/ff.h"
+#include "scl/math/mersenne61.h"
+#include "scl/primitives/prg.h"
 #include "scl/ss/additive.h"
-#include "scl/util/prg.h"
 
 using namespace scl;
 
 TEST_CASE("AdditiveSS", "[ss]") {
-  using FF = math::Fp<61>;
-  auto prg = util::PRG::create();
+  using Elem = FF<Mersenne61>;
+  auto prg = PRG::create();
 
-  auto secret = FF(12345);
+  auto secret = Elem(12345);
 
-  auto shares = ss::additiveShare(secret, 10, prg);
+  auto shares = additiveShare(secret, 10, prg);
   REQUIRE(shares.size() == 10);
   REQUIRE(shares.sum() == secret);
 
-  auto x = FF(55555);
-  auto shr_x = ss::additiveShare(x, 10, prg);
+  auto x = Elem(55555);
+  auto shr_x = additiveShare(x, 10, prg);
   auto share_sum = shares.add(shr_x);
 
   REQUIRE(share_sum.sum() == secret + x);
