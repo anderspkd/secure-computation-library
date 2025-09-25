@@ -30,7 +30,7 @@ option(
 option(
   SCL_BUILD_WITH_ADDRESS_SANITIZATION
   "Buid SCL with -fsanitize=address. Implies SCL_BUILD_TESTS=ON"
-  OFF)
+  ON)
 
 option(
   SCL_BUILD_DOCUMENTATION
@@ -81,8 +81,8 @@ set(SCL_SOURCE_FILES
   src/scl/net/network.cc
 
   src/scl/simulation/event.cc
+  src/scl/simulation/network_description.cc
   src/scl/simulation/context.cc
-  src/scl/simulation/config.cc
   src/scl/simulation/transport.cc
   src/scl/simulation/channel.cc
   src/scl/simulation/simulator.cc

@@ -116,7 +116,7 @@ class LoopbackChannel final : public Channel {
   /**
    * @brief Check if there are data available for receiving.
    */
-  Task<bool> hasData() override {
+  Task<bool> poll() override {
     co_return !m_in->empty();
   }
 

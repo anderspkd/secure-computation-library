@@ -21,8 +21,6 @@
 #include <stdexcept>
 #include <string>
 
-using namespace scl;
-
 namespace {
 
 void validateIdAndSize(std::size_t id, std::size_t n) {
@@ -37,7 +35,8 @@ void validateIdAndSize(std::size_t id, std::size_t n) {
 
 }  // namespace
 
-NetworkConfig NetworkConfig::load(std::size_t id, const std::string& filename) {
+scl::NetworkConfig scl::NetworkConfig::load(std::size_t id,
+                                            const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
@@ -45,7 +44,7 @@ NetworkConfig NetworkConfig::load(std::size_t id, const std::string& filename) {
   }
 
   std::string line;
-  std::vector<Party> info;
+  std::vector<ConnectionInfo> info;
 
   while (std::getline(file, line)) {
     auto a_ = line.find(',');
@@ -61,7 +60,7 @@ NetworkConfig NetworkConfig::load(std::size_t id, const std::string& filename) {
     auto id = std::stoul(std::string(line.begin(), line.begin() + a));
     auto hostname = std::string(line.begin() + a + 1, line.begin() + b);
     auto port = std::stoul(std::string(line.begin() + b + 1, line.end()));
-    info.emplace_back(Party{id, hostname, port});
+    info.emplace_back(ConnectionInfo{id, hostname, port});
   }
 
   validateIdAndSize(id, info.size());
@@ -69,21 +68,21 @@ NetworkConfig NetworkConfig::load(std::size_t id, const std::string& filename) {
   return NetworkConfig(id, info);
 }
 
-NetworkConfig NetworkConfig::localhost(std::size_t id,
-                                       std::size_t size,
-                                       std::size_t port_base) {
+scl::NetworkConfig scl::NetworkConfig::localhost(std::size_t id,
+                                                 std::size_t size,
+                                                 std::size_t port_base) {
   validateIdAndSize(id, size);
 
-  std::vector<Party> info;
+  std::vector<ConnectionInfo> info;
   for (std::size_t i = 0; i < size; ++i) {
     std::size_t port = port_base + i;
-    info.emplace_back(Party{i, "127.0.0.1", port});
+    info.emplace_back(ConnectionInfo{i, "127.0.0.1", port});
   }
 
   return NetworkConfig(id, info);
 }
 
-void NetworkConfig::validate() {
+void scl::NetworkConfig::validate() {
   auto n = networkSize();
 
   if (static_cast<std::size_t>(id()) >= n) {

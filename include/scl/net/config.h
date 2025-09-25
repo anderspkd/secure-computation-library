@@ -34,7 +34,7 @@ namespace scl {
 /**
  * @brief Connection information for a party.
  */
-struct Party {
+struct ConnectionInfo {
   /**
    * @brief The id of this party.
    */
@@ -96,16 +96,18 @@ class NetworkConfig {
    * @param id the id of the local party
    * @param parties a list of parties
    */
-  NetworkConfig(std::size_t id, const std::vector<Party>& parties)
+  NetworkConfig(std::size_t id, const std::vector<ConnectionInfo>& parties)
       : m_id(id), m_parties(parties) {
     validate();
   };
 
-  /**
-   * @brief Create a network config for only one party.
-   */
-  NetworkConfig()
-      : m_id(0), m_parties(std::vector<Party>{Party{0, "0.0.0.0", 0}}) {};
+  // /**
+  //  * @brief Create a network config for only one party.
+  //  */
+  // NetworkConfig()
+  //     : m_id(0),
+  //       m_parties(
+  //           std::vector<ConnectionInfo>{ConnectionInfo{0, "0.0.0.0", 0}}) {};
 
   /**
    * @brief Gets the identity of this party.
@@ -124,20 +126,20 @@ class NetworkConfig {
   /**
    * @brief Get a list of connection information for parties in this network.
    */
-  std::vector<Party> parties() const {
+  std::vector<ConnectionInfo> parties() const {
     return m_parties;
   };
 
   /**
    * @brief Get information about a party.
    */
-  Party party(unsigned id) const {
+  ConnectionInfo party(unsigned id) const {
     return m_parties[id];
   };
 
  private:
   std::size_t m_id;
-  std::vector<Party> m_parties;
+  std::vector<ConnectionInfo> m_parties;
 
   void validate();
 };

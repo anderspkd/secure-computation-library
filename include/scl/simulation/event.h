@@ -1,27 +1,12 @@
-/* SCL --- Secure Computation Library
- * Copyright (C) 2024 Anders Dalskov
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 #ifndef SCL_SIMULATION_EVENT_H
 #define SCL_SIMULATION_EVENT_H
 
 #include <cstddef>
-#include <iostream>
 #include <memory>
-#include <vector>
+#include <ostream>
+#include <string>
+#include <type_traits>
+#include <utility>
 
 #include "scl/simulation/channel_id.h"
 #include "scl/time.h"
@@ -33,298 +18,373 @@ namespace scl {
  */
 enum class EventType {
   /**
-   * @brief Event generated when a party starts running.
+   * @brief Internal event type.
+   */
+  TRANSIENT,
+
+  /**
+   * @brief Events emitted when a Protocol is begins executing.
+   */
+  BEGIN,
+
+  /**
+   * @brief Events emitted when a Protocol ends.
+   */
+  END,
+
+  /**
+   * @brief Event emitted when a simulation starts.
    */
   START,
 
   /**
-   * @brief Event generated when a party stops running.
+   * @brief Event emitted when a simulation ends.
    */
   STOP,
 
   /**
-   * @brief Event generated when a party is forcibly stopped.
+   * @brief Event emitted if the simulation was stopped due to an exception.
    */
   KILLED,
 
   /**
-   * @brief Event generated when a party was cancelled by the manager.
+   * @brief Event emitted if the simulation was stopped by a user defined hook.
    */
   CANCELLED,
 
   /**
-   * @brief Event generated when a channel is closed.
+   * @brief Event emitted when a Channel is closed.
    */
-  CLOSE,
+  CHANNEL_CLOSE,
 
   /**
-   * @brief Event generated when data is sent on a channel.
+   * @brief Event emitted when Packet is sent on a Channel.
    */
-  SEND,
+  CHANNEL_SEND,
 
   /**
-   * @brief Event generated when data is received on a channel.
+   * @brief Event emitted when a Packet is received on a Channel.
    */
-  RECV,
+  CHANNEL_RECV,
 
   /**
-   * @brief Event generated when a channel is queried for the presence of data.
+   * @brief Event emitted if a timeout occured when receiving a Packet.
    */
-  HAS_DATA,
+  CHANNEL_RECV_TIMEOUT,
 
   /**
-   * @brief Event generated when a party sleeps.
+   * @brief Event emitted when a Channel is poll'ed for data.
    */
-  SLEEP,
+  CHANNEL_POLL,
 
   /**
-   * @brief Event generated when a party produces output.
+   * @brief Event emitted when a protocol sleeps.
    */
-  OUTPUT,
-
-  /**
-   * @brief Event generated at the start of a protocol.
-   */
-  PROTOCOL_BEGIN,
-
-  /**
-   * @brief Event generated at the end of a protocol.
-   */
-  PROTOCOL_END,
-
+  SLEEP
 };
 
 /**
- * @brief An event in a simulation.
+ * @brief Base class for all events.
  */
-struct Event {
-  /**
-   * @brief Create an event indicating the party started running.
-   */
-  static std::shared_ptr<Event> start();
-
-  /**
-   * @brief Create an event indicating the party stopped running.
-   * @param timestamp the time the party stopped running at.
-   */
-  static std::shared_ptr<Event> stop(Time::Duration timestamp);
-
-  /**
-   * @brief Create an event indicating the party was killed by an exception.
-   * @param timestamp the time the party was stopped.
-   * @param reason a message describing the reason for the kill.
-   */
-  static std::shared_ptr<Event> killed(Time::Duration timestamp,
-                                       const std::string& reason);
-
-  /**
-   * @brief Create an event indicating the party was stopped.
-   * @param timestamp the time the party was stopped.
-   */
-  static std::shared_ptr<Event> cancelled(Time::Duration timestamp);
-
-  /**
-   * @brief Create an event indicating that a channel was closed.
-   * @param timestamp the time the channel was closed.
-   * @param channel_id the ID of the channel.
-   */
-  static std::shared_ptr<Event> closeChannel(Time::Duration timestamp,
-                                             ChannelId channel_id);
-
-  /**
-   * @brief Create an event indicating that some data was sent on a channel.
-   * @param timestamp the time the data was sent.
-   * @param channel_id the ID of the channel.
-   * @param amount the amount of bytes sent.
-   */
-  static std::shared_ptr<Event> sendData(Time::Duration timestamp,
-                                         ChannelId channel_id,
-                                         std::size_t amount);
-
-  /**
-   * @brief Create an event indicating that some data was received on a channel.
-   * @param timestamp the time the data was received.
-   * @param channel_id the ID of the channel.
-   * @param amount the amount of bytes received.
-   */
-  static std::shared_ptr<Event> recvData(Time::Duration timestamp,
-                                         ChannelId channel_id,
-                                         std::size_t amount);
-
-  /**
-   * @brief Create an event indicating that a channel was queried for the
-   * presence of data.
-   * @param timestamp the time of the query.
-   * @param channel_id the ID of the channel.
-   */
-  static std::shared_ptr<Event> hasData(Time::Duration timestamp,
-                                        ChannelId channel_id);
-
-  /**
-   * @brief Create an event indicating that the party slept.
-   * @param timestamp the time the party went to sleep.
-   * @param sleep_duration the duration of the sleep.
-   */
-  static std::shared_ptr<Event> sleep(Time::Duration timestamp,
-                                      Time::Duration sleep_duration);
-
-  /**
-   * @brief Create an event indicating that the party produced an output.
-   */
-  static std::shared_ptr<Event> output(Time::Duration timestamp);
-
-  /**
-   * @brief Create an event indicating that a protocol began.
-   * @param timestamp the starting time of the protocol.
-   * @param protocol_name the name of the protocol.
-   */
-  static std::shared_ptr<Event> protocolBegin(Time::Duration timestamp,
-                                              const std::string& protocol_name);
-
-  /**
-   * @brief Create an event indicating that a protocol ended.
-   * @param timestamp the finishing time of the protocol.
-   * @param protocol_name the name of the protocol.
-   */
-  static std::shared_ptr<Event> protocolEnd(Time::Duration timestamp,
-                                            const std::string& protocol_name);
-
+class Event {
+ public:
   /**
    * @brief Constructor.
+   * @param timestamp the time that the event was issued.
    */
-  Event(EventType type, Time::Duration timestamp)
-      : type(type), timestamp(timestamp) {}
+  Event(Time::Duration timestamp) : m_timestamp(timestamp) {}
 
   virtual ~Event() {}
 
   /**
-   * @brief The event type.
+   * @brief Returns the timestamp of this event.
    */
-  EventType type;
+  virtual Time::Duration time() const {
+    return m_timestamp;
+  }
 
   /**
-   * @brief The event timestamp.
+   * @brief Write a representation of this event to a stream.
    */
-  Time::Duration timestamp;
+  virtual void write(std::ostream& stream) = 0;
+
+  /**
+   * @brief Get a type descriptor of the event.
+   */
+  virtual EventType type() const = 0;
+
+ private:
+  Time::Duration m_timestamp;
 };
 
 /**
- * @brief An event relating to a channel.
+ * @brief Event issued when a party starts executing a Protocol.
  */
-struct ChannelEvent : public Event {
-  /**
-   * @brief Constructor
-   */
-  ChannelEvent(EventType type, Time::Duration timestamp, ChannelId channel_id)
-      : Event(type, timestamp), channel_id(channel_id) {}
+class BeginEvent final : public Event {
+ public:
+  BeginEvent(Time::Duration timestamp, const std::string& name)
+      : Event(timestamp), m_name(name) {}
 
-  ~ChannelEvent() {}
-  /**
-   * @brief The ID of the channel this event was created for.
-   */
-  ChannelId channel_id;
+  void write(std::ostream& stream) override;
+
+  EventType type() const override {
+    return EventType::BEGIN;
+  }
+
+  std::string_view name() const {
+    return m_name;
+  }
+
+ private:
+  std::string m_name;
 };
 
 /**
- * @brief An event relating to a channel send or receive action.
+ * @brief Event issued when a party finishes executing a Protocol.
  */
-struct ChannelDataEvent final : public ChannelEvent {
-  /**
-   * @brief Constructor.
-   */
-  ChannelDataEvent(EventType type,
-                   Time::Duration timestamp,
-                   ChannelId channel_id,
-                   std::size_t amount)
-      : ChannelEvent(type, timestamp, channel_id), amount(amount) {}
+class EndEvent final : public Event {
+ public:
+  EndEvent(Time::Duration timestamp, const std::string& name)
+      : Event(timestamp), m_name(name) {}
 
-  /**
-   * @brief The amount of data in this event.
-   */
-  std::size_t amount;
+  void write(std::ostream& stream) override;
+
+  EventType type() const override {
+    return EventType::END;
+  }
+
+  std::string_view name() const {
+    return m_name;
+  }
+
+ private:
+  std::string m_name;
 };
 
 /**
- * @brief An event relating to a sleep.
+ * @brief Event issued when a party starts running.
  */
-struct SleepEvent final : public Event {
-  /**
-   * @brief Constructor.
-   */
-  SleepEvent(EventType type,
-             Time::Duration timestamp,
-             Time::Duration sleep_duration)
-      : Event(type, timestamp + sleep_duration),
-        sleep_duration(sleep_duration) {}
-  /**
-   * @brief The sleep duration.
-   */
-  Time::Duration sleep_duration;
+class StartEvent final : public Event {
+ public:
+  StartEvent() : Event(Time::Duration::zero()) {}
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::START;
+  }
 };
 
 /**
- * @brief A protocol event.
+ * @brief Event issued when a party stops running.
  */
-struct ProtocolEvent final : public Event {
-  /**
-   * @brief Constructor.
-   */
-  ProtocolEvent(EventType type,
-                Time::Duration timestamp,
-                const std::string& protocol_name)
-      : Event(type, timestamp), protocol_name(protocol_name) {}
-  /**
-   * @brief The name of the protocol.
-   */
-  std::string protocol_name;
+class StopEvent final : public Event {
+ public:
+  using Event::Event;
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::STOP;
+  }
 };
 
 /**
- * @brief A kill event.
+ * @brief Event issued if a party throws an uncaught exception.
  */
-struct KillEvent final : public Event {
-  /**
-   * @brief Constructor.
-   */
-  KillEvent(Time::Duration timestamp, const std::string& reason)
-      : Event(EventType::KILLED, timestamp), reason(reason) {}
+class KilledEvent final : public Event {
+ public:
+  KilledEvent(Time::Duration timestamp, const std::string& reason)
+      : Event(timestamp), m_reason(reason) {}
+  std::string reason() const {
+    return m_reason;
+  }
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::KILLED;
+  }
 
-  /**
-   * @brief The message giving a reason for the kill.
-   */
-  std::string reason;
+ private:
+  std::string m_reason;
 };
 
 /**
- * @brief Pretty print an event type.
+ * @brief Event issued if a party gets killed by a user specified hook.
  */
-std::ostream& operator<<(std::ostream& stream, EventType type);
+class CancelledEvent final : public Event {
+ public:
+  using Event::Event;
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::CANCELLED;
+  }
+};
 
 /**
- * @brief Pretty print an event.
+ * @brief Base class for events related to channel actions.
  */
-std::ostream& operator<<(std::ostream& stream, const Event* event);
+class ChannelEvent : public Event {
+ public:
+  ChannelEvent(Time::Duration timestamp, ChannelId id)
+      : Event(timestamp), m_id(id) {}
+
+  ChannelId id() const {
+    return m_id;
+  }
+
+ private:
+  ChannelId m_id;
+};
 
 /**
- * @brief Pretty print an event.
+ * @brief Event issued when a party closes a channel.
  */
-inline std::ostream& operator<<(std::ostream& stream,
-                                std::shared_ptr<Event> event) {
-  return stream << event.get();
-}
+class CloseEvent final : public ChannelEvent {
+ public:
+  using ChannelEvent::ChannelEvent;
+
+  void write(std::ostream& stream) override;
+
+  EventType type() const override {
+    return EventType::CHANNEL_CLOSE;
+  }
+};
 
 /**
- * @brief The execution trace of a simulation is a list of the events it
- * generated.
+ * @brief Base class for events related to data transfers on a channel.
  */
-using SimulationTrace = std::vector<std::shared_ptr<Event>>;
+class ChannelDataEvent : public ChannelEvent {
+ public:
+  ChannelDataEvent(Time::Duration timestamp, ChannelId id, std::size_t amount)
+      : ChannelEvent(timestamp, id), m_amount(amount) {}
+
+  std::size_t amount() const {
+    return m_amount;
+  }
+
+ private:
+  std::size_t m_amount;
+};
 
 /**
- * @brief Write a trace to an output stream.
- * @param stream the stream.
- * @param trace the trace.
+ * @brief Event issued when a party sends data on a channel.
  */
-void writeTrace(std::ostream& stream, const SimulationTrace& trace);
+class SendEvent final : public ChannelDataEvent {
+ public:
+  using ChannelDataEvent::ChannelDataEvent;
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::CHANNEL_SEND;
+  }
+};
+
+/**
+ * @brief Event issued when a party finishes receiving data.
+ */
+class RecvEvent final : public ChannelDataEvent {
+ public:
+  using ChannelDataEvent::ChannelDataEvent;
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::CHANNEL_RECV;
+  }
+};
+
+class RecvTimeoutEvent final : public ChannelEvent {
+ public:
+  using ChannelEvent::ChannelEvent;
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::CHANNEL_RECV_TIMEOUT;
+  }
+};
+
+/**
+ * @brief Event issued by a party when it issues call to Channel::poll.
+ */
+class PollEvent final : public ChannelEvent {
+ public:
+  PollEvent(Time::Duration timestamp, ChannelId id, bool result)
+      : ChannelEvent(timestamp, id), m_result(result) {}
+  void write(std::ostream& stream) override;
+
+  EventType type() const override {
+    return EventType::CHANNEL_POLL;
+  }
+
+  bool result() const {
+    return m_result;
+  }
+
+ private:
+  bool m_result;
+};
+
+class SleepEvent final : public Event {
+ public:
+  SleepEvent(Time::Duration timestamp, Time::Duration duration)
+      : Event(timestamp), m_duration(duration) {};
+
+  void write(std::ostream& stream) override;
+
+  EventType type() const override {
+    return EventType::SLEEP;
+  }
+
+  Time::Duration duration() const {
+    return m_duration;
+  }
+
+ private:
+  Time::Duration m_duration;
+};
+
+class EventList final {
+ public:
+  EventList();
+  template <typename EVENT, typename... ARGS>
+    requires(std::is_base_of_v<Event, EVENT>)
+  void add(ARGS... args) {
+    // if the last event is transient, replace it instead.
+    if (!m_events.empty() && m_events.back()->type() == EventType::TRANSIENT) {
+      m_events.back() = std::make_unique<EVENT>(std::forward<ARGS>(args)...);
+    } else {
+      m_events.emplace_back(
+          std::make_unique<EVENT>(std::forward<ARGS>(args)...));
+    }
+  }
+
+  auto begin() {
+    return m_events.begin();
+  }
+
+  auto cbegin() const {
+    return m_events.cbegin();
+  }
+
+  auto end() {
+    return m_events.end();
+  }
+
+  auto cend() const {
+    return m_events.cend();
+  }
+
+  auto size() const {
+    return m_events.size();
+  }
+
+  bool empty() const {
+    return m_events.empty();
+  }
+
+  const Event* latest() const {
+    return m_events.back().get();
+  }
+
+  Event* latest() {
+    return m_events.back().get();
+  }
+
+ private:
+  std::vector<std::unique_ptr<Event>> m_events;
+};
 
 }  // namespace scl
 

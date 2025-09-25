@@ -18,6 +18,8 @@
 #ifndef SCL_NET_CHANNEL_H
 #define SCL_NET_CHANNEL_H
 
+#include <optional>
+
 #include "scl/coro/task.h"
 #include "scl/net/packet.h"
 
@@ -54,10 +56,20 @@ class Channel {
   virtual Task<Packet> recv() = 0;
 
   /**
+   * @brief Receive a data packet on the channel with a timeout.
+   * @param timeout the timeout.
+   * @return the received packet.
+   */
+  virtual Task<std::optional<Packet>> recv(Time::Duration timeout) {
+    (void)timeout;
+    co_return {};
+  }
+
+  /**
    * @brief Check if there is something to receive on this channel.
    * @return true if this channel has data and false otherwise.
    */
-  virtual Task<bool> hasData() = 0;
+  virtual Task<bool> poll() = 0;
 };
 
 }  // namespace scl

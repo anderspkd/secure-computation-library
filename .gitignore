@@ -10,3 +10,5 @@ compile_commands.json
 # do not track compiled documentation files
 doc/html
 
+# temp
+old/

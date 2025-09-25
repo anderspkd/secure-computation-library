@@ -76,7 +76,7 @@ scl::Task<SocketAndId> acceptConnection(int server_socket) {
   }
 }
 
-scl::Task<SocketAndId> establishConnection(scl::Party party,
+scl::Task<SocketAndId> establishConnection(scl::ConnectionInfo party,
                                            std::size_t my_id) {
   std::size_t attempts = 100;  // max attempts.
 

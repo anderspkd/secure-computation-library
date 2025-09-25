@@ -47,7 +47,7 @@ TEST_CASE("Packet read/write many", "[net]") {
     p << SmallObj((int)i);
   }
 
-  REQUIRE(p.size() == SmallObj::byteSize() * 10000);
+  REQUIRE(p.dataSize() == SmallObj::byteSize() * 10000);
 
   bool all_equal = true;
   for (std::size_t i = 0; i < 10000; ++i) {
@@ -112,8 +112,8 @@ TEST_CASE("Packet concat", "[net]") {
   p0 << 1 << 2 << LargeObj(44);
   p1 << 3 << SmallObj(55) << 4;
 
-  const auto p0_sz = p0.size();
-  const auto p1_sz = p1.size();
+  const auto p0_sz = p0.dataSize();
+  const auto p1_sz = p1.dataSize();
 
   p0 << p1;
 
@@ -123,7 +123,7 @@ TEST_CASE("Packet concat", "[net]") {
   REQUIRE(p0.read<int>() == 3);
   REQUIRE(p0.read<SmallObj>() == SmallObj(55));
   REQUIRE(p0.read<int>() == 4);
-  REQUIRE(p0_sz + p1_sz == p0.size());
+  REQUIRE(p0_sz + p1_sz == p0.dataSize());
 }
 
 TEST_CASE("Packet remaining", "[net]") {
@@ -131,10 +131,10 @@ TEST_CASE("Packet remaining", "[net]") {
 
   p << 1 << 2 << 3;
 
-  REQUIRE(p.remaining() == p.size());
+  REQUIRE(p.remaining() == p.dataSize());
   p.read<int>();
 
-  REQUIRE(p.remaining() == p.size() - sizeof(int));
+  REQUIRE(p.remaining() == p.dataSize() - sizeof(int));
   p.read<int>();
   p.read<int>();
   REQUIRE(p.remaining() == 0);

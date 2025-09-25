@@ -1,0 +1,12 @@
+{"type":"START","t":0}
+{"type":"STOP","t":123000}
+{"type":"BEGIN","name":"foo","t":123000}
+{"type":"END","name":"bar","t":123000}
+{"type":"KILLED","reason":"fubar","t":123000}
+{"type":"CANCELLED","t":123000}
+{"type":"CHANNEL_CLOSE","id":[1,2],"t":123000}
+{"type":"CHANNEL_SEND","id":[1,2],"amount":50,"t":123000}
+{"type":"CHANNEL_RECV","id":[1,2],"amount":100,"t":123000}
+{"type":"CHANNEL_RECV_TIMEOUT","id":[1,2],"t":123000}
+{"type":"CHANNEL_POLL","id":[1,2],"result":"true","t":123000}
+{"type":"SLEEP","duration":5000,"t":123000}

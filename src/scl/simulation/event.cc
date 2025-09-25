@@ -1,298 +1,181 @@
-/* SCL --- Secure Computation Library
- * Copyright (C) 2024 Anders Dalskov
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 #include "scl/simulation/event.h"
 
-#include <chrono>
+#include <ostream>
+#include <string_view>
 
 #include "scl/simulation/channel_id.h"
 #include "scl/time.h"
 
-std::shared_ptr<scl::Event> scl::Event::start() {
-  return std::make_shared<Event>(EventType::START, Time::Duration::zero());
-}
-
-std::shared_ptr<scl::Event> scl::Event::stop(Time::Duration timestamp) {
-  return std::make_shared<Event>(EventType::STOP, timestamp);
-}
-
-std::shared_ptr<scl::Event> scl::Event::killed(Time::Duration timestamp,
-                                               const std::string& reason) {
-  return std::make_shared<KillEvent>(timestamp, reason);
-}
-
-std::shared_ptr<scl::Event> scl::Event::cancelled(Time::Duration timestamp) {
-  return std::make_shared<Event>(EventType::CANCELLED, timestamp);
-}
-
-std::shared_ptr<scl::Event> scl::Event::closeChannel(
-    Time::Duration timestamp,
-    scl::ChannelId channel_id) {
-  return std::make_shared<ChannelEvent>(EventType::CLOSE,
-                                        timestamp,
-                                        channel_id);
-}
-
-std::shared_ptr<scl::Event> scl::Event::sendData(Time::Duration timestamp,
-                                                 scl::ChannelId channel_id,
-                                                 std::size_t amount) {
-  return std::make_shared<ChannelDataEvent>(EventType::SEND,
-                                            timestamp,
-                                            channel_id,
-                                            amount);
-}
-
-std::shared_ptr<scl::Event> scl::Event::recvData(Time::Duration timestamp,
-                                                 scl::ChannelId channel_id,
-                                                 std::size_t amount) {
-  return std::make_shared<ChannelDataEvent>(EventType::RECV,
-                                            timestamp,
-                                            channel_id,
-                                            amount);
-}
-
-std::shared_ptr<scl::Event> scl::Event::hasData(Time::Duration timestamp,
-                                                scl::ChannelId channel_id) {
-  return std::make_shared<ChannelEvent>(EventType::HAS_DATA,
-                                        timestamp,
-                                        channel_id);
-}
-
-std::shared_ptr<scl::Event> scl::Event::sleep(Time::Duration timestamp,
-                                              Time::Duration sleep_duration) {
-  return std::make_shared<SleepEvent>(EventType::SLEEP,
-                                      timestamp,
-                                      sleep_duration);
-}
-
-std::shared_ptr<scl::Event> scl::Event::output(Time::Duration timestamp) {
-  return std::make_shared<Event>(EventType::OUTPUT, timestamp);
-}
-
-std::shared_ptr<scl::Event> scl::Event::protocolBegin(
-    Time::Duration timestamp,
-    const std::string& protocol_name) {
-  return std::make_shared<ProtocolEvent>(EventType::PROTOCOL_BEGIN,
-                                         timestamp,
-                                         protocol_name);
-}
-
-std::shared_ptr<scl::Event> scl::Event::protocolEnd(
-    Time::Duration timestamp,
-    const std::string& protocol_name) {
-  return std::make_shared<ProtocolEvent>(EventType::PROTOCOL_END,
-                                         timestamp,
-                                         protocol_name);
-}
-
 namespace {
 
-std::string eventTypeToString(scl::EventType type) {
-  switch (type) {
-    case scl::EventType::START:
-      return "START";
-      break;
-    case scl::EventType::STOP:
-      return "STOP";
-      break;
-    case scl::EventType::SEND:
-      return "SEND";
-      break;
-    case scl::EventType::RECV:
-      return "RECV";
-      break;
-    case scl::EventType::HAS_DATA:
-      return "HAS_DATA";
-      break;
-    case scl::EventType::OUTPUT:
-      return "OUTPUT";
-      break;
-    case scl::EventType::SLEEP:
-      return "SLEEP";
-      break;
-    case scl::EventType::PROTOCOL_BEGIN:
-      return "PROTOCOL_BEGIN";
-      break;
-    case scl::EventType::PROTOCOL_END:
-      return "PROTOCOL_END";
-      break;
-    case scl::EventType::KILLED:
-      return "KILLED";
-      break;
-    case scl::EventType::CANCELLED:
-      return "CANCELLED";
-      break;
-      // case scl::EventType::CLOSE:
-    default:
-      return "CLOSE";
-  }
+void writeNumeric(std::ostream& stream, std::string_view key, std::size_t n) {
+  stream << "\"" << key << "\":" << n;
 }
 
-void writeObj(std::ostream& stream, const std::string& string) {
-  stream << "\"" << string << "\"";
+void writeString(std::ostream& stream,
+                 std::string_view key,
+                 std::string_view val) {
+  stream << "\"" << key << "\":" << "\"" << val << "\"";
 }
 
-void writeKey(std::ostream& stream, const std::string& name) {
-  writeObj(stream, name);
-  stream << ":";
+void writeTimestamp(std::ostream& stream, scl::Time::Duration t) {
+  // "t":<timestamp in milis>
+  writeNumeric(stream, "t", scl::timeToMillis(t));
 }
 
-void writeObj(std::ostream& stream, const std::size_t& val) {
-  stream << val;
-}
-
-void writeObj(std::ostream& stream, const long double& val) {
-  stream << val;
-}
-
-void writeObj(std::ostream& stream, const scl::Time::Duration& d) {
-  auto t = std::chrono::duration<long double, std::milli>(d).count();
-  writeObj(stream, t);
-}
-
-void writeObj(std::ostream& stream, const scl::ChannelId& id) {
-  stream << "{";
-
-  writeKey(stream, "local");
-  writeObj(stream, id.local);
-
-  stream << ",";
-
-  writeKey(stream, "remote");
-  writeObj(stream, id.remote);
-
-  stream << "}";
-}
-
-void writeEvent(std::ostream& stream, const scl::ChannelEvent* event) {
-  stream << "{";
-
-  writeKey(stream, "channel_id");
-  writeObj(stream, event->channel_id);
-
-  stream << "}";
-}
-
-void writeEvent(std::ostream& stream, const scl::ChannelDataEvent* event) {
-  stream << "{";
-
-  writeKey(stream, "channel_id");
-  writeObj(stream, event->channel_id);
-
-  stream << ",";
-
-  writeKey(stream, "amount");
-  writeObj(stream, event->amount);
-
-  stream << "}";
-}
-
-void writeEvent(std::ostream& stream, const scl::SleepEvent* event) {
-  stream << "{";
-
-  writeKey(stream, "duration");
-  writeObj(stream, event->sleep_duration);
-
-  stream << "}";
-}
-
-void writeEvent(std::ostream& stream, const scl::ProtocolEvent* event) {
-  stream << "{";
-
-  writeKey(stream, "name");
-  writeObj(stream, event->protocol_name);
-
-  stream << "}";
-}
-
-void writeEvent(std::ostream& stream, const scl::KillEvent* event) {
-  stream << "{";
-
-  writeKey(stream, "reason");
-  writeObj(stream, event->reason);
-
-  stream << "}";
+void writeChannelId(std::ostream& stream, scl::ChannelId id) {
+  stream << "\"id\":" << "[" << id.local << "," << id.remote << "]";
 }
 
 }  // namespace
 
-std::ostream& scl::operator<<(std::ostream& stream,
-                              const scl::EventType event_type) {
-  return stream << eventTypeToString(event_type);
+#define JSON_OBJ_START stream << "{"
+#define JSON_OBJ_END stream << "}"
+#define JSON_COMMA stream << ","
+
+void scl::BeginEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "BEGIN");
+  JSON_COMMA;
+  writeString(stream, "name", name());
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
 }
 
-std::ostream& scl::operator<<(std::ostream& stream, const scl::Event* event) {
-  stream << "{";
-
-  writeKey(stream, "timestamp");
-  writeObj(stream, timeToMillis(event->timestamp));
-
-  stream << ",";
-
-  writeKey(stream, "type");
-  writeObj(stream, eventTypeToString(event->type));
-
-  stream << ",";
-
-  writeKey(stream, "metadata");
-
-  switch (event->type) {
-    case EventType::CLOSE:
-    case EventType::HAS_DATA:
-      writeEvent(stream, dynamic_cast<const ChannelEvent*>(event));
-      break;
-
-    case EventType::SEND:
-    case EventType::RECV:
-      writeEvent(stream, dynamic_cast<const ChannelDataEvent*>(event));
-      break;
-
-    case EventType::SLEEP:
-      writeEvent(stream, dynamic_cast<const SleepEvent*>(event));
-      break;
-
-    case EventType::PROTOCOL_BEGIN:
-    case EventType::PROTOCOL_END:
-      writeEvent(stream, dynamic_cast<const ProtocolEvent*>(event));
-      break;
-
-    case EventType::KILLED:
-      writeEvent(stream, dynamic_cast<const KillEvent*>(event));
-      break;
-
-    default:
-      stream << "{}";
-      break;
-  }
-
-  stream << "}";
-
-  return stream;
+void scl::EndEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "END");
+  JSON_COMMA;
+  writeString(stream, "name", name());
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
 }
 
-void scl::writeTrace(std::ostream& stream, const scl::SimulationTrace& trace) {
-  stream << "[";
+void scl::StartEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "START");
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
 
-  if (!trace.empty()) {
-    for (std::size_t i = 0; i < trace.size() - 1; i++) {
-      stream << trace[i] << ",";
-    }
-    stream << trace[trace.size() - 1];
+void scl::StopEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "STOP");
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::KilledEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "KILLED");
+  JSON_COMMA;
+  writeString(stream, "reason", reason());
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::CancelledEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "CANCELLED");
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::CloseEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "CHANNEL_CLOSE");
+  JSON_COMMA;
+  writeChannelId(stream, id());
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::SendEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "CHANNEL_SEND");
+  JSON_COMMA;
+  writeChannelId(stream, id());
+  JSON_COMMA;
+  writeNumeric(stream, "amount", amount());
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::RecvEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "CHANNEL_RECV");
+  JSON_COMMA;
+  writeChannelId(stream, id());
+  JSON_COMMA;
+  writeNumeric(stream, "amount", amount());
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::RecvTimeoutEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "CHANNEL_RECV_TIMEOUT");
+  JSON_COMMA;
+  writeChannelId(stream, id());
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::PollEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "CHANNEL_POLL");
+  JSON_COMMA;
+  writeChannelId(stream, id());
+  JSON_COMMA;
+  writeString(stream, "result", result() ? "true" : "false");
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+void scl::SleepEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "SLEEP");
+  JSON_COMMA;
+  writeNumeric(stream, "duration", scl::timeToMillis(duration()));
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
+#undef JSON_OBJ_START
+#undef JSON_OBJ_END
+#undef JSON_COMMA
+
+namespace {
+
+// This "event" serves as a backstop in order to ensure that an EventList always
+// contains at least one event, and that this event is meaningful (hence the
+// initialization with a timestamp of 0)
+struct InitialEvent final : public scl::Event {
+  InitialEvent() : scl::Event(scl::Time::Duration::zero()) {}
+
+  void write(std::ostream&) override {}
+
+  // mark this event as TRANSIENT so that it gets removed once real events
+  // arrive.
+  scl::EventType type() const override {
+    return scl::EventType::TRANSIENT;
   }
+};
 
-  stream << "]";
+}  // namespace
+
+scl::EventList::EventList() {
+  add<InitialEvent>();
 }

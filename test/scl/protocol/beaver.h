@@ -20,9 +20,7 @@
 
 #include "./triple.h"
 #include "scl/coro/task.h"
-#include "scl/protocol/base.h"
-#include "scl/protocol/env.h"
-#include "scl/protocol/result.h"
+#include "scl/protocol.h"
 
 namespace scl::test {
 
@@ -32,7 +30,7 @@ class BeaverMul final : public Protocol {
   BeaverMul(SHARE x, SHARE y, Triple<SHARE> triple)
       : m_x(x), m_y(y), m_triple(triple) {}
 
-  Task<ProtocolResult> run(Env& env) const override {
+  Task<Result> run(Env& env) const override {
     Packet packet;
 
     packet << m_x - m_triple.a;  // [e] = [x] - [a]
@@ -58,7 +56,7 @@ class BeaverMul final : public Protocol {
       z += e * d;
     }
 
-    co_return ProtocolResult::done(z);
+    co_return Result::done(z);
   }
 
  private:

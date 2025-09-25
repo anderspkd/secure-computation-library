@@ -19,6 +19,7 @@
 #define SCL_MATH_Z2K_H
 
 #include <cstdint>
+#include <cstring>
 #include <stdexcept>
 
 #include "scl/hex.h"
@@ -258,7 +259,7 @@ class Z2k final {
     }
 
     std::size_t inverted_bits = 5;
-    auto z = m_value;
+    auto z = ((m_value * 3) ^ 2);
     while (inverted_bits < BITS) {
       z *= 2 - m_value * z;
       inverted_bits *= 2;
@@ -325,7 +326,7 @@ class Z2k final {
    */
   void write(unsigned char* dst) const {
     const auto w = m_value & MASK;
-    std::memcpy(dst, (unsigned char*)w, (BITS - 1) / 8 + 1);
+    std::memcpy(dst, (unsigned char*)&w, (BITS - 1) / 8 + 1);
   }
 
  private:

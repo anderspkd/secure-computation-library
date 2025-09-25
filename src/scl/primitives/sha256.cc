@@ -20,11 +20,7 @@
 #include <algorithm>
 #include <cstdint>
 
-using namespace scl;
-
-/**
- * SHA-256 implementation based on https://github.com/System-Glitch/SHA256.
- */
+// SHA-256 implementation based on https://github.com/System-Glitch/SHA256.
 
 namespace {
 
@@ -67,7 +63,7 @@ auto choose(uint32_t x, uint32_t y, uint32_t z) {
 
 }  // namespace
 
-void Sha256::transform() {
+void scl::Sha256::transform() {
   // round constants.
   static constexpr std::array<uint32_t, 64> k = {
       0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
@@ -112,7 +108,7 @@ void Sha256::transform() {
   }
 }
 
-void Sha256::pad() {
+void scl::Sha256::pad() {
   auto i = m_chunk_pos;
   const auto end = m_chunk_pos < 56U ? 56U : 64U;
 
@@ -140,7 +136,7 @@ void Sha256::pad() {
   transform();
 }
 
-Sha256::DigestType Sha256::writeDigest() {
+scl::Sha256::DigestType scl::Sha256::writeDigest() {
   Sha256::DigestType digest;
 
   for (std::size_t i = 0; i < 4; ++i) {
@@ -152,7 +148,7 @@ Sha256::DigestType Sha256::writeDigest() {
   return digest;
 }
 
-void Sha256::hash(const unsigned char* bytes, std::size_t nbytes) {
+void scl::Sha256::hash(const unsigned char* bytes, std::size_t nbytes) {
   for (std::size_t i = 0; i < nbytes; ++i) {
     m_chunk[m_chunk_pos++] = bytes[i];
     if (m_chunk_pos == 64) {
@@ -163,7 +159,7 @@ void Sha256::hash(const unsigned char* bytes, std::size_t nbytes) {
   }
 }
 
-Sha256::DigestType Sha256::write() {
+scl::Sha256::DigestType scl::Sha256::write() {
   pad();
   return writeDigest();
 }

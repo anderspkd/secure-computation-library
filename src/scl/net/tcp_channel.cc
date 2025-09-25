@@ -2,6 +2,7 @@
 
 #include "./syscalls.h"
 #include "./tcp_utils.h"
+#include "scl/coro/runtime.h"
 
 void scl::TcpChannel::close() {
   if (m_alive) {
@@ -96,6 +97,6 @@ scl::Task<scl::Packet> scl::TcpChannel::recv() {
   co_return packet;
 }
 
-scl::Task<bool> scl::TcpChannel::hasData() {
+scl::Task<bool> scl::TcpChannel::poll() {
   co_return details::pollSocket(m_socket, POLLIN);
 }

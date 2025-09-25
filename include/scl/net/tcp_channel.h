@@ -76,7 +76,7 @@ class TcpChannel final : public Channel {
    * @return the received packet.
    *
    * This function will suspend execution if not enough data is ready yet. To
-   * check if it's possible to receive something on the channel, use hasData().
+   * check if it's possible to receive something on the channel, use poll().
    */
   Task<Packet> recv() override;
 
@@ -84,7 +84,7 @@ class TcpChannel final : public Channel {
    * @brief Check if this channel has data ready for recovering.
    * @return true if there's data to receive and false otherwise.
    */
-  Task<bool> hasData() override;
+  Task<bool> poll() override;
 
  private:
   bool m_alive;

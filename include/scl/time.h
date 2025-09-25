@@ -53,6 +53,11 @@ inline long double timeToMillis(Time::Duration time) {
   return duration<long double, std::milli>(time).count();
 }
 
+struct Clock {
+  virtual ~Clock();
+  virtual Time::Duration read() const = 0;
+};
+
 }  // namespace scl
 
 #endif  // SCL_UTIL_TIME_H

@@ -1,112 +1,148 @@
-/* SCL --- Secure Computation Library
- * Copyright (C) 2024 Anders Dalskov
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 #include "scl/simulation/channel.h"
-
-#include <stdexcept>
 
 #include "scl/coro/runtime.h"
 #include "scl/simulation/event.h"
+#include "scl/simulation/transport.h"
 #include "scl/time.h"
 
-void scl::details::SimulatedChannel::close() {
-  Time::Duration elapsed = m_context.elapsedTime();
-  m_context.recordEvent(Event::closeChannel(elapsed, m_cid));
-  m_context.startClock();
+void scl::SimulatedChannel::close() {
+  m_ctx.addEvent<scl::CloseEvent>(m_ctx.elapsedTime(), m_id);
 }
 
-scl::Task<void> scl::details::SimulatedChannel::send(scl::Packet&& packet) {
-  Time::Duration elapsed = m_context.elapsedTime();
-  const std::size_t nbytes = packet.size();
-  m_context.send(m_cid.remote, elapsed);
-
-  m_transport->send(m_cid, std::move(packet));
-
-  m_context.recordEvent(Event::sendData(elapsed, m_cid, nbytes));
-  m_context.startClock();
+scl::Task<void> scl::SimulatedChannel::send(Packet&& packet) {
+  const auto et = m_ctx.elapsedTime();
+  m_ctx.addEvent<SendEvent>(et, m_id, packet.size());
+  m_transport->send(et, m_id, std::move(packet));
   co_return;
 }
 
-scl::Task<void> scl::details::SimulatedChannel::send(const Packet& packet) {
-  Time::Duration elapsed = m_context.elapsedTime();
-  const std::size_t nbytes = packet.size();
-  m_context.send(m_cid.remote, elapsed);
-
-  m_transport->send(m_cid, packet);
-
-  m_context.recordEvent(Event::sendData(elapsed, m_cid, nbytes));
-  m_context.startClock();
+scl::Task<void> scl::SimulatedChannel::send(const Packet& packet) {
+  const auto et = m_ctx.elapsedTime();
+  m_ctx.addEvent<SendEvent>(et, m_id, packet.size());
+  m_transport->send(et, m_id, packet);
   co_return;
 }
 
-scl::Task<scl::Packet> scl::details::SimulatedChannel::recv() {
-  Time::Duration elapsed = m_context.elapsedTime();
+namespace {
 
-  m_context.recvStart(m_cid.remote);
+// transient event signaling that this party is currently blocked while
+// receiving.
+class RecvPendingEvent final : public scl::ChannelEvent {
+ public:
+  RecvPendingEvent(scl::Time::Duration timestamp, scl::ChannelId id)
+      : ChannelEvent(timestamp, id), m_offset(scl::Time::Duration::zero()) {}
 
-  // block until there is data available on the transport.
-  co_await [tp = m_transport, cid = m_cid]() { return tp->hasData(cid); };
+  void write(std::ostream&) override {}
 
-  auto packet = m_transport->recv(m_cid);
-
-  m_context.recvDone(m_cid.remote);
-
-  elapsed = m_context.recv(m_cid.remote, packet.size(), elapsed);
-
-  const std::size_t nbytes = packet.size();
-  m_context.recordEvent(Event::recvData(elapsed, m_cid, nbytes));
-  m_context.startClock();
-  co_return packet;
-}
-
-scl::Task<bool> scl::details::SimulatedChannel::hasData() {
-  Time::Duration now = m_context.elapsedTime();
-  m_context.recordEvent(Event::hasData(now, m_cid));
-
-  auto has_data = m_transport->hasData(m_cid);
-
-  if (!has_data) {
-    const auto other = m_cid.remote;
-
-    // have to consider three cases here:
-    //
-    // 1) If the remote party is ahead of us, then any data it sends will
-    // first
-    //    arrive at some point in the future.
-    //
-    // 2) If the remote party is dead, then _no_ data will arrive to us.
-    //
-    // 3) If the remote party is trying to receive data from us, then it will
-    //    not have data for us until we send something, which cannot be
-    //    earlier than "now". In particular, we won't receive data from remote
-    //    until at some point after whatever "now" is.
-    co_await [now, ctx = m_context, other]() {
-      const auto remote_ahead = now < ctx.currentTimeOf(other);
-      const auto remote_dead = ctx.dead(other);
-      const auto remote_waiting_for_us = ctx.receiving(other);
-
-      return remote_ahead || remote_dead || remote_waiting_for_us;
-    };
-
-    m_context.startClock();
-    // query the transport again.
-    co_return m_transport->hasData(m_cid);
+  scl::EventType type() const override {
+    return scl::EventType::TRANSIENT;
   }
 
-  m_context.startClock();
-  co_return true;
+  scl::Time::Duration time() const override {
+    return scl::ChannelEvent::time() + m_offset;
+  }
+
+  void bumpOffset(scl::Time::Duration t) {
+    if (t > m_offset) {
+      m_offset = t;
+    }
+  }
+
+ private:
+  scl::Time::Duration m_offset;
+};
+
+// Awaitable that checks if the transport is ready.
+struct ReadyChecker {
+  scl::Transport* transport;
+  scl::ChannelId id;
+  RecvPendingEvent* event;
+  scl::Context& ctx;
+
+  bool operator()() {
+    const auto is_ready = transport->ready(id);
+    if (!is_ready) {
+      // transport not being ready means the sender hasn't sent anything
+      // yet. This also means that anything that does get sent, wont get sent
+      // before whatever the time is at the sender. And so we can safely advance
+      // our clock.
+      event->bumpOffset(ctx.elapsedTimeOf(id.remote));
+    }
+    return is_ready;
+  }
+};
+
+}  // namespace
+
+scl::Task<scl::Packet> scl::SimulatedChannel::recv() {
+  const auto et = m_ctx.elapsedTime();
+
+  m_ctx.addEvent<RecvPendingEvent>(et, m_id);
+  RecvPendingEvent* re = dynamic_cast<RecvPendingEvent*>(m_ctx.lastEvent());
+
+  ReadyChecker rc{m_transport.get(), m_id, re, m_ctx};
+  co_await rc;
+
+  auto [pkt, delay] = m_transport->recv(re->time(), m_id);
+
+  m_ctx.addEvent<RecvEvent>(re->time() + delay, m_id, pkt.size());
+
+  co_return pkt;
+}
+
+namespace {
+
+// Ready checker which capable of timing out
+struct TimeoutReadyChecker {
+  scl::Transport* transport;
+  scl::ChannelId id;
+  RecvPendingEvent* event;
+  scl::Context& ctx;
+  scl::Time::Duration timeout_rem;
+
+  bool operator()() {
+    const auto t = ctx.elapsedTimeOf(id.remote);
+    if (event->time() > t) {
+      return transport->ready(id);
+    }
+
+    const auto is_ready = transport->ready(id);
+    if (!is_ready) {
+      // Since the transport is not ready, we can safely advance our time to the
+      // time of the sender.
+      event->bumpOffset(ctx.elapsedTimeOf(id.remote));
+    }
+    return is_ready;
+  }
+};
+
+}  // namespace
+
+scl::Task<std::optional<scl::Packet>> scl::SimulatedChannel::recv(
+    Time::Duration timeout) {
+  // const auto et = m_ctx.elapsedTime();
+
+  // m_ctx.addEvent<RecvPendingEvent>(et, m_id);
+  // RecvPendingEvent* re = dynamic_cast<RecvPendingEvent*>(m_ctx.lastEvent());
+
+  // TimeoutReadyChecker trc{m_transport.get(), m_id, re, m_ctx, timeout};
+  // co_await trc;
+
+  (void)timeout;
+  co_return {};
+}
+
+scl::Task<bool> scl::SimulatedChannel::poll() {
+  const auto et = m_ctx.elapsedTime();
+  Transport::PollResult pr;
+
+  co_await [&pr, e = et, i = m_id, t = m_transport]() {
+    pr = t->poll(e, i);
+    return pr != Transport::PollResult::NA;
+  };
+
+  const auto res = pr == Transport::PollResult::DATA;
+  m_ctx.addEvent<PollEvent>(et, m_id, res);
+
+  co_return res;
 }
