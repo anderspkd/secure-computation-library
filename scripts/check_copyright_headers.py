@@ -38,7 +38,7 @@ def check_file(filename, path):
         ## license must be followed by an empty line
         good = (good and lines[n].rstrip() == "")
         if not good:
-            print(f"{filename} invalid header (error on line: {n})")
+            print(f"{path} invalid header (error on line: {n})")
         return good
 
 

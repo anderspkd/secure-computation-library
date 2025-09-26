@@ -1,5 +1,5 @@
 /* SCL --- Secure Computation Library
- * Copyright (C) 2024 Anders Dalskov
+ * Copyright (C) 2025 Anders Dalskov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,9 +17,6 @@
 
 #ifndef SCL_NET_TCP_UTILS_H
 #define SCL_NET_TCP_UTILS_H
-
-#include <stdexcept>
-#include <system_error>
 
 #include <fcntl.h>
 #include <netinet/in.h>
