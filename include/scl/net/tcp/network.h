@@ -2,8 +2,8 @@
 #define SCL_NET_TCP_NETWORK_H
 
 #include "scl/coro/task.h"
-#include "scl/net/network.h"
 #include "scl/net/config.h"
+#include "scl/net/network.h"
 
 namespace scl {
 

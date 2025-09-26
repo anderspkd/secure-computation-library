@@ -1,10 +1,11 @@
+#include "scl/simulation/network_description.h"
+
 #include <cmath>
 #include <cstddef>
 #include <limits>
 #include <unordered_map>
 
 #include "scl/simulation/channel_id.h"
-#include "scl/simulation/network_description.h"
 
 using namespace scl;
 

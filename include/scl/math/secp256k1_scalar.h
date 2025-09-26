@@ -50,6 +50,6 @@ struct Secp256k1Scalar {
   constexpr static const std::size_t BIT_SIZE = 8 * BYTE_SIZE;
 };
 
-}  // namespace scl::math::ff
+}  // namespace scl
 
 #endif  // SCL_MATH_SECP256K1_SCALAR_H

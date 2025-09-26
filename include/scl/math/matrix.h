@@ -28,8 +28,8 @@
 
 #include "scl/math/lagrange.h"
 #include "scl/math/vector.h"
-#include "scl/serialization.h"
 #include "scl/primitives/prg.h"
+#include "scl/serialization.h"
 
 namespace scl {
 

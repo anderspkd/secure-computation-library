@@ -1,7 +1,8 @@
+#include "scl/net/tcp/channel.h"
+
 #include "./syscalls.h"
 #include "./utils.h"
 #include "scl/coro/runtime.h"
-#include "scl/net/tcp/channel.h"
 
 void scl::TcpChannel::close() {
   if (m_alive) {

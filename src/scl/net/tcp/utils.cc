@@ -1,5 +1,6 @@
-#include "./syscalls.h"
 #include "./utils.h"
+
+#include "./syscalls.h"
 
 int scl::details::createServerSocket(int port, int backlog) {
   int ssock = sys_call::socket(AF_INET, SOCK_STREAM, 0);
