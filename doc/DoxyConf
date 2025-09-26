@@ -5,18 +5,16 @@ PROJECT_BRIEF          = "Utility library for common Secure Computation primitiv
 
 OUTPUT_DIRECTORY       = ./doc
 
-WARN_AS_ERROR          = NO
+WARN_AS_ERROR          = YES
 
 INPUT                  = doc/mainpage.md \
                          include/scl/ \
                          include/scl/primitives \
                          include/scl/math \
-                         include/scl/math/fields \
-			 include/scl/math/curves \
                          include/scl/ss \
                          include/scl/net \
+			 include/scl/net/tcp \
                          include/scl/simulation \
-                         include/scl/protocol \
                          include/scl/coro
 
 FILE_PATTERNS          = *.h
