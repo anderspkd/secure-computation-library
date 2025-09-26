@@ -36,8 +36,8 @@ namespace scl {
  * behaves a bit more like a "fixed-length vector of bits". The main
  * differentiator is that Bitmap implements various element-wise operations.
  *
- * A Bitmap is always a multiple of Bitmap::BlockType. One consequence of this
- * is that its "true size" must be tracked externally.
+ * Bitmap is a useful class for protocols that makes use of indicator sets,
+ * because that's effectively what Bitmap is.
  *
  * @code
  * Bitmap bm(10);    // this creates a Bitmap with space for 10 bits, with
@@ -53,7 +53,8 @@ namespace scl {
  * assert(!bm.at(1));
  *
  * std::cout << bm;
- * // 0000000000000001
+ * // prints "0000000000000001"
+ * // note that a multiple of sizeof(Bitmap::BlockType) is printed.
  *
  * Bitmap bm1(10);
  * Bitmap bm2(10);
@@ -68,6 +69,19 @@ namespace scl {
  * assert((bm1 | bm2).count() == 3);
  *
  * assert((~bm1).count() == 8);
+ *
+ * // Bitmap::set performs no bounds checking, so the following is perfectly
+ * // fine. However, it will lead to weird behaviour. For example
+ *
+ * Bitmap bm_oob(10);
+ * bm_oob.set(10, true);
+ * assert(bm_oob.count() == 1);
+ * assert((~bm_oob).count() == 10);
+ *
+ * // Negation does not touch the bits beyond Bitmap::size in order to ensure
+ * // that Bitmap::count works as expected. So if we assign bits beyond
+ * // Bitmap::size then Bitmap::count might not work correctly anymore :)
+ *
  * @endcode
  */
 class Bitmap {
