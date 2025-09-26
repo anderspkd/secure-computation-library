@@ -20,6 +20,7 @@
 
 #include <bitset>
 #include <cstddef>
+#include <iostream>
 #include <ostream>
 #include <stdexcept>
 #include <vector>
@@ -29,14 +30,45 @@
 namespace scl {
 
 /**
- * @brief A simple bitmap.
+ * @brief A bitmap.
  *
- * The Bitmap class holds bits. It serves some of the same functionality as
- * <code>std::vector<bool></code>. The implementation of Bitmap stores bits
- * packed in objects of type Bitmap::BlockType, current <code>unsigned
- * char</code>. As a consequence, Bitmap always stores a multiple of
- * <code>sizeof(Bitmap::BlockType) * 8</code> bits. Any unset bits are
- * guaranteed to be 0.
+ * Bitmap serves a similar purpose as <code>std::vector<bool></code>, but
+ * behaves a bit more like a "fixed-length vector of bits". The main
+ * differentiator is that Bitmap implements various element-wise operations.
+ *
+ * A Bitmap is always a multiple of Bitmap::BlockType. One consequence of this
+ * is that its "true size" must be tracked externally.
+ *
+ * @code
+ * Bitmap bm(10);    // this creates a Bitmap with space for 10 bits, with
+ *                   // all 10 bits initialized to be 0.
+ *
+ * assert(bm.size() == 10);
+ * assert(bm.numberOfBlocks() == ...);  // a multiple of Bitmap::BITS_PER_BLOCK
+ *
+ * assert(bm.count() == 0)
+ * bm.set(0, true);  // set the first bit to be 1
+ * assert(bm.count() == 1);
+ * assert(bm.at(0));
+ * assert(!bm.at(1));
+ *
+ * std::cout << bm;
+ * // 0000000000000001
+ *
+ * Bitmap bm1(10);
+ * Bitmap bm2(10);
+ *
+ * bm1.set(0, 1);
+ * bm1.set(1, 1);
+ * bm2.set(1, 1);
+ * bm2.set(2, 1);
+ *
+ * assert((bm1 & bm2).count() == 1);
+ * assert((bm1 ^ bm2).count() == 2);
+ * assert((bm1 | bm2).count() == 3);
+ *
+ * assert((~bm1).count() == 8);
+ * @endcode
  */
 class Bitmap {
  public:
@@ -55,9 +87,7 @@ class Bitmap {
 
  public:
   /**
-   * @brief Create a Bitmap from an <code>std::vector<bool></code>.
-   * @param bool_vec the <code>std::vector<bool></code>.
-   * @return a Bitmap.
+   * @brief Create a Bitmap from an STL vector of booleans.
    */
   static Bitmap fromStdVecBool(const std::vector<bool>& bool_vec) {
     Bitmap bm(bool_vec.size());
@@ -65,14 +95,14 @@ class Bitmap {
       bm.set(i, bool_vec[i]);
     }
     return bm;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Construct a Bitmap with some initial size.
-   * @param initial_size the initial size.
    */
   Bitmap(std::size_t initial_size)
-      : m_bits(ContainerType(bytesRequired(initial_size), 0)) {}
+      : m_bits(ContainerType(bytesRequired(initial_size), 0)),
+        m_true_size(initial_size) {}
 
   /**
    * @brief Construct an empty Bitmap.
@@ -81,8 +111,6 @@ class Bitmap {
 
   /**
    * @brief Check the bit at some position.
-   * @param index the bit position.
-   * @return true if the bit at position \p index is set and 0 otherwise.
    */
   bool at(std::size_t index) const {
     const std::size_t block = index / BITS_PER_BLOCK;
@@ -92,8 +120,6 @@ class Bitmap {
 
   /**
    * @brief Set the bit at some position.
-   * @param index the position of the bit to set.
-   * @param b the value to set.
    */
   void set(std::size_t index, bool b) {
     const std::size_t block = index / BITS_PER_BLOCK;
@@ -103,7 +129,6 @@ class Bitmap {
 
   /**
    * @brief Count the number of bits set in this Bitmap.
-   * @return the population count of this Bitmap.
    */
   std::size_t count() const {
     // https://stackoverflow.com/a/698108
@@ -118,17 +143,17 @@ class Bitmap {
 
   /**
    * @brief Get the number of blocks this Bitmap uses.
-   * @return the number of BlockType elements used by this Bitmap.
    */
   std::size_t numberOfBlocks() const {
     return m_bits.size();
   }
 
+  std::size_t size() const {
+    return m_true_size;
+  }
+
   /**
    * @brief Check if two bitmaps contain the same content.
-   * @param bm0 the first Bitmap.
-   * @param bm1 the second Bitmap.
-   * @return true if \p bm0 and \p bm1 are equal, false otherwise.
    */
   friend bool operator==(const Bitmap& bm0, const Bitmap& bm1) {
     return bm0.m_bits == bm1.m_bits;
@@ -136,9 +161,6 @@ class Bitmap {
 
   /**
    * @brief Check if two bitmaps are different.
-   * @param bm0 the first Bitmap.
-   * @param bm1 the second Bitmap.
-   * @return false if \p bm0 and \p bm1 are equal, true otherwise.
    */
   friend bool operator!=(const Bitmap& bm0, const Bitmap& bm1) {
     return !(bm0 == bm1);
@@ -146,8 +168,6 @@ class Bitmap {
 
   /**
    * @brief Write this bitmap to a stream.
-   * @param os the stream.
-   * @param m the bitmap.
    */
   friend std::ostream& operator<<(std::ostream& os, const Bitmap& m) {
     for (const BlockType& block : m.m_bits) {
@@ -158,13 +178,10 @@ class Bitmap {
 
   /**
    * @brief Compute the XOR of two bitmaps.
-   * @param bm0 the first bitmap.
-   * @param bm1 the other bitmap.
    */
   friend Bitmap operator^(const Bitmap& bm0, const Bitmap& bm1) {
     validateSizes(bm0, bm1);
-    Bitmap bm;
-    bm.m_bits.resize(bm0.numberOfBlocks());
+    Bitmap bm(bm0.m_true_size);
     for (std::size_t i = 0; i < bm.m_bits.size(); i++) {
       bm.m_bits[i] = bm0.m_bits[i] ^ bm1.m_bits[i];
     }
@@ -173,13 +190,10 @@ class Bitmap {
 
   /**
    * @brief Compute the AND of two bitmaps.
-   * @param bm0 the first bitmap.
-   * @param bm1 the other bitmap.
    */
   friend Bitmap operator&(const Bitmap& bm0, const Bitmap& bm1) {
     validateSizes(bm0, bm1);
-    Bitmap bm;
-    bm.m_bits.resize(bm0.numberOfBlocks());
+    Bitmap bm(bm0.m_true_size);
     for (std::size_t i = 0; i < bm.m_bits.size(); i++) {
       bm.m_bits[i] = bm0.m_bits[i] & bm1.m_bits[i];
     }
@@ -188,13 +202,10 @@ class Bitmap {
 
   /**
    * @brief Compute the OR of two bitmaps.
-   * @param bm0 the first bitmap.
-   * @param bm1 the other bitmap.
    */
   friend Bitmap operator|(const Bitmap& bm0, const Bitmap& bm1) {
     validateSizes(bm0, bm1);
-    Bitmap bm;
-    bm.m_bits.resize(bm0.numberOfBlocks());
+    Bitmap bm(bm0.m_true_size);
     for (std::size_t i = 0; i < bm.m_bits.size(); i++) {
       bm.m_bits[i] = bm0.m_bits[i] | bm1.m_bits[i];
     }
@@ -203,31 +214,34 @@ class Bitmap {
 
   /**
    * @brief Compute the negation of a bitmap.
-   * @param bm0 the bitmap.
    */
   friend Bitmap operator~(const Bitmap& bm0) {
-    Bitmap bm;
-    bm.m_bits.resize(bm0.numberOfBlocks());
-    for (std::size_t i = 0; i < bm.m_bits.size(); i++) {
+    Bitmap bm(bm0.m_true_size);
+    std::size_t i = 0;
+    for (; i < bm.m_bits.size() - 1; i++) {
       bm.m_bits[i] = ~bm0.m_bits[i];
     }
+    // for the last block we only negate some of the bits, potentially.
+    const auto mask = (1 << (bm.m_true_size % BITS_PER_BLOCK)) - 1;
+    bm.m_bits[i] = ~bm0.m_bits[i] & mask;
     return bm;
   }
 
  private:
+  friend Serializer<Bitmap>;
+
   ContainerType m_bits;
+  std::size_t m_true_size;
 
   static constexpr std::size_t bytesRequired(std::size_t bits) {
     return bits == 0 ? 1 : (bits - 1) / (BITS_PER_BLOCK) + 1;
   }
 
   static void validateSizes(const Bitmap& bm0, const Bitmap& bm1) {
-    if (bm0.numberOfBlocks() != bm1.numberOfBlocks()) {
+    if (bm0.size() != bm1.size()) {
       throw std::logic_error("bitmaps are different sizes");
     }
   }
-
-  friend Serializer<Bitmap>;
 };
 
 /**
@@ -235,31 +249,12 @@ class Bitmap {
  */
 template <>
 struct Serializer<Bitmap> {
-  /**
-   * @brief Get serialized size of a util::Bitmap.
-   * @param bm the util::Bitmap.
-   * @return the size in bytes of the \p bm.
-   */
   static std::size_t sizeOf(const Bitmap& bm) {
     return Serializer<Bitmap::ContainerType>::sizeOf(bm.m_bits);
   }
-
-  /**
-   * @brief Write a util::Bitmap to a buffer.
-   * @param bm the util::Bitmap.
-   * @param buf the buffer.
-   * @return the number of bytes written.
-   */
   static std::size_t write(const Bitmap& bm, unsigned char* buf) {
     return Serializer<Bitmap::ContainerType>::write(bm.m_bits, buf);
   }
-
-  /**
-   * @brief Read a util::Bitmap from a buffer.
-   * @param bm the util::Bitmap that will store the result.
-   * @param buf the buffer to read the util::Bitmap from.
-   * @return the number of bytes read from \p buf.
-   */
   static std::size_t read(Bitmap& bm, const unsigned char* buf) {
     return Serializer<Bitmap::ContainerType>::read(bm.m_bits, buf);
   }

@@ -27,10 +27,12 @@ TEST_CASE("Bitmap construct", "[util]") {
   Bitmap bm(10);
   REQUIRE(bm.numberOfBlocks() == 2);
   REQUIRE(bm.count() == 0);
+  REQUIRE(bm.size() == 10);
 
   Bitmap bm0;
   REQUIRE(bm0.numberOfBlocks() == 1);
   REQUIRE(bm0.count() == 0);
+  REQUIRE(bm0.size() == 0);
 }
 
 TEST_CASE("Bitmap get/set", "[util]") {
@@ -70,6 +72,7 @@ TEST_CASE("Bitmap XOR", "[util]") {
   REQUIRE(bm.at(0) == false);
   REQUIRE(bm.at(4) == true);
   REQUIRE(bm.at(5) == false);
+  REQUIRE(bm.size() == bm0.size());
 }
 
 TEST_CASE("Bitmap AND", "[util]") {
@@ -89,6 +92,7 @@ TEST_CASE("Bitmap AND", "[util]") {
   REQUIRE(bm.at(0) == true);
   REQUIRE(bm.at(4) == false);
   REQUIRE(bm.at(5) == false);
+  REQUIRE(bm.size() == bm0.size());
 }
 
 TEST_CASE("Bitmap OR", "[util]") {
@@ -108,19 +112,24 @@ TEST_CASE("Bitmap OR", "[util]") {
   REQUIRE(bm.at(0) == true);
   REQUIRE(bm.at(4) == true);
   REQUIRE(bm.at(5) == false);
+  REQUIRE(bm.size() == bm0.size());
 }
 
 TEST_CASE("Bitmap NEG", "[util]") {
   Bitmap bm0(10);
 
   bm0.set(0, true);
-  bm0.set(4, true);
+  bm0.set(7, true);
+
+  REQUIRE(bm0.count() == 2);
 
   auto bm = ~bm0;
 
   REQUIRE(bm.at(0) == false);
-  REQUIRE(bm.at(4) == false);
+  REQUIRE(bm.at(7) == false);
   REQUIRE(bm.at(5) == true);
+  REQUIRE(bm.count() == 8);
+  REQUIRE(bm.size() == bm0.size());
 }
 
 TEST_CASE("Bitmap equal", "[util]") {
