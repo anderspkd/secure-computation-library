@@ -208,7 +208,7 @@ class EC final {
    */
   friend EC operator*(const ScalarField& scalar, const EC& point) {
     return point * scalar;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Negate this point.
@@ -252,7 +252,7 @@ class EC final {
    */
   bool isPointAtInfinity() const {
     return details::isPointAtInfinity<CURVE>(m_value);
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Return this point as a pair of affine coordinates.
@@ -261,7 +261,7 @@ class EC final {
    */
   std::array<Field, 2> toAffine() const {
     return details::toAffine<CURVE>(m_value);
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Normalize this point.
@@ -280,7 +280,7 @@ class EC final {
    */
   std::string toString() const {
     return details::toString<CURVE>(m_value);
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Operator << for printing a curve point.
@@ -294,7 +294,7 @@ class EC final {
    */
   void write(unsigned char* dest, bool compress) const {
     details::toBytes<CURVE>(dest, m_value, compress);
-  }  // LCOV_EXCL_LINE
+  }
 
  private:
   typename CURVE::ValueType m_value;

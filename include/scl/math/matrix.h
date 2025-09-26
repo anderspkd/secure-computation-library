@@ -145,7 +145,7 @@ class Matrix final {
       I(i, i) = ELEMENT(1);
     }
     return I;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Construct an empty 0-by-0 matrix.
@@ -454,7 +454,7 @@ Matrix<ELEMENT> Matrix<ELEMENT>::vandermonde(std::size_t n,
     }
   }
   return v;
-}  // LCOV_EXCL_LINE
+}
 
 template <typename ELEMENT>
 Matrix<ELEMENT> Matrix<ELEMENT>::hyperInvertible(std::size_t n, std::size_t m) {
@@ -489,7 +489,7 @@ Matrix<ELEMENT> Matrix<ELEMENT>::multiply(const Matrix<ELEMENT>& other) const {
     }
   }
   return result;
-}  // LCOV_EXCL_LINE
+}
 
 template <typename ELEMENT>
 Vector<ELEMENT> Matrix<ELEMENT>::multiply(const Vector<ELEMENT>& vector) const {
@@ -722,7 +722,7 @@ Vector<ELEMENT> extractSolution(const Matrix<ELEMENT>& A) {
     }
   }
   return x;
-}  // LCOV_EXCL_LINE
+}
 
 /**
  * @brief Check if a linear system has a solution.

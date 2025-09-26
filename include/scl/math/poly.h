@@ -61,7 +61,7 @@ class Polynomial {
       y = *it++ + y * x;
     }
     return y;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Access coefficients, with the constant term at position 0.
@@ -213,7 +213,7 @@ Vector<RING> padCoefficients(const Polynomial<RING>& p, std::size_t n) {
     }
   }
   return c;
-}  // LCOV_EXCL_LINE
+}
 
 template <typename RING>
 Polynomial<RING> Polynomial<RING>::add(const Polynomial<RING>& q) const {

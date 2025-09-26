@@ -83,7 +83,7 @@ class Array final {
       p.m_values[i] = T::read(src + i * T::byteSize());
     }
     return p;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Create an array filled with random elements.
@@ -96,7 +96,7 @@ class Array final {
       p.m_values[i] = T::random(prg);
     }
     return p;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Get an Array filled with the multiplicative identity
@@ -338,7 +338,7 @@ class Array final {
     Array<T, N> r = *this;
     r /= other;
     return r;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Get the value at a particular entry in the product element.

@@ -89,7 +89,7 @@ auto MerkleTree<HASH, LEAF>::hashLeafs(const std::vector<LEAF>& data)
   }
 
   return digests;
-}  // LCOV_EXCL_LINE
+}
 
 template <typename HASH, typename LEAF>
 auto MerkleTree<HASH, LEAF>::hash(const std::vector<LEAF>& data) -> DigestType {

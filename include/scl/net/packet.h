@@ -128,7 +128,7 @@ class Packet {
     const auto sz = Serializer<T>::read(v, get() + m_read_ptr);
     m_read_ptr += sz;
     return v;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Write an object to this packet.
@@ -295,7 +295,7 @@ class Packet {
       // Not testing this at the moment. It would be better if allocation of the
       // internal buffer has handled by an allocator type of some sort. Possibly
       // one from the standard library.
-      throw std::bad_alloc();  // LCOV_EXCL_LINE
+      throw std::bad_alloc();
     }
     m_buffer.reset(static_cast<unsigned char*>(buf_new));
     m_cap = new_size;

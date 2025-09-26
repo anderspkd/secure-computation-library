@@ -104,7 +104,7 @@ std::string scl::details::toString<Curve>(const Point& point) {
     str = ss.str();
   }
   return str;
-}  // LCOV_EXCL_LINE
+}
 
 template <>
 void scl::details::setGenerator<Curve>(Point& out) {

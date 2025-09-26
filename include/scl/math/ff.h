@@ -62,7 +62,7 @@ class FF final {
     FF e;
     details::fromBytes<FIELD>(e.m_value, src);
     return e;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Create a random element, using a supplied PRG.
@@ -227,7 +227,7 @@ class FF final {
     details::negate<FIELD>(copy);
     r.m_value = copy;
     return r;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Negate a finite field element.

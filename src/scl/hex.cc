@@ -36,4 +36,4 @@ std::string scl::toHexString(const __uint128_t& v) {
     str = ss.str();
   }
   return str;
-}  // LCOV_EXCL_LINE
+}

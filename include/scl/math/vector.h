@@ -46,7 +46,7 @@ T innerProd(IT0 xb, IT0 xe, IT1 yb) {
     v += *xb++ * *yb++;
   }
   return v;
-}  // LCOV_EXCL_LINE
+}
 
 /**
  * @brief Vector.
@@ -259,7 +259,7 @@ class Vector final {
       sum += v;
     }
     return sum;
-  }  // LCOV_EXCL_LINE
+  }
 
   /**
    * @brief Scale this vector by a constant.

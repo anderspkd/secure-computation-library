@@ -66,7 +66,7 @@ scl::Number scl::Number::fromString(const std::string& str) {
   scl::Number num;
   mpz_set_str(num.m_value, str.c_str(), 16);
   return num;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::read(const unsigned char* buf) {
   std::uint32_t size_and_sign;
@@ -81,7 +81,7 @@ scl::Number scl::Number::read(const unsigned char* buf) {
     mpz_neg(r.m_value, r.m_value);
   }
   return r;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number::Number(int value) : Number() {
   mpz_set_si(m_value, value);
@@ -91,25 +91,25 @@ scl::Number scl::Number::operator+(const Number& number) const {
   scl::Number sum;
   mpz_add(sum.m_value, m_value, number.m_value);
   return sum;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator-(const Number& number) const {
   scl::Number diff;
   mpz_sub(diff.m_value, m_value, number.m_value);
   return diff;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator-() const {
   scl::Number neg;
   mpz_neg(neg.m_value, m_value);
   return neg;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator*(const Number& number) const {
   scl::Number prod;
   mpz_mul(prod.m_value, m_value, number.m_value);
   return prod;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator/(const Number& number) const {
   if (mpz_sgn(number.m_value) == 0) {
@@ -118,13 +118,13 @@ scl::Number scl::Number::operator/(const Number& number) const {
   scl::Number frac;
   mpz_div(frac.m_value, m_value, number.m_value);
   return frac;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator%(const Number& mod) const {
   scl::Number res;
   mpz_mod(res.m_value, m_value, mod.m_value);
   return res;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator<<(int shift) const {
   scl::Number shifted;
@@ -134,7 +134,7 @@ scl::Number scl::Number::operator<<(int shift) const {
     mpz_mul_2exp(shifted.m_value, m_value, shift);
   }
   return shifted;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator>>(int shift) const {
   scl::Number shifted;
@@ -144,31 +144,31 @@ scl::Number scl::Number::operator>>(int shift) const {
     mpz_tdiv_q_2exp(shifted.m_value, m_value, shift);
   }
   return shifted;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator^(const Number& number) const {
   scl::Number xord;
   mpz_xor(xord.m_value, m_value, number.m_value);
   return xord;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator|(const Number& number) const {
   scl::Number ord;
   mpz_ior(ord.m_value, m_value, number.m_value);
   return ord;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator&(const Number& number) const {
   scl::Number andd;
   mpz_and(andd.m_value, m_value, number.m_value);
   return andd;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::Number::operator~() const {
   scl::Number com;
   mpz_com(com.m_value, m_value);
   return com;
-}  // LCOV_EXCL_LINE
+}
 
 int scl::Number::compare(const Number& number) const {
   return mpz_cmp(m_value, number.m_value);
@@ -210,13 +210,13 @@ scl::Number scl::lcm(const Number& a, const Number& b) {
   Number lcm;
   mpz_lcm(lcm.m_value, a.m_value, b.m_value);
   return lcm;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::gcd(const Number& a, const Number& b) {
   Number gcd;
   mpz_gcd(gcd.m_value, a.m_value, b.m_value);
   return gcd;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::modInverse(const Number& val, const Number& mod) {
   if (mpz_sgn(mod.m_value) == 0) {
@@ -230,7 +230,7 @@ scl::Number scl::modInverse(const Number& val, const Number& mod) {
   }
 
   return inv;
-}  // LCOV_EXCL_LINE
+}
 
 scl::Number scl::modExp(const Number& base,
                         const Number& exp,
@@ -238,4 +238,4 @@ scl::Number scl::modExp(const Number& base,
   Number r;
   mpz_powm(r.m_value, base.m_value, exp.m_value, mod.m_value);
   return r;
-}  // LCOV_EXCL_LINE
+}

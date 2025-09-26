@@ -23,6 +23,9 @@
 
 namespace scl {
 
+/**
+ * @brief x
+ */
 struct ChannelId final {
   std::size_t local;
   std::size_t remote;
@@ -36,6 +39,9 @@ struct ChannelId final {
 
 }  // namespace scl
 
+/**
+ * @brief x
+ */
 template <>
 struct std::hash<scl::ChannelId> {
   std::size_t operator()(const scl::ChannelId& channel_id) const {
