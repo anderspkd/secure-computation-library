@@ -18,6 +18,8 @@
 #ifndef SCL_NET_TCP_UTILS_H
 #define SCL_NET_TCP_UTILS_H
 
+#include <string>
+
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>

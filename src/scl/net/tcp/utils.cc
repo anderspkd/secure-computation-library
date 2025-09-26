@@ -17,6 +17,8 @@
 
 #include "./utils.h"
 
+#include <system_error>
+
 #include "./syscalls.h"
 
 int scl::details::createServerSocket(int port, int backlog) {
