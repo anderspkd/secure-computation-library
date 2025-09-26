@@ -23,7 +23,6 @@
 #include <stdexcept>
 
 #include "scl/hex.h"
-#include "scl/math/hex_util.h"
 #include "scl/primitives/prg.h"
 
 namespace scl {

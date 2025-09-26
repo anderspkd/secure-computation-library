@@ -27,7 +27,7 @@
 
 #include <gmp.h>
 
-#include "scl/math/hex_util.h"
+#include "scl/hex.h"
 
 namespace scl::details {
 

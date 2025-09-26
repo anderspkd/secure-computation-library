@@ -23,7 +23,6 @@
 #include "./small_ff.h"
 #include "scl/hex.h"
 #include "scl/math/ff_ops.h"
-#include "scl/math/hex_util.h"
 
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
