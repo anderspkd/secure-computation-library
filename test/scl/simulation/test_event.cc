@@ -11,7 +11,7 @@
 using namespace scl;
 using namespace std::chrono_literals;
 
-TEST_CASE("Simulation Event write tests") {
+TEST_CASE("Event write tests") {
   EventList evl;
 
   evl.add<StartEvent>();
@@ -68,4 +68,11 @@ TEST_CASE("EventList removes TRANSIENT events") {
 
   REQUIRE(evl.size() == 1);
   REQUIRE(evl.latest()->type() == scl::EventType::START);
+
+  // non-transient events are not removed
+
+  evl.add<StopEvent>(10s);
+
+  REQUIRE(evl.size() == 2);
+  REQUIRE(evl.latest()->type() == scl::EventType::STOP);
 }
