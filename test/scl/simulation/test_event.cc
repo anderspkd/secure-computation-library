@@ -64,7 +64,7 @@ TEST_CASE("EventList removes TRANSIENT events") {
 
   evl.add<StartEvent>();
 
-  // transient event should have been removed now
+  // the TRANSIENT event should have been removed now
 
   REQUIRE(evl.size() == 1);
   REQUIRE(evl.latest()->type() == scl::EventType::START);
