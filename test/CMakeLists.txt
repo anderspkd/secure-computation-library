@@ -21,11 +21,11 @@ set(SCL_SOURCE_FILES_TEST
   scl/test_cmdline.cc
   scl/test_serializer.cc
 
-  scl/util/test_prg.cc
-  scl/util/test_sha3.cc
-  scl/util/test_sha256.cc
-  scl/util/test_ecdsa.cc
-  scl/util/test_merkle.cc
+  scl/primitives/test_prg.cc
+  scl/primitives/test_sha3.cc
+  scl/primitives/test_sha256.cc
+  scl/primitives/test_ecdsa.cc
+  scl/primitives/test_merkle.cc
 
   scl/gf7.cc
   scl/math/test_mersenne61.cc
@@ -52,8 +52,9 @@ set(SCL_SOURCE_FILES_TEST
   scl/net/util.cc
   scl/net/test_config.cc
   scl/net/test_loopback.cc
-  scl/net/test_network.cc
   scl/net/test_packet.cc
+
+  scl/net/tcp/test_network.cc
 
   # scl/protocol/test_protocol.cc
 

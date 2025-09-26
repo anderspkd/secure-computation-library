@@ -15,20 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/net/network.h"
+#include "scl/net/tcp/network.h"
 
 #include <cstdint>
 #include <memory>
 
 #include "./syscalls.h"
-#include "./tcp_utils.h"
+#include "./utils.h"
 #include "scl/coro/runtime.h"
 #include "scl/net/channel.h"
 #include "scl/net/config.h"
 #include "scl/net/loopback.h"
-#include "scl/net/tcp_channel.h"
-
-using namespace std::chrono_literals;
+#include "scl/net/tcp/channel.h"
 
 namespace {
 
@@ -62,6 +60,7 @@ struct SocketAndId {
 };
 
 scl::Task<SocketAndId> acceptConnection(int server_socket) {
+  using namespace std::chrono_literals;
   while (true) {
     if (scl::details::pollSocket(server_socket, POLLIN)) {
       auto conn = scl::details::acceptConnection(server_socket);
@@ -78,6 +77,7 @@ scl::Task<SocketAndId> acceptConnection(int server_socket) {
 
 scl::Task<SocketAndId> establishConnection(scl::ConnectionInfo party,
                                            std::size_t my_id) {
+  using namespace std::chrono_literals;
   std::size_t attempts = 100;  // max attempts.
 
   while (attempts > 0) {
@@ -102,7 +102,7 @@ scl::Task<SocketAndId> establishConnection(scl::ConnectionInfo party,
 
 }  // namespace
 
-scl::Task<scl::Network> scl::Network::create(const NetworkConfig& config) {
+scl::Task<scl::Network> scl::createTcpNetwork(const NetworkConfig& config) {
   std::vector<std::shared_ptr<Channel>> channels(config.networkSize());
 
   const std::size_t id = config.id();

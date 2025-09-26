@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "scl/net/channel.h"
-#include "scl/net/config.h"
 
 namespace scl {
 
@@ -55,17 +54,6 @@ namespace scl {
  */
 class Network {
  public:
-  /**
-   * @brief Create a network using a network config.
-   * @param config the network configuration to use.
-   *
-   * Creates a new network where the connection information about the parties of
-   * the network is read from a provided config. In the resulting network, the
-   * local party is connected to itself with a LoopbackChannel, and to everyone
-   * else with a TcpChannel.
-   */
-  static Task<Network> create(const NetworkConfig& config);
-
   /**
    * @brief Create a new network.
    * @param channels the list of channels in the network.

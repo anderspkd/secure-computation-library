@@ -75,10 +75,11 @@ set(SCL_SOURCE_FILES
 
   src/scl/coro/runtime.cc
 
-  src/scl/net/tcp_utils.cc
-  src/scl/net/tcp_channel.cc
   src/scl/net/config.cc
-  src/scl/net/network.cc
+
+  src/scl/net/tcp/utils.cc
+  src/scl/net/tcp/channel.cc
+  src/scl/net/tcp/network.cc
 
   src/scl/simulation/event.cc
   src/scl/simulation/network_description.cc

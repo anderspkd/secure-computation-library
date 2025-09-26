@@ -101,14 +101,6 @@ class NetworkConfig {
     validate();
   };
 
-  // /**
-  //  * @brief Create a network config for only one party.
-  //  */
-  // NetworkConfig()
-  //     : m_id(0),
-  //       m_parties(
-  //           std::vector<ConnectionInfo>{ConnectionInfo{0, "0.0.0.0", 0}}) {};
-
   /**
    * @brief Gets the identity of this party.
    */

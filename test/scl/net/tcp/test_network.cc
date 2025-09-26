@@ -16,21 +16,18 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
-#include <cstdint>
-#include <thread>
 
 #include "scl/coro/batch.h"
 #include "scl/coro/runtime.h"
 #include "scl/coro/task.h"
 #include "scl/net/config.h"
-#include "scl/net/network.h"
-#include "scl/net/tcp_channel.h"
+#include "scl/net/tcp/network.h"
 
 using namespace scl;
 
 TEST_CASE("Network one party", "[net]") {
   auto rt = DefaultRuntime::create();
-  auto network = rt->run(Network::create(NetworkConfig::localhost(0, 1)));
+  auto network = rt->run(createTcpNetwork(NetworkConfig::localhost(0, 1)));
   REQUIRE(network.size() == 1);
 }
 
@@ -39,13 +36,13 @@ namespace {
 Task<std::vector<Network>> connect3() {
   std::vector<Task<Network>> networks;
   auto conf0 = NetworkConfig::localhost(0, 3);
-  networks.emplace_back(Network::create(conf0));
+  networks.emplace_back(createTcpNetwork(conf0));
 
   auto conf1 = NetworkConfig::localhost(1, 3);
-  networks.emplace_back(Network::create(conf1));
+  networks.emplace_back(createTcpNetwork(conf1));
 
   auto conf2 = NetworkConfig::localhost(2, 3);
-  networks.emplace_back(Network::create(conf2));
+  networks.emplace_back(createTcpNetwork(conf2));
 
   co_return co_await batch(std::move(networks));
 }
