@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_BITMAP_H
-#define SCL_UTIL_BITMAP_H
+#ifndef SCL_BITMAP_H
+#define SCL_BITMAP_H
 
 #include <bitset>
 #include <cstddef>
@@ -267,4 +267,4 @@ struct Serializer<Bitmap> {
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_BITMAP_H
+#endif  // SCL_BITMAP_H

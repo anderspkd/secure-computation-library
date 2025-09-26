@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_CMDLINE_H
-#define SCL_UTIL_CMDLINE_H
+#ifndef SCL_CMDLINE_H
+#define SCL_CMDLINE_H
 
 #include <algorithm>
 #include <cstdlib>
@@ -336,4 +336,4 @@ bool ProgramOptions::Parser::exists(const T& arg_or_flag) const {
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_CMDLINE_H
+#endif  // SCL_CMDLINE_H

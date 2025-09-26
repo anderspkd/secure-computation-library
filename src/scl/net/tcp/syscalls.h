@@ -1,5 +1,5 @@
-#ifndef SCL_NET_SYSCALLS
-#define SCL_NET_SYSCALLS
+#ifndef SCL_NET_TCP_SYSCALLS_H
+#define SCL_NET_TCP_SYSCALLS_H
 
 #include <cerrno>
 
@@ -80,4 +80,4 @@ inline auto write(int sockfd, const void* buf, size_t count) {
 
 }  // namespace scl::details::sys_call
 
-#endif  // SCL_NET_SYSCALLS
+#endif  // SCL_NET_TCP_SYSCALLS_H

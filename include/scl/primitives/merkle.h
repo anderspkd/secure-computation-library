@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_MERKLE_H
-#define SCL_UTIL_MERKLE_H
+#ifndef SCL_PRIMITIVES_MERKLE_H
+#define SCL_PRIMITIVES_MERKLE_H
 
 #include <vector>
 
@@ -182,4 +182,4 @@ bool MerkleTree<HASH, LEAF>::verify(const LEAF& leaf,
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_MERKLE_H
+#endif  // SCL_PRIMITIVES_MERKLE_H

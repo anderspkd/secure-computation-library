@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_PRG_H
-#define SCL_UTIL_PRG_H
+#ifndef SCL_PRIMITIVES_PRG_H
+#define SCL_PRIMITIVES_PRG_H
 
 #include <array>
 #include <cstddef>
@@ -173,4 +173,4 @@ class PRG {
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_PRG_H
+#endif  // SCL_PRIMITIVES_PRG_H

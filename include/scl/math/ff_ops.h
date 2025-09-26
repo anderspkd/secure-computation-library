@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FIELDS_FF_OPS_H
-#define SCL_MATH_FIELDS_FF_OPS_H
+#ifndef SCL_MATH_FF_OPS_H
+#define SCL_MATH_FF_OPS_H
 
 #include <string>
 
@@ -112,6 +112,6 @@ void fromBytes(typename FIELD::ValueType& dest, const unsigned char* src);
 template <typename FIELD>
 std::string toString(const typename FIELD::ValueType& in);
 
-}  // namespace scl
+}  // namespace scl::details
 
-#endif  // SCL_MATH_FIELDS_FF_OPS_H
+#endif  // SCL_MATH_FF_OPS_H

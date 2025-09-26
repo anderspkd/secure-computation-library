@@ -15,12 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_SIGN_H
-#define SCL_UTIL_SIGN_H
+#ifndef SCL_PRIMITIVES_SIGN_H
+#define SCL_PRIMITIVES_SIGN_H
 
-#include "scl/math/secp256k1.h"
 #include "scl/math/ec.h"
 #include "scl/math/ff.h"
+#include "scl/math/secp256k1.h"
 
 namespace scl {
 
@@ -177,4 +177,4 @@ class ECDSA {
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_SIGN_H
+#endif  // SCL_PRIMITIVES_SIGN_H

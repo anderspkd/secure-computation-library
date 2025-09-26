@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_SHA256_H
-#define SCL_UTIL_SHA256_H
+#ifndef SCL_PRIMITIVES_SHA256_H
+#define SCL_PRIMITIVES_SHA256_H
 
 #include <array>
 #include <cstddef>
@@ -69,4 +69,4 @@ class Sha256 final : public IUFHash<Sha256> {
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_SHA256_H
+#endif  // SCL_PRIMITIVES_SHA256_H

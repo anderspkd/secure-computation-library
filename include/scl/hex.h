@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_STR_H
-#define SCL_UTIL_STR_H
+#ifndef SCL_HEX_H
+#define SCL_HEX_H
 
 #include <iomanip>
 #include <sstream>
@@ -58,4 +58,4 @@ std::string toHexString(const __uint128_t& v);
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_STR_H
+#endif  // SCL_HEX_H

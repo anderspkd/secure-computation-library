@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FIELDS_SECP256K1_FIELD_H
-#define SCL_MATH_FIELDS_SECP256K1_FIELD_H
+#ifndef SCL_MATH_SECP256K1_FIELD_H
+#define SCL_MATH_SECP256K1_FIELD_H
 
 #include <array>
 #include <cstddef>
@@ -50,6 +50,6 @@ struct Secp256k1Field {
   constexpr static const std::size_t BIT_SIZE = 8 * BYTE_SIZE;
 };
 
-}  // namespace scl::math::ff
+}  // namespace scl
 
-#endif  // SCL_MATH_FIELDS_SECP256K1_FIELD_H
+#endif  // SCL_MATH_SECP256K1_FIELD_H

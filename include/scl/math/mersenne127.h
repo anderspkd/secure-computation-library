@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FIELDS_MERSENNE127_H
-#define SCL_MATH_FIELDS_MERSENNE127_H
+#ifndef SCL_MATH_MERSENNE127_H
+#define SCL_MATH_MERSENNE127_H
 
 #include <cstddef>
 
@@ -47,6 +47,6 @@ struct Mersenne127 {
   constexpr static const std::size_t BIT_SIZE = 127;
 };
 
-}  // namespace scl::math::ff
+}  // namespace scl
 
-#endif  // SCL_MATH_FIELDS_MERSENNE127_H
+#endif  // SCL_MATH_MERSENNE127_H

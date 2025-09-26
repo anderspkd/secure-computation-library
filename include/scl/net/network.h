@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "scl/coro/task.h"
 #include "scl/net/channel.h"
 
 namespace scl {

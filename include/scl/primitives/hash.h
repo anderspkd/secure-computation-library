@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_HASH_H
-#define SCL_UTIL_HASH_H
+#ifndef SCL_PRIMITIVES_HASH_H
+#define SCL_PRIMITIVES_HASH_H
 
 #include <cstddef>
 
@@ -35,4 +35,4 @@ using Hash = Sha3<BITS>;
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_HASH_H
+#endif  // SCL_PRIMITIVES_HASH_H

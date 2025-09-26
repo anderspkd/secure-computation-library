@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FIELDS_FF_OPS_GMP_H
-#define SCL_MATH_FIELDS_FF_OPS_GMP_H
+#ifndef SCL_MATH_FF_OPS_GMP_H
+#define SCL_MATH_FF_OPS_GMP_H
 
 #include <algorithm>
 #include <cmath>
@@ -401,4 +401,4 @@ void montyFromString(mp_limb_t* out,
 
 }  // namespace scl::details
 
-#endif  // SCL_MATH_FIELDS_FF_OPS_GMP_H
+#endif  // SCL_MATH_FF_OPS_GMP_H

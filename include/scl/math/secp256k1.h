@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_CURVES_SECP256K1_H
-#define SCL_MATH_CURVES_SECP256K1_H
+#ifndef SCL_MATH_SECP256K1_H
+#define SCL_MATH_SECP256K1_H
 
 #include <gmp.h>
 
@@ -55,4 +55,4 @@ struct Secp256k1 {
 
 }  // namespace scl
 
-#endif  // SCL_MATH_CURVES_SECP256K1_H
+#endif  // SCL_MATH_SECP256K1_H

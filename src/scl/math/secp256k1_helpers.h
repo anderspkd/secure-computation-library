@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FIELDS_SECP256K1_HELPERS_H
-#define SCL_MATH_FIELDS_SECP256K1_HELPERS_H
+#ifndef SCL_MATH_SECP256K1_HELPERS_H
+#define SCL_MATH_SECP256K1_HELPERS_H
 
 #include "scl/math/ff.h"
 #include "scl/math/naf.h"
@@ -55,4 +55,4 @@ NafEncoding<Secp256k1Scalar> toNaf(const FF<Secp256k1Scalar>& x);
 
 }  // namespace scl::details
 
-#endif  // SCL_MATH_FIELDS_SECP256K1_HELPERS_H
+#endif  // SCL_MATH_SECP256K1_HELPERS_H

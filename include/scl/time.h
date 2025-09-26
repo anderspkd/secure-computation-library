@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_UTIL_TIME_H
-#define SCL_UTIL_TIME_H
+#ifndef SCL_TIME_H
+#define SCL_TIME_H
 
 #include <chrono>
 #include <ratio>
@@ -60,4 +60,4 @@ struct Clock {
 
 }  // namespace scl
 
-#endif  // SCL_UTIL_TIME_H
+#endif  // SCL_TIME_H

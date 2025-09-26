@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_CURVES_EC_OPS_H
-#define SCL_MATH_CURVES_EC_OPS_H
+#ifndef SCL_MATH_EC_OPS_H
+#define SCL_MATH_EC_OPS_H
 
 #include <array>
 #include <string>
@@ -154,4 +154,4 @@ std::string toString(const typename CURVE::ValueType& point);
 
 }  // namespace scl::details
 
-#endif  // SCL_MATH_CURVES_EC_OPS_H
+#endif  // SCL_MATH_EC_OPS_H

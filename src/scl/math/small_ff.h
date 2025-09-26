@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FIELDS_SMALL_FF_H
-#define SCL_MATH_FIELDS_SMALL_FF_H
+#ifndef SCL_MATH_SMALL_FF_H
+#define SCL_MATH_SMALL_FF_H
 
 #include <stdexcept>
 
@@ -93,4 +93,4 @@ void modInv(T& t, const T& v, const T& m) {
 
 }  // namespace scl::details
 
-#endif  // SCL_MATH_FIELDS_SMALL_FF_H
+#endif  // SCL_MATH_SMALL_FF_H
