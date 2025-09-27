@@ -46,13 +46,47 @@ concept ProtocolBuilder = requires(BUILDER builder) {
  */
 class Simulator final {
  public:
+  /**
+   * @brief A simulation hook.
+   *
+   * Simulation hooks are functions which are run whenever a specific/any Event
+   * is created by some party. Hooks enable a programmable way of gaining
+   * insight into a running simulation.
+   *
+   * The following illustrates how it is possible to define a hook which
+   * prints a message every time a party enters a Protocol.
+   *
+   * @code
+   * void printHook(std::size_t pid, Event* event) {
+   *   BeginEvent* be = (BeginEvent*)event;
+   *   std::cout << "party " << pid << " started " << be->name() << "\n";
+   * }
+   *
+   * // make sure to add the hook with the right trigger, otherwise we're
+   * // gonna have a bad time.
+   * sim.addHook(EventType::BEGIN_EVENT, printHook);
+   * @endcode
+   */
   struct SimulationHook {
+    /**
+     * @brief Type definition of hook functions.
+     */
     using HookType = std::function<void(std::size_t, Event*)>;
 
+    /**
+     * @brief The trigger, if any.
+     */
     std::optional<EventType> trigger;
+
+    /**
+     * @brief The hook function.
+     */
     HookType hook;
   };
 
+  /**
+   * @brief Run the simulation.
+   */
   template <ProtocolBuilder BUILDER>
   void run(BUILDER& builder, NetworkDescription network_desc) {
     auto protocol = builder();
@@ -62,12 +96,18 @@ class Simulator final {
     run(std::move(protocol), network_desc);
   }
 
+  /**
+   * @brief Add a hook with a trigger.
+   */
   template <typename HOOK>
     requires(std::convertible_to<HOOK, SimulationHook::HookType>)
   void addHook(EventType trigger, HOOK hook) {
     m_hooks.emplace_back(trigger, hook);
   }
 
+  /**
+   * @brief Add a hook without a trigger.
+   */
   template <typename HOOK>
     requires(std::convertible_to<HOOK, SimulationHook::HookType>)
   void addHook(HOOK hook) {

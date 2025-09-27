@@ -193,6 +193,6 @@ struct InitialEvent final : public scl::Event {
 
 }  // namespace
 
-scl::EventList::EventList() {
+scl::details::EventList::EventList() {
   add<InitialEvent>();
 }

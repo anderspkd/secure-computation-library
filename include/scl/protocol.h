@@ -26,38 +26,108 @@
 
 namespace scl {
 
+/**
+ * @brief Protocol environment.
+ *
+ * Env is the interface with which a Protocol can interact with the outside
+ * world, as it were. It contains (1) a way to send and receive data to the
+ * other parties, and (2) a way to see how long the protocol has been running
+ * for.
+ */
 struct Env {
+  /**
+   * @brief The network.
+   */
   Network network;
+
+  /**
+   * @brief A clock.
+   */
   std::unique_ptr<Clock> clock;
 };
 
 struct Result;
 
+/**
+ * @brief Protocol interface.
+ *
+ * Protocol defines the "smallest possible" protocol. Namely a protocol which
+ * can be run once, and which might produce (1) some output, and (2) another
+ * protocol which can then be run next. This allows us to string multiple
+ * Protocols together in order to get a much larger protocol. For example,
+ * instead of implementing a full evaluation of a circuit, it might be easier to
+ * implement something which only evaluates a single layer of the circuit. To
+ * evaluate the full circuit, we just need stich enough of these single-layer
+ * protocols together.
+ *
+ * The following simple example illustrates this idea.
+ * @code
+ * class CountdownProtocol final : public Protocol {
+ *  public:
+ *   CountdownProtocol(int current) : m_current(current) {}
+ *   Task<Result> run(Env& ignored) const override {
+ *     std::cout << "countdown: " << m_current << "\n";
+ *     if (m_current == 0) {
+ *       co_return Result::done();
+ *     } else {
+ *       co_return Result::next(
+ *           std::make_unique<CountdownProtocol>(m_current - 1));
+ *     }
+ *   }
+ *  private:
+ *   int m_current;
+ * };
+ * @endcode
+ */
 struct Protocol {
   virtual ~Protocol() {}
 
+  /**
+   * @brief Default name of a protocol.
+   */
   constexpr static const char* DEFAULT_NAME = "N/A";
 
+  /**
+   * @brief Runs the protocol.
+   */
   virtual Task<Result> run(Env& env) const = 0;
 
+  /**
+   * @brief Returns the name of the protocol.
+   */
   virtual std::string name() const {
     return DEFAULT_NAME;
   }
 };
 
+/**
+ * @brief The result of calling Protocol::run.
+ */
 struct Result {
+  /**
+   * @brief Creates a Result with no next step, and no output.
+   */
   static Result done() {
     return Result{.next = nullptr, .output = {}};
   }
 
+  /**
+   * @brief Creates a Result with no next step, and some output.
+   */
   static Result done(std::any output) {
     return Result{.next = nullptr, .output = output};
   }
 
+  /**
+   * @brief Creates a Result with a next step, and no output.
+   */
   static Result nextStep(std::unique_ptr<Protocol> next) {
     return Result{.next = std::move(next), .output = {}};
   }
 
+  /**
+   * @brief Creates a Result with a next step, and some output.
+   */
   static Result nextStep(std::unique_ptr<Protocol> next, std::any output) {
     return Result{.next = std::move(next), .output = output};
   }

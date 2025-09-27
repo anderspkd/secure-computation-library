@@ -102,12 +102,14 @@ enum class EventType {
 
 /**
  * @brief Base class for all events.
+ *
+ * All events in SCL's simulator inheret from Event. The most basic Event is
+ * effectively just a timestamp telling us when the event was generated.
  */
 class Event {
  public:
   /**
    * @brief Constructor.
-   * @param timestamp the time that the event was issued.
    */
   Event(Time::Duration timestamp) : m_timestamp(timestamp) {}
 
@@ -136,6 +138,7 @@ class Event {
 
 /**
  * @brief Event issued when a party starts executing a Protocol.
+ * @see EndEvent
  */
 class BeginEvent final : public Event {
  public:
@@ -148,6 +151,10 @@ class BeginEvent final : public Event {
     return EventType::BEGIN;
   }
 
+  /**
+   * @brief The name of protocol.
+   * @see Protocol::name
+   */
   std::string_view name() const {
     return m_name;
   }
@@ -158,6 +165,7 @@ class BeginEvent final : public Event {
 
 /**
  * @brief Event issued when a party finishes executing a Protocol.
+ * @see BeginEvent
  */
 class EndEvent final : public Event {
  public:
@@ -170,6 +178,10 @@ class EndEvent final : public Event {
     return EventType::END;
   }
 
+  /**
+   * @brief The name of protocol.
+   * @see Protocol::name
+   */
   std::string_view name() const {
     return m_name;
   }
@@ -180,6 +192,7 @@ class EndEvent final : public Event {
 
 /**
  * @brief Event issued when a party starts running.
+ * @see StopEvent
  */
 class StartEvent final : public Event {
  public:
@@ -192,6 +205,7 @@ class StartEvent final : public Event {
 
 /**
  * @brief Event issued when a party stops running.
+ * @see StartEvent
  */
 class StopEvent final : public Event {
  public:
@@ -209,6 +223,10 @@ class KilledEvent final : public Event {
  public:
   KilledEvent(Time::Duration timestamp, const std::string& reason)
       : Event(timestamp), m_reason(reason) {}
+
+  /**
+   * @brief The exception's what message.
+   */
   std::string reason() const {
     return m_reason;
   }
@@ -241,6 +259,9 @@ class ChannelEvent : public Event {
   ChannelEvent(Time::Duration timestamp, ChannelId id)
       : Event(timestamp), m_id(id) {}
 
+  /**
+   * @brief The identifier of the channel this event pertains to.
+   */
   ChannelId id() const {
     return m_id;
   }
@@ -255,9 +276,7 @@ class ChannelEvent : public Event {
 class CloseEvent final : public ChannelEvent {
  public:
   using ChannelEvent::ChannelEvent;
-
   void write(std::ostream& stream) override;
-
   EventType type() const override {
     return EventType::CHANNEL_CLOSE;
   }
@@ -271,6 +290,9 @@ class ChannelDataEvent : public ChannelEvent {
   ChannelDataEvent(Time::Duration timestamp, ChannelId id, std::size_t amount)
       : ChannelEvent(timestamp, id), m_amount(amount) {}
 
+  /**
+   * @brief The amount of data sent or received.
+   */
   std::size_t amount() const {
     return m_amount;
   }
@@ -303,6 +325,9 @@ class RecvEvent final : public ChannelDataEvent {
   }
 };
 
+/**
+ * @brief Event issued when a party times out during a recv call.
+ */
 class RecvTimeoutEvent final : public ChannelEvent {
  public:
   using ChannelEvent::ChannelEvent;
@@ -325,6 +350,9 @@ class PollEvent final : public ChannelEvent {
     return EventType::CHANNEL_POLL;
   }
 
+  /**
+   * @brief The result of the Channel::poll call.
+   */
   bool result() const {
     return m_result;
   }
@@ -333,6 +361,9 @@ class PollEvent final : public ChannelEvent {
   bool m_result;
 };
 
+/**
+ * @brief Event issued when a party sleeps.
+ */
 class SleepEvent final : public Event {
  public:
   SleepEvent(Time::Duration timestamp, Time::Duration duration)
@@ -344,6 +375,9 @@ class SleepEvent final : public Event {
     return EventType::SLEEP;
   }
 
+  /**
+   * @brief The amount of time a party slept.
+   */
   Time::Duration duration() const {
     return m_duration;
   }
@@ -352,9 +386,22 @@ class SleepEvent final : public Event {
   Time::Duration m_duration;
 };
 
+namespace details {
+
+/**
+ * @brief Tracks events added by a party during simulation.
+ *
+ * EventList is mostly just a wrapper around an STL vector of Event
+ * pointers. Minor book keeping is done to ensure that all events of type
+ * EventType::TRANSIENT only appear of the head of the list.
+ */
 class EventList final {
  public:
   EventList();
+
+  /**
+   * @brief Add a new event by in-place construction.
+   */
   template <typename EVENT, typename... ARGS>
     requires(std::is_base_of_v<Event, EVENT>)
   void add(ARGS... args) {
@@ -403,6 +450,7 @@ class EventList final {
   std::vector<std::unique_ptr<Event>> m_events;
 };
 
+}  // namespace details
 }  // namespace scl
 
 #endif  // SCL_SIMULATION_EVENT_H

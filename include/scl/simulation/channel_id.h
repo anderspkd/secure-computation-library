@@ -24,7 +24,7 @@
 namespace scl {
 
 /**
- * @brief x
+ * @brief Identifier used for Channels.
  */
 struct ChannelId final {
   std::size_t local;

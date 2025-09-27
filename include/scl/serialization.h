@@ -25,17 +25,54 @@
 
 namespace scl {
 
+/**
+ * @brief Serializer type.
+ *
+ * A type \p T is serializable if it <code>Serializer<T></code> contains three
+ * static functions.
+ *
+ * @code
+ * struct Thing {
+ *   static std::size_t sizeOf(Thing t) {
+ *      // return the size in bytes of the object t of type Thing
+ *   }
+ *
+ *   static std::size_t write(Thing t, unsigned char* out) {
+ *      // write t to out.
+ *      // out will be guaranteed to point to at least sizeOf(t) available bytes
+ *      // return the amount of bytes written to out
+ *   }
+ *
+ *   static std::size_t read(Thing& t, const unsigned char* in) {
+ *      // read a Thing from in, store the result in t
+ *      // return the amount of bytes read from in
+ *   }
+ * }
+ * @endcode
+ *
+ * Note that no guarantees are made about the buffer passed to
+ * <code>read</code>.
+ *
+ * Serializer's mostly play a role in reading and writing to Packets for the
+ * purpose of communicating with other parties.
+ */
 template <typename T>
 struct Serializer;
 
+/**
+ * @brief Serializable concept.
+ */
 template <typename T>
 concept Serializable =
-    requires(T v, const unsigned char* in, unsigned char* out) {
+    requires(T v, T& r, const unsigned char* in, unsigned char* out) {
       { Serializer<T>::sizeOf(v) } -> std::same_as<std::size_t>;
       { Serializer<T>::write(v, out) } -> std::same_as<std::size_t>;
-      { Serializer<T>::read(v, in) } -> std::same_as<std::size_t>;
+      { Serializer<T>::read(r, in) } -> std::same_as<std::size_t>;
     };
 
+/**
+ * @brief Serializer for trivially copyable types.
+ */
 template <typename T>
   requires(std::is_trivially_copyable_v<T>)
 struct Serializer<T> {
@@ -54,7 +91,10 @@ struct Serializer<T> {
   }
 };
 
-template <typename T>
+/**
+ * @brief Serializer for STL vectors of something serializable.
+ */
+template <Serializable T>
 struct Serializer<std::vector<T>> {
   using VecSizeType = std::uint32_t;
 
