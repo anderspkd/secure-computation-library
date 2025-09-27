@@ -22,7 +22,7 @@
 #include <sstream>
 #include <string>
 
-namespace scl {
+namespace scl::details {
 
 /**
  * @brief Convert value into a string.
@@ -55,8 +55,6 @@ std::string toHexString(It begin, It end) {
  */
 template <>
 std::string toHexString(const __uint128_t& v);
-
-namespace details {
 
 #define SCL_TO_HEX(v, c)                                                \
   do {                                                                  \
@@ -97,7 +95,6 @@ T fromHexString(const std::string& s) {
 
 #undef SCL_TO_HEX
 
-}  // namespace details
-}  // namespace scl
+}  // namespace scl::details
 
 #endif  // SCL_HEX_H

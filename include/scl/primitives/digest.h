@@ -42,7 +42,7 @@ using Digest = std::array<unsigned char, BITS / 8>;
  */
 template <typename DIGEST>
 std::string digestToString(const DIGEST& digest) {
-  return toHexString(digest.begin(), digest.end());
+  return details::toHexString(digest.begin(), digest.end());
 }
 
 }  // namespace scl

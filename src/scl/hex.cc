@@ -20,7 +20,7 @@
 #include <cstdint>
 
 template <>
-std::string scl::toHexString(const __uint128_t& v) {
+std::string scl::details::toHexString(const __uint128_t& v) {
   std::string str;
   if (v == 0) {
     str = "0";

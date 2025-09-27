@@ -310,7 +310,7 @@ class Z2k final {
    */
   std::string toString() const {
     const auto w = m_value & MASK;
-    return toHexString(w);
+    return details::toHexString(w);
   }
 
   /**
