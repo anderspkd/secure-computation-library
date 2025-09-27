@@ -19,6 +19,22 @@
 
 #include <vector>
 
+template <>
+bool scl::ProgramOptions::get<bool>(std::string_view name) const {
+  const auto v = m_args.at(name);
+  return v == "1" || v == "true";
+}
+
+template <>
+int scl::ProgramOptions::get<int>(std::string_view name) const {
+  return std::stoi(m_args.at(name).data());
+}
+
+template <>
+std::size_t scl::ProgramOptions::get<std::size_t>(std::string_view name) const {
+  return std::stoul(m_args.at(name).data());
+}
+
 bool scl::ProgramOptions::Parser::isArg(std::string_view name) const {
   return std::any_of(m_args.begin(), m_args.end(), [&](auto a) {
     return a.name == name;

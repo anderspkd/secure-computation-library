@@ -23,7 +23,6 @@
 #include <iostream>
 #include <optional>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <variant>
@@ -32,23 +31,53 @@
 namespace scl {
 
 /**
- * @brief Simple command line argument parser.
+ * @brief Container for arguments and flags parsed by ProgramOptions::Parser.
  *
- * ProgramOptions allows defining and parsing options for a program in a limited
- * manner using a builder pattern. For example:
+ * ProgramOptions holds the result after parsing the stuff in <code>argv</code>;
+ * typically, this would be options, flags and so on.
  *
+ * The interface of ProgramOptions is pretty intuitive
  * @code
- * auto p = ProgramOptions::Parser("some description")
- *            .add(ProgramArg::required("foo", "int", "foo description"))
- *            .add(ProgramArg::optional("bar", "bool", "123"))
- *            .add(ProgramFlag("flag"))
- *            .parse(argc, argv);
+ * ProgramOptions opts = ...  //
+ *
+ * // check if "-foo 123" was passed in argv
+ * opts.has("foo");
+ * int foo = opts.get<int>("foo");
+ * assert(foo == 123);
+ *
+ * // the non templated version of get simply returns the argument as
+ * // an std::string_view
+ * std::string_view foo_str = opts.get("foo");
+ * assert(foo_str == "123");
+ *
+ * // check if "-some_flag" was passed in argv
+ * opts.flagSet("some_flag");
  * @endcode
  *
- * The above snippet will parse the <code>argv</code> argument vector passed to
- * a program looking for arguments <code>-foo value</code> and
- * <code>flag</code>. The <code>bar</code> is optional and if not explicitly
- * supplied, gets the default value <code>"123"</code>.
+ * ProgramOptions::get stores argument values internally as
+ * strings. Specialization is, of course, allowed.
+ *
+ * @code
+ * struct FooStruct {
+ *   int x;
+ *   int y;
+ * };
+ *
+ * template <>
+ * FooStruct scl::ProgramOptions::get<FooStruct>(std::string_view name) const {
+ *   FooStruct r;
+ *   const auto arg_val = m_args.at(name);
+ *   // turn the string arg_val into a FooStruct
+ *   return r;
+ * }
+ *
+ * // this will enable us to write
+ * FooStruct x = opts.get<FooStruct>();
+ * @endcode
+ *
+ * Specializations exist for <code>int</code>, <code>std::size_t</code> and
+ * <code>bool</code>. For the latter, the strings "1" and "true" are treated as
+ * <code>true</code>, while everything else is treated as <code>false</code>.
  */
 class ProgramOptions {
  public:
@@ -56,8 +85,6 @@ class ProgramOptions {
 
   /**
    * @brief Check if some argument has been provided.
-   * @param name the name of the argument.
-   * @return true if the argument was set, false otherwise.
    */
   bool has(std::string_view name) const {
     return m_args.find(name) != m_args.end();
@@ -65,8 +92,6 @@ class ProgramOptions {
 
   /**
    * @brief Check if a flag has been set.
-   * @param name the name of the flag.
-   * @return true if the flag was set, false otherwise.
    */
   bool flagSet(std::string_view name) const {
     return m_flags.find(name) != m_flags.end();
@@ -74,8 +99,6 @@ class ProgramOptions {
 
   /**
    * @brief Get the raw value of an argument.
-   * @param name the name of the argument.
-   * @return the value of the argument, as is.
    */
   std::string_view get(std::string_view name) const {
     return m_args.at(name);
@@ -83,14 +106,6 @@ class ProgramOptions {
 
   /**
    * @brief Get the value of an argument with conversion.
-   * @tparam T the type to convert the argument to.
-   * @param name the name of the argument.
-   * @return the value of the argument after conversion.
-   *
-   * Specializations exist for this function for <code>bool</code>,
-   * <code>int</code> and <code>std::size_t</code>. It is possible to provide
-   * custom specializations that can be used to turn a string into any kind of
-   * object.
    */
   template <typename T>
   T get(std::string_view name) const;
@@ -105,31 +120,14 @@ class ProgramOptions {
   std::unordered_map<std::string_view, bool> m_flags;
 };
 
-/**
- * @brief Specialization of CmdArgs::Get for <code>bool</code>.
- */
 template <>
-inline bool ProgramOptions::get<bool>(std::string_view name) const {
-  const auto v = m_args.at(name);
-  return v == "1" || v == "true";
-}
+bool ProgramOptions::get<bool>(std::string_view name) const;
 
-/**
- * @brief Specialization for CmdArgs::Get for <code>int</code>.
- */
 template <>
-inline int ProgramOptions::get<int>(std::string_view name) const {
-  return std::stoi(m_args.at(name).data());
-}
+int ProgramOptions::get<int>(std::string_view name) const;
 
-/**
- * @brief Specialization of CmdArgs::Get for <code>std::size_t</code>.
- */
 template <>
-inline std::size_t ProgramOptions::get<std::size_t>(
-    std::string_view name) const {
-  return std::stoul(m_args.at(name).data());
-}
+std::size_t ProgramOptions::get<std::size_t>(std::string_view name) const;
 
 /**
  * @brief An command-line argument definition.
@@ -137,9 +135,12 @@ inline std::size_t ProgramOptions::get<std::size_t>(
 struct ProgramArg {
   /**
    * @brief Create a required command-line argument.
-   * @param name the name.
-   * @param type_hint a string describing the expected type. E.g., "int".
-   * @param description a short description.
+   *
+   * This creates a required program argument. Adding a ProgramArg to a
+   * ProgramOptions::Parser through this call with a \p name value of
+   * <code>"something"</code> means that the caller of our program must supply
+   * <code>-something</code> when calling our program. The type hint is purely
+   * cosmetic.
    */
   static ProgramArg required(std::string_view name,
                              std::string_view type_hint,
@@ -149,10 +150,9 @@ struct ProgramArg {
 
   /**
    * @brief Create an optional command-line argument.
-   * @param name the name.
-   * @param type_hint a string describing the expected type. E.g., "int".
-   * @param default_value an optional default value.
-   * @param description a short description.
+   *
+   * This creates an optional program argument. In case the argument is not
+   * supplied by the caller of our program, the \p default_value will be used.
    */
   static ProgramArg optional(std::string_view name,
                              std::string_view type_hint,
@@ -193,8 +193,6 @@ struct ProgramArg {
 struct ProgramFlag {
   /**
    * @brief Create a flag argument.
-   * @param name the name of the flag.
-   * @param description a description.
    */
   ProgramFlag(std::string_view name, std::string_view description = "")
       : name(name), description(description) {}
@@ -211,22 +209,90 @@ struct ProgramFlag {
 };
 
 /**
- * @brief Argument parser.
+ * @brief Argument parser for command-line options.
  *
- * The parser accepts argument defintions (through the Add functions) and
- * parses the arguments provided to the main function into a CmdArgs object.
+ * Parser provides a builder for constructing a ProgramOptions object based on
+ * the stuff in <code>argv</code>.
+ *
+ * Parser permits the user to create three different types of program arguments:
+ * - ProgramArg::required creates an option which accepts one argument, and
+ * which must be provided for the program to Parser::parse to work.
+ * - ProgramArg::optional creates an option which accepts one argument, and
+ * which is optional.
+ * - ProgramFlag creates a "flag", or toggle argument.
+ *
+ * @code
+ * // example.cc
+ * #include <scl/cmdline.h>
+ * #include <iostream>
+ *
+ * using namespace scl;
+ *
+ * int main(int argc, char** argv) {
+ *   auto parser = ProgramOptions::Parser("super awesome program")
+ *                     .add(ProgramArg::required("foo", "int", "foo"))
+ *                     .add(ProgramArg::optional("bar", "bool", "true", "bar"))
+ *                     .add(ProgramFlag("baz", "baz"));
+ *
+ *   auto opts = parser.parse(argc, argv);
+ *
+ *   std::cout << "foo = " << opts.get<int>("foo") << "\n";
+ *   std::cout << "bar = " << std::boolalpha << opts.get<bool>("bar") << "\n";
+ *   std::cout << "baz set? " << std::boolalpha << opts.flagSet("baz") << "\n";
+ * }
+ * @endcode
+ *
+ * \code{.unparsed}
+ * $ g++ example.cc -lscl
+ * $ ./a.out
+ * ERROR: missing required argument
+ * Usage: ./a.out -foo int [options ...]
+ *
+ * super awesome program
+ *
+ * Required arguments
+ *  -foo 'int'         foo.
+ *
+ * Optional arguments
+ *  -bar 'bool'        bar. [default=true]
+ *
+ * Flags
+ *  -baz               baz.
+ *
+ * $ ./a.out -help
+ * Usage: ./a.out -foo int [options ...]
+ *
+ * super awesome program
+ *
+ * Required arguments
+ *  -foo 'int'         foo.
+ *
+ * Optional arguments
+ *  -bar 'bool'        bar. [default=true]
+ *
+ * Flags
+ *  -baz               baz.
+ *
+ * $ ./a.out -foo 42
+ * foo = 42
+ * bar = true
+ * baz set? false
+ * $ ./a.out -foo 100 -bar false -baz
+ * foo = 100
+ * bar = false
+ * baz set? true
+ * $
+ * \endcode
  */
 class ProgramOptions::Parser {
  public:
   /**
    * @brief Create a command-line argument parser.
-   * @param description a short description of the program.
    */
   Parser(std::string_view description = "") : m_description(description) {}
 
   /**
    * @brief Define an argument.
-   * @param def an argument definition.
    */
   Parser& add(const ProgramArg& def) {
     m_args.emplace_back(def);
@@ -235,7 +301,6 @@ class ProgramOptions::Parser {
 
   /**
    * @brief Define a flag argument.
-   * @param flag a flag definition.
    */
   Parser& add(const ProgramFlag& flag) {
     m_flags.emplace_back(flag);
@@ -244,22 +309,12 @@ class ProgramOptions::Parser {
 
   /**
    * @brief Parse arguments.
-   * @param argc the number of arguments.
-   * @param argv the arguments.
-   * @return the program options, or an error message.
-   *
-   * The \p argc and \p argv are assumed to be the inputs to a programs main
-   * function.
    */
   std::variant<ProgramOptions, std::string_view> parseArguments(int argc,
                                                                 char* argv[]);
 
   /**
    * @brief Parse arguments.
-   * @param argc the number of arguments.
-   * @param argv the arguments.
-   * @param exit_on_error whether to std::exit when parsing fails
-   * @return a set of program options.
    */
   ProgramOptions parse(int argc, char* argv[], bool exit_on_error = true) {
     auto opts = parseArguments(argc, argv);
