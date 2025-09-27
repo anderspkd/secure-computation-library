@@ -25,7 +25,7 @@
 #include "scl/simulation/network_description.h"
 #include "scl/simulation/simulator.h"
 
-namespace scl {
+namespace scl::details {
 
 class Context;
 
@@ -34,6 +34,9 @@ class Context;
  */
 class SimulatorContext final {
  public:
+  /**
+   * @brief Create a new simulation context object.
+   */
   static SimulatorContext create(
       NetworkDescription network_desc,
       std::vector<Simulator::SimulationHook>&& hooks);
@@ -43,6 +46,9 @@ class SimulatorContext final {
    */
   Context getContext(std::size_t id);
 
+  /**
+   * @brief Add an event to
+   */
   template <typename EVENT, typename... ARGS>
     requires(std::is_base_of_v<Event, EVENT>)
   void addEvent(std::size_t pid, ARGS... args) {
@@ -125,6 +131,6 @@ inline Context SimulatorContext::getContext(std::size_t id) {
   return Context{*this, id};
 }
 
-}  // namespace scl
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_CONTEXT_H

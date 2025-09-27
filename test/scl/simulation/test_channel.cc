@@ -31,13 +31,13 @@ using namespace std::chrono_literals;
 
 TEST_CASE("SimulatedChannel send") {
   auto nd = NetworkDescription::createDefaultLAN(2);
-  auto ctx = SimulatorContext::create(nd, {});
+  auto ctx = details::SimulatorContext::create(nd, {});
 
-  auto tp = std::make_shared<Transport>(ctx);
+  auto tp = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
-  auto channel = SimulatedChannel::create(id, ctx.getContext(0), tp);
+  auto channel = details::SimulatedChannel::create(id, ctx.getContext(0), tp);
 
-  SimulatorRuntime srt(ctx);
+  details::SimulatorRuntime srt(ctx);
 
   // send something
   Packet pkt;
@@ -65,12 +65,12 @@ TEST_CASE("SimulatedChannel send") {
 
 TEST_CASE("SimulatedChannel recv") {
   auto nd = NetworkDescription::createDefaultLAN(2);
-  auto ctx = SimulatorContext::create(nd, {});
-  auto tp = std::make_shared<Transport>(ctx);
+  auto ctx = details::SimulatorContext::create(nd, {});
+  auto tp = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
-  auto channel = SimulatedChannel::create(id, ctx.getContext(0), tp);
+  auto channel = details::SimulatedChannel::create(id, ctx.getContext(0), tp);
 
-  SimulatorRuntime srt(ctx);
+  details::SimulatorRuntime srt(ctx);
 
   Packet pkt;
   pkt << 1 << 2 << 3;

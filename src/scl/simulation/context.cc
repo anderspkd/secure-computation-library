@@ -19,9 +19,7 @@
 
 #include "scl/simulation/event.h"
 
-using namespace scl;
-
-SimulatorContext SimulatorContext::create(
+scl::details::SimulatorContext scl::details::SimulatorContext::create(
     NetworkDescription network_desc,
     std::vector<Simulator::SimulationHook>&& hooks) {
   SimulatorContext ctx{network_desc};
@@ -33,7 +31,7 @@ SimulatorContext SimulatorContext::create(
   return ctx;
 }
 
-void SimulatorContext::runHooks(std::size_t pid, Event* event) {
+void scl::details::SimulatorContext::runHooks(std::size_t pid, Event* event) {
   for (auto& [trigger, hook] : m_hooks) {
     // if the trigger was specified, then the hook is only run if the current
     // event matches the trigger type.

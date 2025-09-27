@@ -24,7 +24,7 @@
 #include "scl/simulation/context.h"
 #include "scl/simulation/transport.h"
 
-namespace scl {
+namespace scl::details {
 
 class SimulatedChannel final : public Channel {
  public:
@@ -52,6 +52,6 @@ class SimulatedChannel final : public Channel {
   std::shared_ptr<Transport> m_transport;
 };
 
-}  // namespace scl
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_CHANNEL_H

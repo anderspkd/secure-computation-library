@@ -23,7 +23,7 @@
 #include "scl/coro/runtime.h"
 #include "scl/simulation/context.h"
 
-namespace scl {
+namespace scl::details {
 
 class SimulatorRuntime final : public Runtime {
  private:
@@ -60,6 +60,6 @@ class SimulatorRuntime final : public Runtime {
   std::list<Coro> m_tq;
 };
 
-}  // namespace scl
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_RUNTIME_H

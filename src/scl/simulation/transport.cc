@@ -25,19 +25,21 @@
 #include "scl/simulation/event.h"
 #include "scl/simulation/network_description.h"
 
-void scl::Transport::send(Time::Duration ts, ChannelId id, Packet&& packet) {
+void scl::details::Transport::send(Time::Duration ts,
+                                   ChannelId id,
+                                   Packet&& packet) {
   const std::pair<Packet, Time::Duration> e{packet, ts};
   m_pqs[id].push(e);
 }
 
-void scl::Transport::send(Time::Duration ts,
-                          ChannelId id,
-                          const Packet& packet) {
+void scl::details::Transport::send(Time::Duration ts,
+                                   ChannelId id,
+                                   const Packet& packet) {
   const std::pair<Packet, Time::Duration> e{packet, ts};
   m_pqs[id].push(e);
 }
 
-bool scl::Transport::ready(ChannelId id) const {
+bool scl::details::Transport::ready(ChannelId id) const {
   // check if the other end of the channel contains anything.
   const auto sid = id.flip();
   return m_pqs.find(sid) != m_pqs.end() && !m_pqs.at(sid).empty();
@@ -125,7 +127,7 @@ scl::Time::Duration computeDelay(
 
 }  // namespace
 
-std::pair<scl::Packet, scl::Time::Duration> scl::Transport::recv(
+std::pair<scl::Packet, scl::Time::Duration> scl::details::Transport::recv(
     Time::Duration ts,
     ChannelId id) {
   const auto params = m_sim_ctx.getChannel(id);
@@ -148,8 +150,9 @@ scl::Time::Duration smallestTimeDelta(
 
 }  // namespace
 
-scl::Transport::PollResult scl::Transport::poll(Time::Duration ts,
-                                                ChannelId id) const {
+scl::details::Transport::PollResult scl::details::Transport::poll(
+    Time::Duration ts,
+    ChannelId id) const {
   const auto stime = m_sim_ctx.getContext(id.remote).lastEvent()->time();
 
   const auto delta = smallestTimeDelta(m_sim_ctx.getChannel(id));

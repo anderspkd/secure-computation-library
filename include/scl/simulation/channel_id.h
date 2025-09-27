@@ -39,14 +39,15 @@ struct ChannelId final {
 
 }  // namespace scl
 
-/**
- * @brief x
- */
+/// @cond
+
 template <>
 struct std::hash<scl::ChannelId> {
   std::size_t operator()(const scl::ChannelId& channel_id) const {
     return channel_id.local ^ (channel_id.remote << 32);
   }
 };
+
+/// @endcond
 
 #endif  // SCL_SIMULATION_CHANNEL_ID_H

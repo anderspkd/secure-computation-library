@@ -53,8 +53,20 @@ inline long double timeToMillis(Time::Duration time) {
   return duration<long double, std::milli>(time).count();
 }
 
+/**
+ * @brief Clock interface.
+ *
+ * Clock is used within protocols to get the time elapsed since the protocol was
+ * first started. The reason for requiring an interface to get this information
+ * is because protocols might be run in a simulation, in which case wall-clock
+ * time wouldn't be accurate.
+ */
 struct Clock {
   virtual ~Clock();
+
+  /**
+   * @brief Read the value of the clock.
+   */
   virtual Time::Duration read() const = 0;
 };
 

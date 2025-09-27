@@ -28,17 +28,12 @@ namespace scl {
 
 /**
  * @brief A digest of some bitsize.
- * @tparam Bits the bitsize of the digest
- *
- * This type is effectively <code>std::array<unsigned char, N / 8</code>.
  */
 template <std::size_t BITS>
 using Digest = std::array<unsigned char, BITS / 8>;
 
 /**
- * @brief Convert a digest to a string.
- * @param digest the digest
- * @return a hex representation of the digest.
+ * @brief Convert a digest to a hex string.
  */
 template <typename DIGEST>
 std::string digestToString(const DIGEST& digest) {

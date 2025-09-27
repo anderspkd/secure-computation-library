@@ -26,28 +26,76 @@
 
 namespace scl {
 
+/**
+ * @brief Describes the characterists of a channel.
+ */
 struct ChannelDescription final {
+  /**
+   * @brief The channel bandwidth, in bits/s.
+   */
   std::size_t bandwith;
+
+  /**
+   * @brief The channel latency, in microseconds.
+   */
   std::size_t latency;
+
+  /**
+   * @brief The latency variance, in microseconds.
+   */
   std::size_t latency_jitter;
+
+  /**
+   * @brief The channel package loss, a value in [0, 1).
+   */
   float loss;
 };
 
+/**
+ * @brief Describes a network in terms of its channels.
+ */
 class NetworkDescription final {
  public:
+  /**
+   * @brief The parameters of a channel at a given point in time.
+   */
   struct ChannelParameters {
+    /**
+     * @brief The current channel bandwidth.
+     */
     std::size_t bandwidth;
+
+    /**
+     * @brief The current channel latency.
+     */
     std::size_t latency;
+
+    /**
+     * @brief The current channel packege loss.
+     */
     float loss;
   };
 
+  /**
+   * @brief Create a default LAN network.
+   */
   static NetworkDescription createDefaultLAN(std::size_t size);
+
+  /**
+   * @brief Create a default WAN network.
+   */
   static NetworkDescription createDefaultWAN(std::size_t size);
 
+  /**
+   * @brief The size of the network.
+   */
   std::size_t size() const {
     return m_size;
   }
 
+  /**
+   * @brief Get the parameters of a particular channel.
+   */
   ChannelParameters getChannel(ChannelId id);
 
  private:

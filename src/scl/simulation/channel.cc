@@ -22,18 +22,18 @@
 #include "scl/simulation/transport.h"
 #include "scl/time.h"
 
-void scl::SimulatedChannel::close() {
+void scl::details::SimulatedChannel::close() {
   m_ctx.addEvent<scl::CloseEvent>(m_ctx.elapsedTime(), m_id);
 }
 
-scl::Task<void> scl::SimulatedChannel::send(Packet&& packet) {
+scl::Task<void> scl::details::SimulatedChannel::send(Packet&& packet) {
   const auto et = m_ctx.elapsedTime();
   m_ctx.addEvent<SendEvent>(et, m_id, packet.size());
   m_transport->send(et, m_id, std::move(packet));
   co_return;
 }
 
-scl::Task<void> scl::SimulatedChannel::send(const Packet& packet) {
+scl::Task<void> scl::details::SimulatedChannel::send(const Packet& packet) {
   const auto et = m_ctx.elapsedTime();
   m_ctx.addEvent<SendEvent>(et, m_id, packet.size());
   m_transport->send(et, m_id, packet);
@@ -71,10 +71,10 @@ class RecvPendingEvent final : public scl::ChannelEvent {
 
 // Awaitable that checks if the transport is ready.
 struct ReadyChecker {
-  scl::Transport* transport;
+  scl::details::Transport* transport;
   scl::ChannelId id;
   RecvPendingEvent* event;
-  scl::Context& ctx;
+  scl::details::Context& ctx;
 
   bool operator()() {
     const auto is_ready = transport->ready(id);
@@ -91,7 +91,7 @@ struct ReadyChecker {
 
 }  // namespace
 
-scl::Task<scl::Packet> scl::SimulatedChannel::recv() {
+scl::Task<scl::Packet> scl::details::SimulatedChannel::recv() {
   const auto et = m_ctx.elapsedTime();
 
   m_ctx.addEvent<RecvPendingEvent>(et, m_id);
@@ -111,10 +111,10 @@ namespace {
 
 // Ready checker which capable of timing out
 struct TimeoutReadyChecker {
-  scl::Transport* transport;
+  scl::details::Transport* transport;
   scl::ChannelId id;
   RecvPendingEvent* event;
-  scl::Context& ctx;
+  scl::details::Context& ctx;
   scl::Time::Duration timeout_rem;
 
   bool operator()() {
@@ -135,7 +135,7 @@ struct TimeoutReadyChecker {
 
 }  // namespace
 
-scl::Task<std::optional<scl::Packet>> scl::SimulatedChannel::recv(
+scl::Task<std::optional<scl::Packet>> scl::details::SimulatedChannel::recv(
     Time::Duration timeout) {
   // const auto et = m_ctx.elapsedTime();
 
@@ -149,7 +149,7 @@ scl::Task<std::optional<scl::Packet>> scl::SimulatedChannel::recv(
   co_return {};
 }
 
-scl::Task<bool> scl::SimulatedChannel::poll() {
+scl::Task<bool> scl::details::SimulatedChannel::poll() {
   const auto et = m_ctx.elapsedTime();
   Transport::PollResult pr;
 

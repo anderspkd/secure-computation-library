@@ -26,7 +26,7 @@
 #include "scl/simulation/context.h"
 #include "scl/time.h"
 
-namespace scl {
+namespace scl::details {
 
 class Transport {
  public:
@@ -49,6 +49,6 @@ class Transport {
       m_pqs;
 };
 
-}  // namespace scl
+}  // namespace scl::details
 
 #endif  // SCL_SIMULATION_TRANSPORT_H
