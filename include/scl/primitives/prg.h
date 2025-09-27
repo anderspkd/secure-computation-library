@@ -156,7 +156,7 @@ class PRG {
   /**
    * @brief The seed.
    */
-  std::array<unsigned char, BLOCK_SIZE> Seed() const {
+  std::array<unsigned char, BLOCK_SIZE> seed() const {
     return m_seed;
   }
 

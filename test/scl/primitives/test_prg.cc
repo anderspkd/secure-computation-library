@@ -15,12 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
 
 #include "scl/primitives/prg.h"
@@ -66,7 +64,7 @@ TEST_CASE("PRG predictable", "[misc]") {
   auto prg0 = PRG::create(seed, 15);
   auto prg1 = PRG::create(seed, 15);
 
-  REQUIRE(prg0.Seed() == prg1.Seed());
+  REQUIRE(prg0.seed() == prg1.seed());
 
   auto bytes0 = prg0.next(100);
   auto bytes1 = prg1.next(100);
