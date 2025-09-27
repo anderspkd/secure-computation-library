@@ -1,5 +1,5 @@
 # SCL --- Secure Computation Library
-# Copyright (C) 2024 Anders Dalskov
+# Copyright (C) 2025 Anders Dalskov
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ option(
 option(
   SCL_BUILD_WITH_ADDRESS_SANITIZATION
   "Buid SCL with -fsanitize=address. Implies SCL_BUILD_TESTS=ON"
-  ON)
+  OFF)
 
 option(
   SCL_BUILD_DOCUMENTATION
