@@ -80,7 +80,7 @@ void aes128Enc(const __m128i* key_schedule, __m128i m, unsigned char* ct) {
 }
 
 auto createMask(long counter) {
-  return _mm_set_epi64x(PRG_NONCE, counter);
+  return _mm_set_epi64x(0x0123456789ABCDEF, counter);
 }
 
 }  // namespace
@@ -117,7 +117,7 @@ void scl::PRG::init() {
 
 void scl::PRG::reset() {
   init();
-  m_counter = PRG_INITIAL_COUNTER;
+  m_counter = 0;
 }
 
 void scl::PRG::next(unsigned char* buffer, size_t n) {
