@@ -132,39 +132,6 @@ class Network {
   }
 
   /**
-   * @brief Receive data from a subset of parties.
-   * @param t the minimum number of parties to receive data from.
-   * @return list of received packets.
-   *
-   * Attempts to receive data from all parties, but stops when a Packet has been
-   * received from at least t parties. The return value is a std::vector of
-   * size() std::optional elements. Positions with no values correspond to
-   * parties that did not send anything. Thus, the return value will have at
-   * least \p t positions with values.
-   */
-  Task<std::vector<std::optional<Packet>>> recv(std::size_t t) {
-    std::vector<Task<Packet>> recvs;
-    recvs.reserve(size());
-    for (std::size_t i = 0; i < size(); i++) {
-      recvs.emplace_back(party(i)->recv());
-    }
-    co_return co_await batch(std::move(recvs), t);
-  }
-
-  /**
-   * @brief Receive data from all parties on the network.
-   * @return list of received packets.
-   */
-  Task<std::vector<Packet>> recv() {
-    std::vector<Task<Packet>> recvs;
-    recvs.reserve(size());
-    for (std::size_t i = 0; i < size(); i++) {
-      recvs.emplace_back(party(i)->recv());
-    }
-    co_return co_await batch(std::move(recvs));
-  }
-
-  /**
    * @brief The number of parties in this network.
    */
   std::size_t size() const {

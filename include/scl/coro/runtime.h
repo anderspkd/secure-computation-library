@@ -175,32 +175,6 @@ std::coroutine_handle<> FutureAwaiter<FUTURE>::await_suspend(
   return m_runtime->next();
 }
 
-template <typename RESULT>
-std::coroutine_handle<> Batch<RESULT>::await_suspend(
-    std::coroutine_handle<> coroutine) {
-  for (auto& task : m_tasks) {
-    task.setRuntime(m_runtime);
-    m_runtime->schedule(task.m_handle);
-  }
-
-  m_runtime->schedule(coroutine, [this]() { return await_ready(); });
-
-  return m_runtime->next();
-}
-
-template <typename RESULT>
-std::coroutine_handle<> PartialBatch<RESULT>::await_suspend(
-    std::coroutine_handle<> coroutine) {
-  for (auto& task : m_tasks) {
-    task.setRuntime(m_runtime);
-    m_runtime->schedule(task.m_handle);
-  }
-
-  m_runtime->schedule(coroutine, [this]() { return await_ready(); });
-
-  return m_runtime->next();
-}
-
 inline std::coroutine_handle<> SleepAwaiter::await_suspend(
     std::coroutine_handle<> handle) {
   m_runtime->schedule(handle, m_duration);

@@ -16,6 +16,7 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
+#include <thread>
 
 #include "scl/coro/batch.h"
 #include "scl/coro/runtime.h"
@@ -33,18 +34,24 @@ TEST_CASE("Network one party", "[net]") {
 
 namespace {
 
-Task<std::vector<Network>> connect3() {
-  std::vector<Task<Network>> networks;
-  auto conf0 = NetworkConfig::localhost(0, 3);
-  networks.emplace_back(createTcpNetwork(conf0));
+void connect(std::size_t id, Network* nw) {
+  auto rt = DefaultRuntime::create();
+  auto conf = NetworkConfig::localhost(id, 3);
+  *nw = rt->run(createTcpNetwork(conf));
+}
 
-  auto conf1 = NetworkConfig::localhost(1, 3);
-  networks.emplace_back(createTcpNetwork(conf1));
+std::vector<Network> connect3() {
+  std::vector<Network> networks(3);
 
-  auto conf2 = NetworkConfig::localhost(2, 3);
-  networks.emplace_back(createTcpNetwork(conf2));
+  std::thread t0(connect, 0, &(networks[0]));
+  std::thread t1(connect, 1, &(networks[1]));
+  std::thread t2(connect, 2, &(networks[2]));
 
-  co_return co_await batch(std::move(networks));
+  t0.join();
+  t1.join();
+  t2.join();
+
+  return networks;
 }
 
 Task<void> send(Channel* channel, int v) {
@@ -63,7 +70,7 @@ Task<int> recv(Channel* channel) {
 TEST_CASE("Network TCP", "[net]") {
   auto rt = DefaultRuntime::create();
 
-  auto networks = rt->run(connect3());
+  auto networks = connect3();
 
   REQUIRE(networks.size() == 3);
 

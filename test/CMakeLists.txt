@@ -1,5 +1,5 @@
 # SCL --- Secure Computation Library
-# Copyright (C) 2024 Anders Dalskov
+# Copyright (C) 2025 Anders Dalskov
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -47,7 +47,6 @@ set(SCL_SOURCE_FILES_TEST
   scl/ss/test_pedersen.cc
 
   scl/coro/test_task.cc
-  scl/coro/test_batch.cc
 
   scl/net/util.cc
   scl/net/test_config.cc

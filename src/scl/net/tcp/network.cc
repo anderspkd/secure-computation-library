@@ -17,6 +17,8 @@
 
 #include "scl/net/tcp/network.h"
 
+#include <algorithm>
+#include <coroutine>
 #include <cstdint>
 #include <memory>
 
@@ -100,6 +102,44 @@ scl::Task<SocketAndId> establishConnection(scl::ConnectionInfo party,
   throw std::runtime_error("could not establish connection to party");
 }
 
+class BatchTask final {
+ public:
+  BatchTask(std::vector<scl::Task<SocketAndId>>&& tasks)
+      : m_tasks(std::move(tasks)), m_runtime(nullptr) {}
+
+  bool await_ready() const noexcept {
+    return std::all_of(m_tasks.begin(), m_tasks.end(), [](const auto& task) {
+      return task.ready();
+    });
+  }
+
+  std::coroutine_handle<> await_suspend(std::coroutine_handle<> handle) {
+    for (auto& task : m_tasks) {
+      task.setRuntime(m_runtime);
+      m_runtime->schedule(task.m_handle);
+    }
+    m_runtime->schedule(handle, [this]() { return this->await_ready(); });
+
+    return m_runtime->next();
+  }
+
+  std::vector<SocketAndId> await_resume() {
+    std::vector<SocketAndId> results;
+    for (const auto& task : m_tasks) {
+      results.emplace_back(task.result());
+    }
+    return results;
+  }
+
+  void setRuntime(scl::Runtime* runtime) {
+    m_runtime = runtime;
+  }
+
+ private:
+  std::vector<scl::Task<SocketAndId>> m_tasks;
+  scl::Runtime* m_runtime;
+};
+
 }  // namespace
 
 scl::Task<scl::Network> scl::createTcpNetwork(const NetworkConfig& config) {
@@ -123,7 +163,7 @@ scl::Task<scl::Network> scl::createTcpNetwork(const NetworkConfig& config) {
     }
   }
 
-  std::vector<SocketAndId> sais = co_await batch(std::move(tasks));
+  std::vector<SocketAndId> sais = co_await BatchTask(std::move(tasks));
 
   details::sys_call::close(server_socket);
 
