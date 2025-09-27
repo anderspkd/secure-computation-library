@@ -18,6 +18,7 @@
 #include "scl/primitives/prg.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
 #include <emmintrin.h>

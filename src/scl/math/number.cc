@@ -18,6 +18,7 @@
 #include "scl/math/number.h"
 
 #include <cstring>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 
