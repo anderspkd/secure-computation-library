@@ -24,7 +24,7 @@
 
 using namespace scl;
 
-using Mrkl = MerkleTree<Hash<256>, std::string_view>;
+using Mrkl = MerkleTree<std::string_view>;
 
 namespace {
 

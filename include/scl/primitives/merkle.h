@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "scl/bitmap.h"
+#include "scl/primitives/hash.h"
 #include "scl/primitives/merkle_proof.h"
 
 namespace scl {
@@ -31,7 +32,7 @@ namespace scl {
  * @tparam T the leaf data type.
  * @TODO: Switch LEAF and HASH; Default Hash to scl::Hash<256>.
  */
-template <typename HASH, typename LEAF>
+template <typename LEAF, typename HASH = Hash<256>>
 struct MerkleTree {
   /**
    * @brief The digest type nodes.
@@ -70,8 +71,8 @@ struct MerkleTree {
   static std::vector<DigestType> hashLeafs(const std::vector<LEAF>& data);
 };
 
-template <typename HASH, typename LEAF>
-auto MerkleTree<HASH, LEAF>::hashLeafs(const std::vector<LEAF>& data)
+template <typename LEAF, typename HASH>
+auto MerkleTree<LEAF, HASH>::hashLeafs(const std::vector<LEAF>& data)
     -> std::vector<DigestType> {
   std::vector<DigestType> digests;
   auto sz = data.size();
@@ -91,8 +92,8 @@ auto MerkleTree<HASH, LEAF>::hashLeafs(const std::vector<LEAF>& data)
   return digests;
 }
 
-template <typename HASH, typename LEAF>
-auto MerkleTree<HASH, LEAF>::hash(const std::vector<LEAF>& data) -> DigestType {
+template <typename LEAF, typename HASH>
+auto MerkleTree<LEAF, HASH>::hash(const std::vector<LEAF>& data) -> DigestType {
   std::vector<DigestType> digests = hashLeafs(data);
 
   auto sz = digests.size();
@@ -119,8 +120,8 @@ auto MerkleTree<HASH, LEAF>::hash(const std::vector<LEAF>& data) -> DigestType {
   return digests[0];
 }
 
-template <typename HASH, typename LEAF>
-auto MerkleTree<HASH, LEAF>::prove(const std::vector<LEAF>& data,
+template <typename LEAF, typename HASH>
+auto MerkleTree<LEAF, HASH>::prove(const std::vector<LEAF>& data,
                                    std::size_t index) -> Proof {
   std::vector<DigestType> digests = hashLeafs(data);
   std::vector<DigestType> path;
@@ -161,8 +162,8 @@ auto MerkleTree<HASH, LEAF>::prove(const std::vector<LEAF>& data,
   return {path, Bitmap::fromStdVecBool(direction)};
 }
 
-template <typename HASH, typename LEAF>
-bool MerkleTree<HASH, LEAF>::verify(const LEAF& leaf,
+template <typename LEAF, typename HASH>
+bool MerkleTree<LEAF, HASH>::verify(const LEAF& leaf,
                                     const DigestType& root,
                                     const Proof& proof) {
   const auto [h, d] = proof;
