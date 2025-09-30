@@ -21,7 +21,7 @@
 #include <stdexcept>
 #include <string>
 
-scl::NetworkConfig scl::NetworkConfig::load(std::size_t id,
+scl::NetworkConfig scl::NetworkConfig::load(std::size_t my_id,
                                             const std::string& filename) {
   std::ifstream file(filename);
 
@@ -48,17 +48,17 @@ scl::NetworkConfig scl::NetworkConfig::load(std::size_t id,
     info.emplace_back(ConnectionInfo{i++, host, port});
   }
 
-  if (id >= info.size()) {
+  if (my_id >= info.size()) {
     throw std::invalid_argument("invalid id");
   }
 
-  return NetworkConfig(id, info);
+  return NetworkConfig(my_id, info);
 }
 
-scl::NetworkConfig scl::NetworkConfig::localhost(std::size_t id,
+scl::NetworkConfig scl::NetworkConfig::localhost(std::size_t my_id,
                                                  std::size_t size,
                                                  std::size_t port_base) {
-  if (id >= size) {
+  if (my_id >= size) {
     throw std::invalid_argument("invalid id");
   }
 
@@ -68,7 +68,7 @@ scl::NetworkConfig scl::NetworkConfig::localhost(std::size_t id,
     info.emplace_back(ConnectionInfo{i, "127.0.0.1", port});
   }
 
-  return NetworkConfig(id, info);
+  return NetworkConfig(my_id, info);
 }
 
 void scl::NetworkConfig::validate() {

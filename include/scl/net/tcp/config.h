@@ -59,6 +59,9 @@ struct ConnectionInfo {
  *
  * A NetworkConfig is needed whenever by network objects in order to establish
  * connections to other nodes.
+ *
+ * @see NetworkConfig::load
+ * @see NetworkConfig::localhost
  */
 class NetworkConfig {
  public:
@@ -76,7 +79,7 @@ class NetworkConfig {
    * 192.0.2.2, 5000
    * 192.0.2.3, 3000
    * $
-   * \endcode{.unparsed}
+   * \endcode
    *
    * The order in which parties information occurs will correspond to their
    * identifier in the NetworkConfig that will be created.
@@ -90,21 +93,44 @@ class NetworkConfig {
    * assert(me.hostname == "192.0.2.2");
    * assert(me.port == 5000);
    * @endcode
+   *
+   * Minor validation is performed on the file.
+   *
+   * @throws std::invalid_argument if \p my_id is too large.
+   * @throws std::invalid_argument if \p filename contains an invalid row.
+   * @throws std::invalid_argument if \p filename could not be opened.
    */
-  static NetworkConfig load(std::size_t id, const std::string& filename);
+  static NetworkConfig load(std::size_t my_id, const std::string& filename);
 
   /**
    * @brief Create a network config where all parties are running locally.
+   *
+   * Creates a network config of a specified size, where all parties have
+   * addresses on this machine.
+   *
+   * @code
+   * auto nc = NetworkConfig::localhost(3, 5, 5000);
+   *
+   * for (int i = 0; i < nc.networkSize(); i++) {
+   *   assert(nc.party(i).host == "127.0.0.1");
+   *   assert(nc.party(i).port == 5000 + i);
+   * }
+   * @endcode
+   *
+   * @throws std::invalid_argument if <code>my_id >= size</code>.
    */
-  static NetworkConfig localhost(std::size_t id,
+  static NetworkConfig localhost(std::size_t my_id,
                                  std::size_t size,
                                  std::size_t port_base);
 
   /**
    * @brief Create a network config where all parties are running locally.
+   *
+   * Like \ref NetworkConfig::localhost with \ref DEFAULT_LOCALHOST_PORT_OFFSET
+   * as \p port_base.
    */
-  static NetworkConfig localhost(std::size_t id, std::size_t size) {
-    return NetworkConfig::localhost(id, size, DEFAULT_LOCALHOST_PORT_OFFSET);
+  static NetworkConfig localhost(std::size_t my_id, std::size_t size) {
+    return NetworkConfig::localhost(my_id, size, DEFAULT_LOCALHOST_PORT_OFFSET);
   };
 
   /**
