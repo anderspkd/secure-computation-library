@@ -17,7 +17,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
-#include <iostream>
 #include <stdexcept>
 
 #include "scl/net/config.h"
@@ -31,17 +30,17 @@ TEST_CASE("Config read from file", "[net]") {
   REQUIRE(cfg.networkSize() == 3);
   REQUIRE(cfg.id() == 0);
   auto parties = cfg.parties();
-  REQUIRE(parties[0].hostname == "1.2.3.4");
+  REQUIRE(parties[0].hostname == "192.0.2.1");
   REQUIRE(parties[0].port == 8000);
-  REQUIRE(parties[1].hostname == "2.3.4.5");
+  REQUIRE(parties[1].hostname == "192.0.2.2");
   REQUIRE(parties[1].port == 5000);
-  REQUIRE(parties[2].hostname == "5.5.5.5");
+  REQUIRE(parties[2].hostname == "192.0.2.3");
   REQUIRE(parties[2].port == 3000);
 
   std::string invalid_empty = SCL_TEST_DATA_DIR "invalid_no_entries.txt";
   REQUIRE_THROWS_MATCHES(NetworkConfig::load(0, invalid_empty),
                          std::invalid_argument,
-                         Catch::Matchers::Message("n cannot be zero"));
+                         Catch::Matchers::Message("invalid id"));
 
   std::string valid = SCL_TEST_DATA_DIR "3_parties.txt";
   REQUIRE_THROWS_MATCHES(NetworkConfig::load(4, valid),
@@ -54,7 +53,7 @@ TEST_CASE("Config read from file", "[net]") {
       std::invalid_argument,
       Catch::Matchers::Message("invalid entry in config file"));
 
-  std::string invalid_non_existing_file;
+  std::string invalid_non_existing_file = "";
   REQUIRE_THROWS_MATCHES(NetworkConfig::load(0, invalid_non_existing_file),
                          std::invalid_argument,
                          Catch::Matchers::Message("could not open file"));

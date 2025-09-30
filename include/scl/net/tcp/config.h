@@ -24,15 +24,17 @@
 
 /**
  * @brief Default port offset used when all parties are running locally.
+ * @ingroup net-tcp
  */
-#ifndef DEFAULT_PORT_OFFSET
-#define DEFAULT_PORT_OFFSET 9900
+#ifndef DEFAULT_LOCALHOST_PORT_OFFSET
+#define DEFAULT_LOCALHOST_PORT_OFFSET 9900
 #endif
 
 namespace scl {
 
 /**
  * @brief Connection information for a party.
+ * @ingroup net-tcp
  */
 struct ConnectionInfo {
   /**
@@ -53,6 +55,7 @@ struct ConnectionInfo {
 
 /**
  * @brief Network configuration.
+ * @ingroup net-tcp
  *
  * A NetworkConfig is needed whenever by network objects in order to establish
  * connections to other nodes.
@@ -61,22 +64,37 @@ class NetworkConfig {
  public:
   /**
    * @brief Load a network config from a file.
-   * @param id the identity of this party
-   * @param filename the filename
+   *
+   * This method creates a NetworkConfig from a file containing connection
+   * information of the different parties. The file should be a CSV filed with
+   * three columns. Each row in the file contains a party's IPv4 address and the
+   * port to use, in that order. An example is given below for three parties
+   *
+   * \code{.unparsed}
+   * $ cat 3_parties.txt
+   * 192.0.2.1, 8000
+   * 192.0.2.2, 5000
+   * 192.0.2.3, 3000
+   * $
+   * \endcode{.unparsed}
+   *
+   * The order in which parties information occurs will correspond to their
+   * identifier in the NetworkConfig that will be created.
+   *
+   * @code
+   * auto nc = NetworkConfig::load(1, "3_parties.txt");
+   * assert(nc.id() == 1);
+   * assert(nc.networkSize() == 3);
+   *
+   * auto me = nc.party(1);
+   * assert(me.hostname == "192.0.2.2");
+   * assert(me.port == 5000);
+   * @endcode
    */
   static NetworkConfig load(std::size_t id, const std::string& filename);
 
   /**
    * @brief Create a network config where all parties are running locally.
-   *
-   * Because different processes cannot reuse the same port, the port argument
-   * denotes a base from which a party's actual port is computed. Specifically,
-   * party <code>i</code> will listen on <code>port_base + i</code> and connect
-   * (as a client) to party <code>j</code> on <code>port_base + j</code>.
-   *
-   * @param id the identity of this party
-   * @param size the size of the network
-   * @param port_base the base port
    */
   static NetworkConfig localhost(std::size_t id,
                                  std::size_t size,
@@ -84,22 +102,18 @@ class NetworkConfig {
 
   /**
    * @brief Create a network config where all parties are running locally.
-   * @param id the identity of this party
-   * @param size the size of the network
    */
   static NetworkConfig localhost(std::size_t id, std::size_t size) {
-    return NetworkConfig::localhost(id, size, DEFAULT_PORT_OFFSET);
+    return NetworkConfig::localhost(id, size, DEFAULT_LOCALHOST_PORT_OFFSET);
   };
 
   /**
    * @brief Create a config from a list of parties.
-   * @param id the id of the local party
-   * @param parties a list of parties
    */
   NetworkConfig(std::size_t id, const std::vector<ConnectionInfo>& parties)
       : m_id(id), m_parties(parties) {
     validate();
-  };
+  }
 
   /**
    * @brief Gets the identity of this party.

@@ -15,25 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/net/config.h"
+#include "scl/net/tcp/config.h"
 
 #include <fstream>
 #include <stdexcept>
 #include <string>
-
-namespace {
-
-void validateIdAndSize(std::size_t id, std::size_t n) {
-  if (n == 0) {
-    throw std::invalid_argument("n cannot be zero");
-  }
-
-  if (n <= id) {
-    throw std::invalid_argument("invalid id");
-  }
-}
-
-}  // namespace
 
 scl::NetworkConfig scl::NetworkConfig::load(std::size_t id,
                                             const std::string& filename) {
@@ -46,24 +32,25 @@ scl::NetworkConfig scl::NetworkConfig::load(std::size_t id,
   std::string line;
   std::vector<ConnectionInfo> info;
 
-  while (std::getline(file, line)) {
-    auto a_ = line.find(',');
-    auto b_ = line.rfind(',');
+  std::size_t i = 0;
 
-    if (a_ == std::string::npos || a_ == b_) {
+  while (std::getline(file, line)) {
+    auto split = line.find(',');
+    
+    if (split == std::string::npos) {
       throw std::invalid_argument("invalid entry in config file");
     }
 
-    auto a = static_cast<std::string::difference_type>(a_);
-    auto b = static_cast<std::string::difference_type>(b_);
+    auto s = static_cast<std::string::difference_type>(split);
+    auto host = std::string(line.begin(), line.begin() + s);
+    auto port = std::stoul(std::string(line.begin() + s + 1, line.end()));
 
-    auto id = std::stoul(std::string(line.begin(), line.begin() + a));
-    auto hostname = std::string(line.begin() + a + 1, line.begin() + b);
-    auto port = std::stoul(std::string(line.begin() + b + 1, line.end()));
-    info.emplace_back(ConnectionInfo{id, hostname, port});
+    info.emplace_back(ConnectionInfo{i++, host, port});
   }
 
-  validateIdAndSize(id, info.size());
+  if (id >= info.size()) {
+    throw std::invalid_argument("invalid id");
+  }
 
   return NetworkConfig(id, info);
 }
@@ -71,7 +58,9 @@ scl::NetworkConfig scl::NetworkConfig::load(std::size_t id,
 scl::NetworkConfig scl::NetworkConfig::localhost(std::size_t id,
                                                  std::size_t size,
                                                  std::size_t port_base) {
-  validateIdAndSize(id, size);
+  if (id >= size) {
+    throw std::invalid_argument("invalid id");
+  }
 
   std::vector<ConnectionInfo> info;
   for (std::size_t i = 0; i < size; ++i) {
