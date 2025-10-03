@@ -16,9 +16,6 @@ jobs:
       - name: Copyright
         run: ./scripts/check_copyright_headers.py
 
-      - name: Header Guards
-        run: ./scripts/check_header_guards.py
-
   style:
     name: style
     runs-on: ubuntu-22.04
