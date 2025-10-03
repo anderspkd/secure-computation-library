@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_EC_H
-#define SCL_MATH_EC_H
+#pragma once
 
 #include <array>
 #include <ostream>
@@ -325,5 +324,3 @@ struct Serializer<EC<CURVE>> {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_EC_H

@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_NET_LOOPBACK_H
-#define SCL_NET_LOOPBACK_H
+#pragma once
 
 #include <deque>
 #include <memory>
@@ -135,5 +134,3 @@ class LoopbackChannel final : public Channel {
 };
 
 }  // namespace scl
-
-#endif  // SCL_NET_LOOPBACK_H

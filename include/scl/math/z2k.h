@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_Z2K_H
-#define SCL_MATH_Z2K_H
+#pragma once
 
 #include <cstdint>
 #include <cstring>
@@ -333,5 +332,3 @@ class Z2k final {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_Z2K_H

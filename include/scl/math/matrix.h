@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_MATRIX_H
-#define SCL_MATH_MATRIX_H
+#pragma once
 
 #include <cstdint>
 #include <cstring>
@@ -955,5 +954,3 @@ struct Serializer<Matrix<ELEMENT>> {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_MATRIX_H

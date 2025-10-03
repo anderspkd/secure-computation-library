@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_NET_NETWORK_H
-#define SCL_NET_NETWORK_H
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -160,5 +159,3 @@ class Network {
 };
 
 }  // namespace scl
-
-#endif  // SCL_NET_NETWORK_H

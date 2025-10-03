@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_PRIMITIVES_HASH_H
-#define SCL_PRIMITIVES_HASH_H
+#pragma once
 
 #include <cstddef>
 
@@ -34,5 +33,3 @@ template <std::size_t BITS>
 using Hash = Sha3<BITS>;
 
 }  // namespace scl
-
-#endif  // SCL_PRIMITIVES_HASH_H

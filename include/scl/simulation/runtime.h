@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_RUNTIME_H
-#define SCL_SIMULATION_RUNTIME_H
+#pragma once
 
 #include <coroutine>
 
@@ -61,5 +60,3 @@ class SimulatorRuntime final : public Runtime {
 };
 
 }  // namespace scl::details
-
-#endif  // SCL_SIMULATION_RUNTIME_H

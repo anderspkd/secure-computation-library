@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SS_ADDITIVE_H
-#define SCL_SS_ADDITIVE_H
+#pragma once
 
 #include "scl/math/vector.h"
 #include "scl/primitives/prg.h"
@@ -52,5 +51,3 @@ Vector<T> createAdditiveSharing(const T& secret, std::size_t n, PRG& prg) {
 }
 
 }  // namespace scl
-
-#endif  // SCL_SS_ADDITIVE_H

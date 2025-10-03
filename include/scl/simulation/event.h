@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_EVENT_H
-#define SCL_SIMULATION_EVENT_H
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -470,5 +469,3 @@ class EventList final {
 
 }  // namespace details
 }  // namespace scl
-
-#endif  // SCL_SIMULATION_EVENT_H

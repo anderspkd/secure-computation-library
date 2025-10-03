@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_TRANSPORT_H
-#define SCL_SIMULATION_TRANSPORT_H
+#pragma once
 
 #include <queue>
 #include <unordered_map>
@@ -50,5 +49,3 @@ class Transport {
 };
 
 }  // namespace scl::details
-
-#endif  // SCL_SIMULATION_TRANSPORT_H

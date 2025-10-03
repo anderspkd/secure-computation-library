@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_FF_OPS_H
-#define SCL_MATH_FF_OPS_H
+#pragma once
 
 #include <string>
 
@@ -113,5 +112,3 @@ template <typename FIELD>
 std::string toString(const typename FIELD::ValueType& in);
 
 }  // namespace scl::details
-
-#endif  // SCL_MATH_FF_OPS_H

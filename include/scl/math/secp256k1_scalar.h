@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_SECP256K1_SCALAR_H
-#define SCL_MATH_SECP256K1_SCALAR_H
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -52,5 +51,3 @@ struct Secp256k1Scalar {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_SECP256K1_SCALAR_H

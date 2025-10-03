@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_SECP256K1_FIELD_H
-#define SCL_MATH_SECP256K1_FIELD_H
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -52,5 +51,3 @@ struct Secp256k1Field {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_SECP256K1_FIELD_H

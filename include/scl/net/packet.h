@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_NET_PACKET_H
-#define SCL_NET_PACKET_H
+#pragma once
 
 #include <cstddef>
 #include <cstdlib>
@@ -312,5 +311,3 @@ class Packet {
 };
 
 }  // namespace scl
-
-#endif  // SCL_NET_PACKET_H

@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_NUMBER_H
-#define SCL_MATH_NUMBER_H
+#pragma once
 
 #include <cstdint>
 
@@ -499,5 +498,3 @@ struct Serializer<Number> {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_NUMBER_H

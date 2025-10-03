@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_LAGRANGE_H
-#define SCL_MATH_LAGRANGE_H
+#pragma once
 
 #include <cstddef>
 
@@ -82,5 +81,3 @@ Vector<T> computeLagrangeBasis(const Vector<T>& nodes, int x) {
 }
 
 }  // namespace scl
-
-#endif  // SCL_MATH_LAGRANGE_H

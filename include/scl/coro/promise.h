@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_CORO_PROMISE_H
-#define SCL_CORO_PROMISE_H
+#pragma once
 
 #include <chrono>
 #include <coroutine>
@@ -223,5 +222,3 @@ class TaskPromise<void> final : public TaskPromiseBase {
 
 }  // namespace details
 }  // namespace scl
-
-#endif  // SCL_CORO_PROMISE_H

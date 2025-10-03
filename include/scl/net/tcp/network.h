@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_NET_TCP_NETWORK_H
-#define SCL_NET_TCP_NETWORK_H
+#pragma once
 
 #include "scl/coro/task.h"
 #include "scl/net/config.h"
@@ -36,5 +35,3 @@ namespace scl {
 Task<Network> createTcpNetwork(const NetworkConfig& config);
 
 }  // namespace scl
-
-#endif  // SCL_NET_TCP_NETWORK_H

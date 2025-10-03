@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SS_PEDERSEN_H
-#define SCL_SS_PEDERSEN_H
+#pragma once
 
 #include "scl/math/array.h"
 #include "scl/math/lagrange.h"
@@ -270,5 +269,3 @@ std::vector<PedersenShare<T>> apply(
 }
 
 }  // namespace scl
-
-#endif  // SCL_SS_PEDERSEN_H

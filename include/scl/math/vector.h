@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_VECTOR_H
-#define SCL_MATH_VECTOR_H
+#pragma once
 
 #include <cstdint>
 #include <cstring>
@@ -619,5 +618,3 @@ struct Serializer<Vector<ELEMENT>> {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_VECTOR_H

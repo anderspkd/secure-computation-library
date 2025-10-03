@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_NET_CONFIG_H
-#define SCL_NET_CONFIG_H
+#pragma once
 
 #include <cstddef>
 #include <string>
@@ -177,5 +176,3 @@ class NetworkConfig {
 };
 
 }  // namespace scl
-
-#endif  // SCL_NET_CONFIG_H

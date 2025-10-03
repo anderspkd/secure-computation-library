@@ -58,7 +58,7 @@ find_library(GMP gmp libgmp REQUIRED)
 
 set(SCL_HEADERS "${CMAKE_SOURCE_DIR}/include")
 set(SCL_SOURCE_FILES
-  src/scl/cmdline.cc
+  src/scl/argparser.cc
   src/scl/hex.cc
 
   src/scl/primitives/prg.cc

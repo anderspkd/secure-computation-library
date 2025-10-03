@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_EC_OPS_H
-#define SCL_MATH_EC_OPS_H
+#pragma once
 
 #include <array>
 #include <string>
@@ -153,5 +152,3 @@ template <typename CURVE>
 std::string toString(const typename CURVE::ValueType& point);
 
 }  // namespace scl::details
-
-#endif  // SCL_MATH_EC_OPS_H

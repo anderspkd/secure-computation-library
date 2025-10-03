@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SERIALIZATION_H
-#define SCL_SERIALIZATION_H
+#pragma once
 
 #include <cstdint>
 #include <cstring>
@@ -131,5 +130,3 @@ struct Serializer<std::vector<T>> {
 };
 
 }  // namespace scl
-
-#endif  // SCL_SERIALIZATION_H

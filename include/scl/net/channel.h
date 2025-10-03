@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_NET_CHANNEL_H
-#define SCL_NET_CHANNEL_H
+#pragma once
 
 #include <optional>
 
@@ -74,5 +73,3 @@ class Channel {
 };
 
 }  // namespace scl
-
-#endif  // SCL_NET_CHANNEL_H

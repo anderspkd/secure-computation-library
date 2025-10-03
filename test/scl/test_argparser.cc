@@ -21,7 +21,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "scl/cmdline.h"
+#include "scl/argparser.h"
 
 using namespace scl;
 

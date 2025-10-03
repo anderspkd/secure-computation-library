@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_MERSENNE61_H
-#define SCL_MATH_MERSENNE61_H
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -50,5 +49,3 @@ struct Mersenne61 {
 };
 
 }  // namespace scl
-
-#endif  // SCL_MATH_MERSENNE61_H

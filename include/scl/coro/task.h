@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_CORO_TASK_H
-#define SCL_CORO_TASK_H
+#pragma once
 
 #include <coroutine>
 #include <utility>
@@ -186,5 +185,3 @@ inline Task<void> TaskPromise<void>::get_return_object() {
 
 }  // namespace details
 }  // namespace scl
-
-#endif  // SCL_CORO_TASK_H

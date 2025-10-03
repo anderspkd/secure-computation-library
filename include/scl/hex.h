@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_HEX_H
-#define SCL_HEX_H
+#pragma once
 
 #include <iomanip>
 #include <sstream>
@@ -103,5 +102,3 @@ T fromHexString(const std::string& s) {
 #undef SCL_TO_HEX
 
 }  // namespace scl::details
-
-#endif  // SCL_HEX_H

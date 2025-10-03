@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_CHANNEL_ID_H
-#define SCL_SIMULATION_CHANNEL_ID_H
+#pragma once
 
 #include <cstddef>
 #include <functional>
@@ -62,5 +61,3 @@ struct std::hash<scl::ChannelId> {
 };
 
 /// @endcond
-
-#endif  // SCL_SIMULATION_CHANNEL_ID_H

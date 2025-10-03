@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_MATH_NAF_H
-#define SCL_MATH_NAF_H
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -101,5 +100,3 @@ struct NafEncoding {
 };
 
 }  // namespace scl::details
-
-#endif  // SCL_MATH_NAF_H

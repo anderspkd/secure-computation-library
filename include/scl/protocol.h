@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_PROTOCOL_H
-#define SCL_PROTOCOL_H
+#pragma once
 
 #include <any>
 
@@ -157,5 +156,3 @@ Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
 }
 
 }  // namespace scl
-
-#endif  // SCL_PROTOCOL_H

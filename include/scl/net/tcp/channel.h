@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_NET_TCP_CHANNEL_H
-#define SCL_NET_TCP_CHANNEL_H
+#pragma once
 
 #include "scl/net/channel.h"
 
@@ -93,5 +92,3 @@ class TcpChannel final : public Channel {
 };
 
 }  // namespace scl
-
-#endif  // SCL_NET_TCP_CHANNEL_H

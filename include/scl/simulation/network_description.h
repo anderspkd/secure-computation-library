@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_NETWORK_DESCRIPTION_H
-#define SCL_SIMULATION_NETWORK_DESCRIPTION_H
+#pragma once
 
 #include <cstddef>
 #include <random>
@@ -121,5 +120,3 @@ class NetworkDescription final {
 };
 
 }  // namespace scl
-
-#endif  // SCL_SIMULATION_NETWORK_DESCRIPTION_H

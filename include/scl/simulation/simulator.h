@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_SIMULATOR_H
-#define SCL_SIMULATION_SIMULATOR_H
+#pragma once
 
 #include <concepts>
 #include <functional>
@@ -122,5 +121,3 @@ class Simulator final {
 };
 
 }  // namespace scl
-
-#endif  // SCL_SIMULATION_SIMULATOR_H

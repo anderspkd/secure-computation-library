@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_CHANNEL_H
-#define SCL_SIMULATION_CHANNEL_H
+#pragma once
 
 #include "scl/net/channel.h"
 #include "scl/net/packet.h"
@@ -53,5 +52,3 @@ class SimulatedChannel final : public Channel {
 };
 
 }  // namespace scl::details
-
-#endif  // SCL_SIMULATION_CHANNEL_H

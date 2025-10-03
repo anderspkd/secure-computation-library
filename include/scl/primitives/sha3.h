@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_PRIMITIVES_SHA3_H
-#define SCL_PRIMITIVES_SHA3_H
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -158,5 +157,3 @@ auto Sha3<BITS>::write() -> Sha3<BITS>::DigestType {
 }
 
 }  // namespace scl
-
-#endif  // SCL_PRIMITIVES_SHA3_H

@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_CORO_SLEEP_AWAITER_H
-#define SCL_CORO_SLEEP_AWAITER_H
+#pragma once
 
 #include <coroutine>
 
@@ -73,5 +72,3 @@ class SleepAwaiter {
 
 }  // namespace details
 }  // namespace scl
-
-#endif  // SCL_CORO_SLEEP_AWAITER_H

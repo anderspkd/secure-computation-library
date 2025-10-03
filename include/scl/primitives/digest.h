@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_PRIMITIVES_DIGEST_H
-#define SCL_PRIMITIVES_DIGEST_H
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -41,5 +40,3 @@ std::string digestToString(const DIGEST& digest) {
 }
 
 }  // namespace scl
-
-#endif  // SCL_PRIMITIVES_DIGEST_H

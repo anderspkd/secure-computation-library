@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SIMULATION_CONTEXT_H
-#define SCL_SIMULATION_CONTEXT_H
+#pragma once
 
 #include <cstddef>
 #include <type_traits>
@@ -132,5 +131,3 @@ inline Context SimulatorContext::getContext(std::size_t id) {
 }
 
 }  // namespace scl::details
-
-#endif  // SCL_SIMULATION_CONTEXT_H

@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 3.30)
 
 set(SCL_SOURCE_FILES_TEST
   scl/test_bitmap.cc
-  scl/test_cmdline.cc
+  scl/test_argparser.cc
   scl/test_serializer.cc
 
   scl/primitives/test_prg.cc

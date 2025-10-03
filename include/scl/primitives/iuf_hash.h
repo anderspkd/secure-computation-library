@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_PRIMITIVES_IUF_HASH_H
-#define SCL_PRIMITIVES_IUF_HASH_H
+#pragma once
 
 #include <array>
 #include <memory>
@@ -89,5 +88,3 @@ struct IUFHash {
 };
 
 }  // namespace scl
-
-#endif  // SCL_PRIMITIVES_IUF_HASH_H
