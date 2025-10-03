@@ -27,6 +27,7 @@ namespace scl {
 
 /**
  * @brief Peer-to-peer communication channel interface.
+ * @ingroup net
  */
 class Channel {
  public:

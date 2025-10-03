@@ -34,7 +34,7 @@ using Elem = FF<Mersenne61>;
 
 TEST_CASE("Shamir share passive", "[ss]") {
   auto prg = PRG::create("shamir passive");
-  const auto shares = shamirSecretShare(Elem(123), 3, 4, prg);
+  const auto shares = createShamirSharing(Elem(123), 3, 4, prg);
 
   REQUIRE(shares.size() == 4);
   REQUIRE(shamirRecoverP(shares) == Elem(123));
@@ -42,7 +42,7 @@ TEST_CASE("Shamir share passive", "[ss]") {
 
 TEST_CASE("Shamir reconstruct", "[ss]") {
   auto prg = PRG::create("shamir recons");
-  const auto shares = shamirSecretShare(Elem(123), 5, 100, prg);
+  const auto shares = createShamirSharing(Elem(123), 5, 100, prg);
 
   REQUIRE(shares.size() == 100);
 
@@ -67,7 +67,7 @@ TEST_CASE("Shamir reconstruct", "[ss]") {
 
 TEST_CASE("Shamir reconstruct detect", "[ss]") {
   auto prg = PRG::create("shamir detect");
-  auto shares = shamirSecretShare(Elem(123), 4, 9, prg);
+  auto shares = createShamirSharing(Elem(123), 4, 9, prg);
 
   REQUIRE(shamirRecoverD(shares, 4) == Elem(123));
 
@@ -108,7 +108,7 @@ TEST_CASE("Shamir reconstruct different x and alphas", "[ss]") {
 
 TEST_CASE("Shamir reconstruct correct", "[sim]") {
   auto prg = PRG::create("shamir correct");
-  auto shares = shamirSecretShare(Elem(123), 2, 7, prg);
+  auto shares = createShamirSharing(Elem(123), 2, 7, prg);
 
   REQUIRE(shamirRecoverC(shares).f.evaluate(Elem{0}) == Elem(123));
 

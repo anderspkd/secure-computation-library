@@ -30,11 +30,7 @@ namespace scl {
 
 /**
  * @brief Elliptic Curve interface.
- * @tparam CURVE elliptic curve definition
- *
- * EC defines a point \f$P\f$ on some Elliptic Curve \f$E(K)\f$. The
- * curve parameters is defined through the \p CURVE template parameter and
- * appropriate overloads of the functions in the \ref ec namespace.
+ * @ingroup math
  */
 template <typename CURVE>
 class EC final {
@@ -111,9 +107,6 @@ class EC final {
     details::setPointAtInfinity<CURVE>(m_value);
   }
 
-  /**
-   * @brief Destructor. Does nothing.
-   */
   ~EC() {}
 
   /**

@@ -26,6 +26,11 @@ namespace scl::details {
 
 /**
  * @brief Convert value into a string.
+ * @ingroup util
+ *
+ * This function converts a "simple" value into a hex string. It is used to
+ * print certain arithmetic types in SCL that are really just wrappers around,
+ * say an unsigned int.
  */
 template <typename T>
 std::string toHexString(const T& v) {
@@ -33,6 +38,13 @@ std::string toHexString(const T& v) {
   ss << std::hex << v;
   return ss.str();
 }
+
+/**
+ * @brief Specialization for <code>__uint128_t</code>.
+ * @ingroup util
+ */
+template <>
+std::string toHexString(const __uint128_t& v);
 
 /**
  * @brief Convert a list of bytes to a string.
@@ -50,11 +62,6 @@ std::string toHexString(It begin, It end) {
   return ss.str();
 }
 
-/**
- * @brief ToHexString specialization for <code>__uint128_t</code>.
- */
-template <>
-std::string toHexString(const __uint128_t& v);
 
 #define SCL_TO_HEX(v, c)                                                \
   do {                                                                  \

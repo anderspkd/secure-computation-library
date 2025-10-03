@@ -38,6 +38,7 @@ class Vector;
 
 /**
  * @brief Matrix.
+ * @ingroup math
  */
 template <typename ELEMENT>
 class Matrix final {

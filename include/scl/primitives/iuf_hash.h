@@ -39,9 +39,6 @@ template <typename HASH>
 struct IUFHash {
   /**
    * @brief Update the hash function with a set of bytes.
-   * @param bytes a pointer to a number of bytes.
-   * @param n the number of bytes.
-   * @return the updated Hash object.
    */
   IUFHash<HASH>& update(const unsigned char* bytes, std::size_t n) {
     static_cast<HASH*>(this)->hash(bytes, n);
@@ -50,8 +47,6 @@ struct IUFHash {
 
   /**
    * @brief Update the hash function with the content from a byte vector.
-   * @param data a vector of bytes.
-   * @return the updated Hash object.
    */
   IUFHash<HASH>& update(const std::vector<unsigned char>& data) {
     return update(data.data(), data.size());
@@ -59,8 +54,6 @@ struct IUFHash {
 
   /**
    * @brief Update the hash function with the content from a byte STL array.
-   * @param data the array
-   * @return the updated Hash object.
    */
   template <std::size_t N>
   IUFHash<HASH>& update(const std::array<unsigned char, N>& data) {
@@ -69,8 +62,6 @@ struct IUFHash {
 
   /**
    * @brief Update the hash function with the content of a string.
-   * @param string the string.
-   * @return the updated Hash object.
    */
   IUFHash<HASH>& update(std::string_view string) {
     return update(reinterpret_cast<const unsigned char*>(string.data()),
@@ -79,11 +70,8 @@ struct IUFHash {
 
   /**
    * @brief Update the hash function with the content of a serializable type.
-   * @param data the data.
-   * @return the updated Hash object.
    */
-  template <typename T>
-    requires Serializable<T>
+  template <Serializable T>
   IUFHash<HASH>& update(const T& data) {
     const auto size = Serializer<T>::sizeOf(data);
     const auto buf = std::make_unique<unsigned char[]>(size);
@@ -93,7 +81,6 @@ struct IUFHash {
 
   /**
    * @brief Finalize and return the digest.
-   * @return a digest.
    */
   auto finalize() {
     auto digest = static_cast<HASH*>(this)->write();

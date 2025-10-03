@@ -26,6 +26,7 @@ namespace scl {
 
 /**
  * @brief Computes a lagrange basis for a set of nodes.
+ * @ingroup math
  * @param nodes the set of nodes.
  * @param x the evaluation point x.
  *

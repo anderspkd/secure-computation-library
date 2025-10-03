@@ -29,72 +29,56 @@ namespace scl {
 
 /**
  * @brief A verifiable secret share for Feldman VSSS.
+ * @ingroup ss
  */
 template <typename GROUP>
 struct FeldmanShare {
   /**
-   * @brief The group that commitments live in.
+   * @brief The commitment type.
    */
-  using Group = GROUP;
+  using CommitType = GROUP;
 
   /**
-   * @brief The field that shares live in.
+   * @brief The share type.
    */
-  using Field = typename GROUP::ScalarField;
+  using ShareType = typename GROUP::ScalarField;
+
+  /**
+   * @brief The secret type.
+   */
+  using SecretType = typename GROUP::ScalarField;
 
   /**
    * @brief The share.
    */
-  Field share;
+  ShareType share;
 
   /**
    * @brief The commitments.
    */
-  Vector<Group> commitments;
+  Vector<CommitType> commitments;
 };
 
 /**
  * @brief A verifiable secret-sharing suitable for Feldman VSSS.
- *
- * This struct captures a set of secret shares produced by the Feldman
- * verifiable secret sharing schemes. In this scheme, a secret is shared into
- * \f$n\f$ shares and \f$t+1\f$ commitments. The share held by a party is one of
- * the \f$n\f$ shares, and all \f$t+1\f$ commitments.
+ * @ingroup ss
  */
 template <typename GROUP>
 struct FeldmanSharing {
   /**
-   * @brief The group that commitments live in.
-   */
-  using Group = GROUP;
-
-  /**
-   * @brief The field that shares live in.
-   */
-  using Field = typename GROUP::ScalarField;
-
-  /**
    * @brief The shares.
    */
-  Vector<typename GROUP::ScalarField> shares;
+  Vector<typename FeldmanShare<GROUP>::ShareType> shares;
 
   /**
    * @brief The commitments.
    */
-  Vector<GROUP> commitments;
-
-  /**
-   * @brief Get a particular party's share.
-   * @param party_id the ID of the party.
-   * @return \p party_id's share.
-   */
-  FeldmanShare<GROUP> getShare(std::size_t party_id) const {
-    return {shares[party_id], commitments};
-  }
+  Vector<typename FeldmanShare<GROUP>::CommitType> commitments;
 };
 
 /**
  * @brief Create a Feldman secret-sharing.
+ * @ingroup ss
  * @param secret the secret to secret-share.
  * @param t the privacy threshold.
  * @param n the number of shares to create.
@@ -102,12 +86,12 @@ struct FeldmanSharing {
  * @return a Feldman secret-sharing.
  */
 template <typename GROUP>
-FeldmanSharing<GROUP> feldmanSecretShare(
-    const typename FeldmanSharing<GROUP>::Field& secret,
+FeldmanSharing<GROUP> createFeldmanVerifiableSharing(
+    const typename FeldmanShare<GROUP>::SecretType& secret,
     std::size_t t,
     std::size_t n,
     PRG& prg) {
-  const auto shares = shamirSecretShare(secret, t, n, prg);
+  const auto shares = createShamirSharing(secret, t, n, prg);
 
   std::vector<GROUP> comm;
   comm.reserve(t + 1);
@@ -122,6 +106,7 @@ FeldmanSharing<GROUP> feldmanSecretShare(
 
 /**
  * @brief Verify a share given a set of commitments.
+ * @ingroup ss
  * @param share the share to verify.
  * @param share_index the index (e.g., party ID) of the share.
  * @return true if the provided share is valid for that index, and false
@@ -142,6 +127,7 @@ bool feldmanVerify(const FeldmanShare<GROUP>& share, std::size_t share_index) {
 
 /**
  * @brief Verify a share given a set of commitments.
+ * @ingroup ss
  * @param share the share to verify.
  * @param commitments the commitments to verify against.
  * @param share_index the index (e.g., party ID) of the share.

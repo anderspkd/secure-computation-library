@@ -24,6 +24,7 @@ namespace scl {
 
 /**
  * @brief A channel implementation using TCP.
+ * @ingroup net-tcp
  */
 class TcpChannel final : public Channel {
  public:

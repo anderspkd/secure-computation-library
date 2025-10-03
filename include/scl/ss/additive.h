@@ -25,6 +25,7 @@ namespace scl {
 
 /**
  * @brief Creates an additive secret-sharing.
+ * @ingroup ss
  * @param secret the secret to secret-share.
  * @param n the number of shares.
  * @param prg a PRG used to generate random shares.
@@ -37,7 +38,7 @@ namespace scl {
  * and so reconstructing the secret is simply <code>shares.sum()</code>.
  */
 template <typename T>
-Vector<T> additiveShare(const T& secret, std::size_t n, PRG& prg) {
+Vector<T> createAdditiveSharing(const T& secret, std::size_t n, PRG& prg) {
   std::vector<T> shares;
   shares.reserve(n);
   auto sum = T::zero();

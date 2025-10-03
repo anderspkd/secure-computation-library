@@ -26,7 +26,7 @@ namespace scl {
 
 /**
  * @brief Create a network using a network config.
- * @param config the network configuration to use.
+ * @ingroup net-tcp
  *
  * Creates a new network where the connection information about the parties of
  * the network is read from a provided config. In the resulting network, the

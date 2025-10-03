@@ -29,7 +29,7 @@ namespace scl {
 
 /**
  * @brief Elements of the ring \f$\mathbb{Z}_{2^K}\f$ for integer \f$K\f$.
- * @tparam Bits the size of the ring.
+ * @ingroup math
  *
  * This class defines the ring of integers modulo a power of two. The bitsize
  * specified in the template parameter corresponds to the power of two

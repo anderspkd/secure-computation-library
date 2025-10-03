@@ -31,18 +31,21 @@ class Number;
 
 /**
  * @brief Compute the least common multiple of two numbers.
+ * @ingroup math
  * @return \f$lcm(a, b)\f$.
  */
 Number lcm(const Number& a, const Number& b);
 
 /**
  * @brief Compute the greatest common divisor of two numbers.
+ * @ingroup math
  * @return \f$gcd(a, b)\f$.
  */
 Number gcd(const Number& a, const Number& b);
 
 /**
  * @brief Compute the modular inverse of a number.
+ * @ingroup math
  * @return \f$val^{-1} \mod mod \f$.
  * @throws std::logic_error if \p val is not invertible.
  * @throws std::invalid_argument if \p mod is 0.
@@ -51,12 +54,14 @@ Number modInverse(const Number& val, const Number& mod);
 
 /**
  * @brief Compute a modular exponentiation.
+ * @ingroup math
  * @return \f$base^{exp} \mod mod\f$.
  */
 Number modExp(const Number& base, const Number& exp, const Number& mod);
 
 /**
  * @brief Arbitrary precision integer.
+ * @ingroup math
  */
 class Number final {
  public:

@@ -56,8 +56,7 @@ concept Invertible = requires(T& a) { a.invert(); };
 
 /**
  * @brief Array of values, e.g., group elements.
- * @tparam T the array element type.
- * @tparam N the number of elements.
+ * @ingroup math
  *
  * Array is effectively a wrapper around <code>std::array<T, N></code> with
  * added functionality that allows operating on Array objects as if they where
@@ -121,7 +120,6 @@ class Array final {
 
   /**
    * @brief Construct an Array filled with copies of the same element.
-   * @param element the element.
    */
   Array(const T& element) {
     m_values.fill(element);
@@ -137,13 +135,11 @@ class Array final {
 
   /**
    * @brief Copy construct an Array from another array.
-   * @param arr the array.
    */
   Array(const std::array<T, N>& arr) : m_values{arr} {}
 
   /**
    * @brief Move construct an Array from another array.
-   * @param arr the array.
    */
   Array(std::array<T, N>&& arr) : m_values{std::move(arr)} {}
 
@@ -284,8 +280,7 @@ class Array final {
    * @brief Multiply two Arrays entry-wise.
    */
   template <typename V>
-  friend Array<MultiplyResultType<T, V>, N> operator*(const Array<T, N>& lhs,
-                                                      const Array<V, N>& rhs)
+  friend auto operator*(const Array<T, N>& lhs, const Array<V, N>& rhs)
     requires Multipliable<T, V>
   {
     Array<MultiplyResultType<T, V>, N> tmp;

@@ -29,7 +29,7 @@ namespace scl {
 
 /**
  * @brief Finite Field interface.
- * @tparam FIELD finite field definition.
+ * @ingroup math
  */
 template <typename FIELD>
 class FF final {

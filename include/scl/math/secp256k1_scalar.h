@@ -27,6 +27,7 @@ namespace scl {
 
 /**
  * @brief Finite field modulo a Secp256k1 prime order sub-group.
+ * @ingroup math
  */
 struct Secp256k1Scalar {
   /**

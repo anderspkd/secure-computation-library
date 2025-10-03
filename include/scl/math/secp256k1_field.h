@@ -27,6 +27,7 @@ namespace scl {
 
 /**
  * @brief The Field over which secp256k1 is defined.
+ * @ingroup math
  */
 struct Secp256k1Field {
   /**

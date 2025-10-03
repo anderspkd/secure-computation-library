@@ -25,7 +25,7 @@ namespace scl::details {
 
 /**
  * @brief Non-adjacent Form encoding of a field element.
- * @tparam T a finite field type.
+ * @ingroup math
  */
 template <typename T>
 struct NafEncoding {

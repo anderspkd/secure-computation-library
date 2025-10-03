@@ -32,6 +32,8 @@ namespace scl {
  * @brief Pseudorandom generator.
  *
  * @code
+ * #include <scl/primitives/prg.h>
+ *
  * auto prg = PRG::create();
  *
  * std::array<unsigned char, 10> buffer;

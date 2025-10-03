@@ -48,11 +48,11 @@ set(SCL_SOURCE_FILES_TEST
 
   scl/coro/test_task.cc
 
-  scl/net/util.cc
-  scl/net/test_config.cc
   scl/net/test_loopback.cc
   scl/net/test_packet.cc
 
+  scl/net/tcp/util.cc
+  scl/net/tcp/test_config.cc
   scl/net/tcp/test_network.cc
 
   # scl/protocol/test_protocol.cc

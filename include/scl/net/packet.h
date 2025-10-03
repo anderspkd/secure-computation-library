@@ -121,8 +121,7 @@ class Packet {
    * util::Serializer. A specialization of util::Serialization for \p T must
    * therefore exist.
    */
-  template <typename T>
-    requires Serializable<T>
+  template <Serializable T>
   T read() {
     T v;
     const auto sz = Serializer<T>::read(v, get() + m_read_ptr);
@@ -138,8 +137,7 @@ class Packet {
    * This function writes \p obj using an util::Serializer. Calling this
    * function may also result in the internal buffer being resized.
    */
-  template <typename T>
-    requires Serializable<T>
+  template <Serializable T>
   std::size_t write(const T& obj) {
     const auto sz = Serializer<T>::sizeOf(obj);
     reserveSpace(sz);

@@ -142,6 +142,9 @@ class Event {
  */
 class BeginEvent final : public Event {
  public:
+  /**
+   * @brief Construct a new BeginEvent.
+   */
   BeginEvent(Time::Duration timestamp, const std::string& name)
       : Event(timestamp), m_name(name) {}
 
@@ -169,6 +172,9 @@ class BeginEvent final : public Event {
  */
 class EndEvent final : public Event {
  public:
+  /**
+   * @brief Construct a new EndEvent.
+   */
   EndEvent(Time::Duration timestamp, const std::string& name)
       : Event(timestamp), m_name(name) {}
 
@@ -196,6 +202,9 @@ class EndEvent final : public Event {
  */
 class StartEvent final : public Event {
  public:
+  /**
+   * @brief Construct a new start event.
+   */
   StartEvent() : Event(Time::Duration::zero()) {}
   void write(std::ostream& stream) override;
   EventType type() const override {
@@ -221,6 +230,9 @@ class StopEvent final : public Event {
  */
 class KilledEvent final : public Event {
  public:
+  /**
+   * @brief Construct a new KilledEvent.
+   */
   KilledEvent(Time::Duration timestamp, const std::string& reason)
       : Event(timestamp), m_reason(reason) {}
 
@@ -256,6 +268,9 @@ class CancelledEvent final : public Event {
  */
 class ChannelEvent : public Event {
  public:
+  /**
+   * @brief Construct a new ChannelEvent.
+   */
   ChannelEvent(Time::Duration timestamp, ChannelId id)
       : Event(timestamp), m_id(id) {}
 
@@ -287,6 +302,9 @@ class CloseEvent final : public ChannelEvent {
  */
 class ChannelDataEvent : public ChannelEvent {
  public:
+  /**
+   * @brief Construct a new ChannelDataEvent.
+   */
   ChannelDataEvent(Time::Duration timestamp, ChannelId id, std::size_t amount)
       : ChannelEvent(timestamp, id), m_amount(amount) {}
 

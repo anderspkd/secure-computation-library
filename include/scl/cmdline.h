@@ -32,6 +32,7 @@ namespace scl {
 
 /**
  * @brief Container for arguments and flags parsed by ProgramOptions::Parser.
+ * @ingroup util
  *
  * ProgramOptions holds the result after parsing the stuff in <code>argv</code>;
  * typically, this would be options, flags and so on.
@@ -131,6 +132,7 @@ std::size_t ProgramOptions::get<std::size_t>(std::string_view name) const;
 
 /**
  * @brief An command-line argument definition.
+ * @ingroup util
  */
 struct ProgramArg {
   /**
@@ -189,6 +191,7 @@ struct ProgramArg {
 
 /**
  * @brief A command-line argument flag definition.
+ * @ingroup util
  */
 struct ProgramFlag {
   /**
@@ -210,6 +213,7 @@ struct ProgramFlag {
 
 /**
  * @brief Argument parser for command-line options.
+ * @ingroup util
  *
  * Parser provides a builder for constructing a ProgramOptions object based on
  * the stuff in <code>argv</code>.

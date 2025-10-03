@@ -28,15 +28,25 @@ namespace scl {
 
 /**
  * @brief A secret share in the Pedersen VSS scheme.
+ * @ingroup ss
  *
- * A PedersenShare for party \f$i\in\{0,\dots,n-1\}\f$ is a tuple
- * \f$(a,r,\mathbf{A})\f$ where \f$\mathbf{A}\f$ is a vector of Pedersen
- * commitments over a group \f$\mathbb{G}\f$, and \f$(a,r)\f$ are elements of
- * \f$\mathbb{Z}_{ord(\mathbb{G})}\f$ corresponding to the \f$i\f$'th opening.
- * That is, \f$aG+rH=\mathbf{A}[i]\f$, for suitable values \f$G,H\f$. The vector
- * of commitments only explicitly lists the \f$t+1\f$ first commitments (where
- * \f$t\f$ is the privacy threshold), but the rest can be computed easily, e.g.,
- * via \ref computeCommitmentForIndex
+ * A degree \f$ t \f$ Pedersen VSS share of a value \f$ x \f$ is triple of
+ *  values \f$ (x', r', \vec{c}) \f$ such that
+ * - \f$ x' \f$ is a degree-\f$ t \f$ Shamir share of \f$ x \f$
+ * - \f$ r' \f$ is a degree-\f$ t \f$ Shamir share of a random value \f$ r \f$
+ * - \f$ \vec{c} \f$ is a vector of commitments to \f$ t + 1 \f$ shares.
+ *
+ * Note that the commitments can be used to interpolate commitments for any
+ * other party's share, as well as the secret. To validate that this share is
+ * correct, we need to ensure that
+ * \f$
+ *  x'\cdot G + r'\cdot H = interp(\vec{c}, i)
+ * \f$
+ * where \f$ i \f$ is the ID of this share (or party), \f$ G, H \f$ are group
+ * elements, and \f$ interp \f$ is an interpolation function.
+ *
+ * @see pedersenVerify
+ * @see computeCommitmentForIndex
  */
 template <typename GROUP>
 struct PedersenShare {
@@ -77,6 +87,7 @@ struct PedersenShare {
 
 /**
  * @brief A secret sharing for the Pedersen VSS scheme.
+ * @ingroup ss
  */
 template <typename GROUP>
 struct PedersenSharing {
@@ -112,13 +123,7 @@ struct PedersenSharing {
 
 /**
  * @brief Verifiably secret share a value using Pedersen VSS scheme.
- * @param secret the secret.
- * @param t the privacy threshold.
- * @param n the number of shares to create.
- * @param prg a PRG to use for creating randomness.
- * @param h a curve point used in the commitments.
- * @param randomness the random value to use for the secret.
- * @return a PedersenSharing of \p secret.
+ * @ingroup ss
  */
 template <typename T>
 PedersenSharing<T> pedersenSecretShare(
@@ -132,7 +137,7 @@ PedersenSharing<T> pedersenSecretShare(
   using G = typename PedersenSharing<T>::Group;
 
   const Array<F, 2> s = {{secret, randomness}};
-  const auto shares = shamirSecretShare(s, t, n, prg);
+  const auto shares = createShamirSharing(s, t, n, prg);
 
   std::vector<G> comm;
   comm.reserve(t + 1);
@@ -147,12 +152,7 @@ PedersenSharing<T> pedersenSecretShare(
 
 /**
  * @brief Verifiably secret share a value using Pedersen VSS scheme.
- * @param secret the secret.
- * @param t the privacy threshold.
- * @param n the number of shares to create.
- * @param prg a PRG to use for creating randomness.
- * @param h a curve point used in the commitments.
- * @return a PedersenSharing of \p secret.
+ * @ingroup ss
  */
 template <typename GROUP>
 PedersenSharing<GROUP> pedersenSecretShare(
@@ -168,9 +168,7 @@ PedersenSharing<GROUP> pedersenSecretShare(
 
 /**
  * @brief Compute the commitment for a particular index.
- * @param commitments the commitments of a Pedersen secret share.
- * @param share_index the index of the share.
- * @return the commitment of the share at \p share_index.
+ * @ingroup ss
  */
 template <typename GROUP>
 GROUP computeCommitmentForIndex(const Vector<GROUP>& commitments,
@@ -189,10 +187,7 @@ GROUP computeCommitmentForIndex(const Vector<GROUP>& commitments,
 
 /**
  * @brief Verify a Pedersen secret share.
- * @param share the share to verify.
- * @param share_index the evaluation index of the share.
- * @param h the curve point used in the commitments.
- * @return true if the share is valid and false otherwise.
+ * @ingroup ss
  */
 template <typename GROUP>
 bool pedersenVerify(const PedersenShare<GROUP> share,
@@ -205,11 +200,7 @@ bool pedersenVerify(const PedersenShare<GROUP> share,
 
 /**
  * @brief Verify a Pedersen secret share.
- * @param share the share and randomness to verify.
- * @param commitments the share commitments.
- * @param share_index the evaluation index of the share.
- * @param h the curve point used in the commitments.
- * @return true if the share is valid and false otherwise.
+ * @ingroup ss
  */
 template <typename T>
 bool pedersenVerify(
@@ -222,10 +213,7 @@ bool pedersenVerify(
 
 /**
  * @brief Apply a matrix to a vector of shares.
- * @param begin a beginning iterator to a list of shares.
- * @param end an end iterator to a list of shares.
- * @param matrix the matrix.
- * @return \p shares after multiplying with \p matrix.
+ * @ingroup ss
  *
  * This function is useful if one wishes to randomize a vector of shares using
  * e.g., a Vandermonde matrix, as in DN07.
@@ -272,9 +260,7 @@ std::vector<PedersenShare<T>> apply(
 
 /**
  * @brief Apply a matrix to a vector of shares.
- * @param shares the shares.
- * @param matrix the matrix.
- * @return \p shares after multiplying with \p matrix.
+ * @ingroup ss
  */
 template <typename T>
 std::vector<PedersenShare<T>> apply(

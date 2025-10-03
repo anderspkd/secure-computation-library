@@ -31,6 +31,7 @@ namespace scl {
 
 /**
  * @brief A bitmap.
+ * @ingroup util
  *
  * Bitmap serves a similar purpose as <code>std::vector<bool></code>, but
  * behaves a bit more like a "fixed-length vector of bits". The main
@@ -156,12 +157,15 @@ class Bitmap {
   }
 
   /**
-   * @brief Get the number of blocks this Bitmap uses.
+   * @brief The number of blocks this Bitmap uses.
    */
   std::size_t numberOfBlocks() const {
     return m_bits.size();
   }
 
+  /**
+   * @brief The size of the bitmap.
+   */
   std::size_t size() const {
     return m_true_size;
   }

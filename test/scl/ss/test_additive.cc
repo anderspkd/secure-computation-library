@@ -30,12 +30,12 @@ TEST_CASE("AdditiveSS", "[ss]") {
 
   auto secret = Elem(12345);
 
-  auto shares = additiveShare(secret, 10, prg);
+  auto shares = createAdditiveSharing(secret, 10, prg);
   REQUIRE(shares.size() == 10);
   REQUIRE(shares.sum() == secret);
 
   auto x = Elem(55555);
-  auto shr_x = additiveShare(x, 10, prg);
+  auto shr_x = createAdditiveSharing(x, 10, prg);
   auto share_sum = shares.add(shr_x);
 
   REQUIRE(share_sum.sum() == secret + x);

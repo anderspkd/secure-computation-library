@@ -24,6 +24,7 @@ namespace scl {
 
 /**
  * @brief The field \f$\mathbb{F}_p\f$ with \f$p=2^{127}-1\f$.
+ * @ingroup math
  */
 struct Mersenne127 {
   /**

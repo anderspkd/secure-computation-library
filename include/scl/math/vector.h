@@ -34,6 +34,7 @@ class Matrix;
 
 /**
  * @brief Computes an inner product between two iterators.
+ * @ingroup math
  * @param xb start of the first iterator.
  * @param xe end of the first iterator.
  * @param yb start of the second iterator.
@@ -50,9 +51,7 @@ T innerProd(IT0 xb, IT0 xe, IT1 yb) {
 
 /**
  * @brief Vector.
- *
- * This class is a thin wrapper around std::vector meant only to provide some
- * functionality that makes it behave like other classes present in SCUtil.
+ * @ingroup math
  */
 template <typename ELEMENT>
 class Vector final {

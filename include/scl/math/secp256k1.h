@@ -28,6 +28,7 @@ namespace scl {
 
 /**
  * @brief Elliptic curve definition for secp256k1.
+ * @ingroup math
  * @see http://www.secg.org/sec2-v2.pdf
  */
 struct Secp256k1 {

@@ -22,15 +22,88 @@
 
 #include "scl/bitmap.h"
 #include "scl/primitives/hash.h"
-#include "scl/primitives/merkle_proof.h"
 
 namespace scl {
 
 /**
- * @brief Merkle hash tree.
- * @tparam H a hash function.
- * @tparam T the leaf data type.
- * @TODO: Switch LEAF and HASH; Default Hash to scl::Hash<256>.
+ * @brief A Merkle tree proof.
+ *
+ * A MerkleProof is used to prove that a specific leaf recides in a Merkle tree,
+ * represented by its root. A proof is a path through the tree, from the leaf in
+ * question, to the root.
+ */
+template <typename DIGEST>
+struct MerkleProof {
+  /**
+   * @brief The path from a particular leaf to the root.
+   */
+  std::vector<DIGEST> path;
+
+  /**
+   * @brief A vector describing whether at the left or right element for each
+   * element in a path.
+   */
+  Bitmap direction;
+};
+
+/**
+ * @brief Serializer for MerkleProof.
+ */
+template <typename DIGEST>
+struct Serializer<MerkleProof<DIGEST>> {
+  /**
+   * @brief Determines the size in bytes of a merkle proof.
+   */
+  static std::size_t sizeOf(const MerkleProof<DIGEST>& proof) {
+    return Serializer<std::vector<DIGEST>>::sizeOf(proof.path) +
+           Serializer<Bitmap>::sizeOf(proof.direction);
+  }
+
+  /**
+   * @brief Write a merkle proof to a buffer.
+   */
+  static std::size_t write(const MerkleProof<DIGEST>& proof,
+                           unsigned char* buf) {
+    buf += Serializer<std::vector<DIGEST>>::write(proof.path, buf);
+    buf += Serializer<Bitmap>::write(proof.direction, buf);
+    return sizeOf(proof);
+  }
+
+  /**
+   * @brief Read a merkle proof from a buffer.
+   */
+  static std::size_t read(MerkleProof<DIGEST>& proof,
+                          const unsigned char* buf) {
+    buf += Serializer<std::vector<DIGEST>>::read(proof.path, buf);
+    buf += Serializer<Bitmap>::read(proof.direction, buf);
+    return sizeOf(proof);
+  }
+};
+
+/**
+ * @brief Merkle tree hash.
+ *
+ * MerkleTree can be used to construct a Merkle hash over a list of
+ * values. MerkleTree is parameterized by two types: The leaf type, which must
+ * be Serializable, and the hash function to use, which should be something
+ * adhearing to the IUFHAsh interface.
+ *
+ * @code
+ * #include <scl/primitives/merkle.h>
+ *
+ * std::vector<LEAF> leafs = ...
+ * LEAF specific_leaf = ...
+ *
+ * leafs[42] = specific_leaf;
+ *
+ * auto merkle_hash = scl::MerkleTree<LEAF>::hash(leafs);
+ *
+ * // create proof that specific_leaf recides at index 42.
+ * auto proof = scl::MerkleTree<LEAF>::prove(leafs, 42);
+ *
+ * // verify the proof
+ * assert(scl::MerkleTree<LEAF>::verify(specific_leaf, merkle_hash, proof));
+ * @endcode
  */
 template <typename LEAF, typename HASH = Hash<256>>
 struct MerkleTree {
@@ -46,8 +119,6 @@ struct MerkleTree {
 
   /**
    * @brief Compute a Merkle tree hash.
-   * @param data the date to hash.
-   * @return the root hash.
    */
   static DigestType hash(const std::vector<LEAF>& data);
 
@@ -58,10 +129,6 @@ struct MerkleTree {
 
   /**
    * @brief Verify a Merkle tree proof.
-   * @param leaf the statement.
-   * @param root the tree root.
-   * @param proof the proof
-   * @return true if the
    */
   static bool verify(const LEAF& leaf,
                      const DigestType& root,
@@ -86,7 +153,6 @@ auto MerkleTree<LEAF, HASH>::hashLeafs(const std::vector<LEAF>& data)
   // duplicate the last hash in case there's an odd number of leafs.
   if (data.size() % 2 == 1) {
     digests.emplace_back(digests.back());
-    sz++;
   }
 
   return digests;

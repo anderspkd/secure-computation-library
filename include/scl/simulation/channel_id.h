@@ -27,11 +27,24 @@ namespace scl {
  * @brief Identifier used for Channels.
  */
 struct ChannelId final {
+  /**
+   * @brief ID of the local party.
+   */
   std::size_t local;
+
+  /**
+   * @brief ID of the remote party.
+   */
   std::size_t remote;
 
+  /**
+   * @brief Allows comparing two ChannelIds.
+   */
   auto operator<=>(const ChannelId& other) const = default;
 
+  /**
+   * @brief Turn this ChannelId into a ChannelId from \p remote's POV.
+   */
   ChannelId flip() const {
     return ChannelId{remote, local};
   }

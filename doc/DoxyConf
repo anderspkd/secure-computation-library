@@ -1,13 +1,14 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "Secure Computation Library"
 PROJECT_NUMBER         = 0.1
-PROJECT_BRIEF          = "Utility library for common Secure Computation primitives."
+PROJECT_BRIEF          = "Utility library for Secure Computation Protocols."
 
 OUTPUT_DIRECTORY       = ./doc
 
-WARN_AS_ERROR          = YES
+WARN_AS_ERROR          = NO
 
 INPUT                  = doc/mainpage.md \
+		         doc/docs.h \
                          include/scl/ \
                          include/scl/primitives \
                          include/scl/math \
@@ -18,7 +19,7 @@ INPUT                  = doc/mainpage.md \
                          include/scl/coro
 
 FILE_PATTERNS          = *.h
-EXCLUDE_SYMBOLS        = SCL_*
+EXCLUDE_SYMBOLS        = SCL_*,details::*,*::details::*
 
 REPEAT_BRIEF           = NO
 
@@ -31,8 +32,13 @@ SHOW_FILES             = NO
 
 USE_MDFILE_AS_MAINPAGE = doc/mainpage.md
 HTML_EXTRA_STYLESHEET  = doc/styling.css
+LAYOUT_FILE	       = doc/layout.xml
 
-GENERATE_TREEVIEW      = YES
+INLINE_INHERITED_MEMB  = YES
+HTML_CODE_FOLDING      = NO
+
+DISABLE_INDEX	       = NO
+GENERATE_TREEVIEW      = NO
 
 USE_MATHJAX            = YES
 

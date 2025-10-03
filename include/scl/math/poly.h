@@ -26,6 +26,7 @@ namespace scl {
 
 /**
  * @brief Polynomials over rings.
+ * @ingroup math
  */
 template <typename RING>
 class Polynomial {
@@ -170,10 +171,27 @@ class Polynomial {
   }
 
  private:
+  Vector<RING> m_coefficients;
+
   Polynomial(const Vector<RING>& coefficients)
       : m_coefficients(coefficients) {};
 
-  Vector<RING> m_coefficients;
+  Vector<RING> padCoefficients(std::size_t n) const {
+    Vector<RING> c(n);
+    for (std::size_t i = 0; i < n; ++i) {
+      if (i <= degree()) {
+        c[i] = operator[](i);
+      }
+    }
+    return c;
+  }
+
+  Polynomial<RING> divideLeadingTerms(const Polynomial<RING>& q) const {
+    const auto deg_out = degree() - q.degree();
+    Vector<RING> c(deg_out + 1);
+    c[deg_out] = leadingTerm() / q.leadingTerm();
+    return Polynomial<RING>::create(c);
+  }
 };
 
 template <typename RING>
@@ -198,29 +216,12 @@ Polynomial<RING> Polynomial<RING>::create(const Vector<RING>& coefficients) {
   return Polynomial<RING>{c};
 }
 
-/**
- * @brief Pads the coefficients of a polynomial with zeros.
- * @param p the polynomial
- * @param n the size of the final Vec
- * @return A scl::Vec of length \p n with coefficients of p and zeros.
- */
-template <typename RING>
-Vector<RING> padCoefficients(const Polynomial<RING>& p, std::size_t n) {
-  Vector<RING> c(n);
-  for (std::size_t i = 0; i < n; ++i) {
-    if (i <= p.degree()) {
-      c[i] = p[i];
-    }
-  }
-  return c;
-}
-
 template <typename RING>
 Polynomial<RING> Polynomial<RING>::add(const Polynomial<RING>& q) const {
   const auto this_larger = degree() > q.degree();
   const auto n = (this_larger ? degree() : q.degree()) + 1;
-  const auto pp = padCoefficients(*this, n);
-  const auto qp = padCoefficients(q, n);
+  const auto pp = padCoefficients(n);
+  const auto qp = q.padCoefficients(n);
   const auto c = pp.add(qp);
   return Polynomial<RING>::create(c);
 }
@@ -229,8 +230,8 @@ template <typename RING>
 Polynomial<RING> Polynomial<RING>::subtract(const Polynomial<RING>& q) const {
   const auto this_larger = degree() > q.degree();
   const auto n = (this_larger ? degree() : q.degree()) + 1;
-  const auto pp = padCoefficients(*this, n);
-  const auto qp = padCoefficients(q, n);
+  const auto pp = padCoefficients(n);
+  const auto qp = q.padCoefficients(n);
   const auto c = pp.subtract(qp);
   return Polynomial<RING>::create(c);
 }
@@ -246,19 +247,6 @@ Polynomial<RING> Polynomial<RING>::multiply(const Polynomial<RING>& q) const {
   return Polynomial<RING>::create(c);
 }
 
-/**
- * @brief Divide the leading terms of two polynomials.
- * @note assumes that <code>deg(p) >= deg(q)</code>.
- */
-template <typename RING>
-Polynomial<RING> divideLeadingTerms(const Polynomial<RING>& p,
-                                    const Polynomial<RING>& q) {
-  const auto deg_out = p.degree() - q.degree();
-  Vector<RING> c(deg_out + 1);
-  c[deg_out] = p.leadingTerm() / q.leadingTerm();
-  return Polynomial<RING>::create(c);
-}
-
 template <typename RING>
 std::array<Polynomial<RING>, 2> Polynomial<RING>::divide(
     const Polynomial<RING>& q) const {
@@ -271,7 +259,7 @@ std::array<Polynomial<RING>, 2> Polynomial<RING>::divide(
   Polynomial p;
   Polynomial r = *this;
   while (!r.isZero() && r.degree() >= q.degree()) {
-    const auto t = divideLeadingTerms(r, q);
+    const auto t = r.divideLeadingTerms(q);
     p = p.add(t);
     r = r.subtract(t.multiply(q));
   }

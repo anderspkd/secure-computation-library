@@ -28,6 +28,7 @@ namespace scl {
 
 /**
  * @brief Protocol environment.
+ * @ingroup eval
  *
  * Env is the interface with which a Protocol can interact with the outside
  * world, as it were. It contains (1) a way to send and receive data to the
@@ -50,6 +51,7 @@ struct Result;
 
 /**
  * @brief Protocol interface.
+ * @ingroup eval
  *
  * Protocol defines the "smallest possible" protocol. Namely a protocol which
  * can be run once, and which might produce (1) some output, and (2) another
@@ -102,6 +104,7 @@ struct Protocol {
 
 /**
  * @brief The result of calling Protocol::run.
+ * @ingroup eval
  */
 struct Result {
   /**
@@ -135,6 +138,23 @@ struct Result {
   std::unique_ptr<Protocol> next;
   std::any output;
 };
+
+template <typename CALLBACK>
+Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
+                       Env& env,
+                       CALLBACK output_cb) {
+  while (protocol) {
+    Result result = co_await protocol->run(env);
+
+    if (result.next) {
+      protocol = std::move(result.next);
+    }
+
+    if (result.output.has_value()) {
+      output_cb(result.output);
+    }
+  }
+}
 
 }  // namespace scl
 

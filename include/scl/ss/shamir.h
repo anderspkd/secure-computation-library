@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SCL_SS_SHAMIR_H
-#define SCL_SS_SHAMIR_H
+#pragma once
 
 #include <array>
 #include <iostream>
@@ -36,6 +35,7 @@ namespace scl {
 
 /**
  * @brief Create a Shamir secret-sharing.
+ * @ingroup ss
  * @tparam T a finite field type.
  * @param secret the secret to secret-share.
  * @param t the privacy threshold.
@@ -49,10 +49,10 @@ namespace scl {
  * points in which \f$f\f$ is evaluated is called the alphas.
  */
 template <typename T>
-Vector<T> shamirSecretShare(const T& secret,
-                            std::size_t t,
-                            std::size_t n,
-                            PRG& prg) {
+Vector<T> createShamirSharing(const T& secret,
+                              std::size_t t,
+                              std::size_t n,
+                              PRG& prg) {
   auto c = Vector<T>::random(t + 1, prg);
   c[0] = secret;
   const auto p = Polynomial<T>::create(c);
@@ -69,6 +69,7 @@ Vector<T> shamirSecretShare(const T& secret,
 
 /**
  * @brief Recover a Shamir secret-shared secret.
+ * @ingroup ss
  * @param shares the shares.
  * @param alphas the alphas.
  * @param x the evaluation point.
@@ -86,6 +87,7 @@ T shamirRecoverP(const Vector<T>& shares, const Vector<T>& alphas, const T& x) {
 
 /**
  * @brief Recover a Shamir secret-shared secret.
+ * @ingroup ss
  * @param shares the shares.
  * @return a value.
  *
@@ -101,6 +103,7 @@ T shamirRecoverP(const Vector<T>& shares) {
 
 /**
  * @brief Recover a Shamir secret-shared secret with error detection.
+ * @ingroup ss
  * @param shares the shares.
  * @param alphas the alphas.
  * @param t the number of shares that might contain errors.
@@ -136,6 +139,7 @@ T shamirRecoverD(const Vector<T>& shares,
 
 /**
  * @brief Recover a Shamir secret-shared secret with error detection.
+ * @ingroup ss
  * @param shares the shares.
  * @param t the degree of the sharing.
  * @return a value.
@@ -151,6 +155,7 @@ T shamirRecoverD(const Vector<T>& shares, std::size_t t) {
 
 /**
  * @brief The result of an error corrected Shamir sharing.
+ * @ingroup ss
  *
  * <p>When recovering a Shamir secret-shared value with error correction, the
  * result is either two polynomials or an error, where an error only occurs when
@@ -180,6 +185,7 @@ struct ErrorCorrectedSecret {
 
 /**
  * @brief Recover a Shamir secret-shared secret with error correction.
+ * @ingroup ss
  * @param shares the shares.
  * @param alphas the alphas.
  * @return a pair of polynomials.
@@ -242,6 +248,7 @@ ErrorCorrectedSecret<T> shamirRecoverC(const Vector<T>& shares,
 
 /**
  * @brief Recover a Shamir secret-shared secret with error correction.
+ * @ingroup ss
  * @param shares the shares.
  * @return a pair of polynomials.
  *
@@ -254,5 +261,3 @@ ErrorCorrectedSecret<T> shamirRecoverC(const Vector<T>& shares) {
 }
 
 }  // namespace scl
-
-#endif  // SCL_SS_SHAMIR_H

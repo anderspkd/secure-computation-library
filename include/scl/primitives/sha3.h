@@ -65,11 +65,15 @@ class Sha3 final : public IUFHash<Sha3<BITS>> {
   unsigned int m_word_index = 0;
 };
 
+namespace details {
+
 /**
  * @brief Keccak function.
  * @param state the current state
  */
 void keccakf(uint64_t state[25]);
+
+}  // namespace details
 
 template <std::size_t BITS>
 void Sha3<BITS>::hash(const unsigned char* bytes, std::size_t nbytes) {
@@ -94,7 +98,7 @@ void Sha3<BITS>::hash(const unsigned char* bytes, std::size_t nbytes) {
     m_saved = 0;
 
     if (++m_word_index == CUTTOFF) {
-      keccakf(m_state);
+      details::keccakf(m_state);
       m_word_index = 0;
     }
   }
@@ -112,7 +116,7 @@ void Sha3<BITS>::hash(const unsigned char* bytes, std::size_t nbytes) {
     m_state[m_word_index] ^= t;
 
     if (++m_word_index == CUTTOFF) {
-      keccakf(m_state);
+      details::keccakf(m_state);
       m_word_index = 0;
     }
     p += sizeof(uint64_t);
@@ -129,7 +133,7 @@ auto Sha3<BITS>::write() -> Sha3<BITS>::DigestType {
       (uint64_t)(((uint64_t)(0x02 | (1 << 2))) << ((m_byte_index) * 8));
   m_state[m_word_index] ^= m_saved ^ t;
   m_state[CUTTOFF - 1] ^= 0x8000000000000000ULL;
-  keccakf(m_state);
+  details::keccakf(m_state);
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
     const unsigned int t1 = (uint32_t)m_state[i];
