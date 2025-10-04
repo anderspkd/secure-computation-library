@@ -124,24 +124,4 @@ bool feldmanVerify(const FeldmanShare<GROUP>& share, std::size_t share_index) {
   return v == GROUP::generator() * share.share;
 }
 
-/**
- * @brief Verify a share given a set of commitments.
- * @ingroup ss
- * @param share the share to verify.
- * @param commitments the commitments to verify against.
- * @param share_index the index (e.g., party ID) of the share.
- * @return true if the provided share is valid for that index, and false
- * otherwise.
- *
- * This function checks if a provided share is consistent with a set of
- * commitments.
- */
-template <typename GROUP>
-bool feldmanVerify(
-    const typename FeldmanShare<GROUP>::Field& share,
-    const Vector<typename FeldmanShare<GROUP>::Group>& commitments,
-    std::size_t share_index) {
-  return feldmanVerify<GROUP>({share, commitments}, share_index);
-}
-
 }  // namespace scl

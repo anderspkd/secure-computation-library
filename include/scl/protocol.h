@@ -18,6 +18,8 @@
 #pragma once
 
 #include <any>
+#include <stdexcept>
+#include <type_traits>
 
 #include "scl/coro/task.h"
 #include "scl/net/network.h"
@@ -63,18 +65,22 @@ struct Result;
  *
  * The following simple example illustrates this idea.
  * @code
+ * #include <scl/protocol.h>
+ *
  * class CountdownProtocol final : public Protocol {
  *  public:
  *   CountdownProtocol(int current) : m_current(current) {}
+
  *   Task<Result> run(Env& ignored) const override {
- *     std::cout << "countdown: " << m_current << "\n";
  *     if (m_current == 0) {
  *       co_return Result::done();
  *     } else {
- *       co_return Result::next(
- *           std::make_unique<CountdownProtocol>(m_current - 1));
+ *       co_return Result::nextStep(
+ *           std::make_unique<CountdownProtocol>(m_current - 1),
+ *            m_current);
  *     }
  *   }
+
  *  private:
  *   int m_current;
  * };
@@ -138,6 +144,9 @@ struct Result {
   std::any output;
 };
 
+/**
+ * @brief Run a protocol.
+ */
 template <typename CALLBACK>
 Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
                        Env& env,
@@ -145,12 +154,29 @@ Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
   while (protocol) {
     Result result = co_await protocol->run(env);
 
-    if (result.next) {
-      protocol = std::move(result.next);
-    }
+    protocol = std::move(result.next);
 
     if (result.output.has_value()) {
       output_cb(result.output);
+    }
+  }
+}
+
+template <typename R>
+Task<R> runProtocol(std::unique_ptr<Protocol> protocol, Env& env) {
+  Result result;
+
+  while (protocol) {
+    result = co_await protocol->run(env);
+
+    protocol = std::move(result.next);
+  }
+
+  if constexpr (!std::is_void_v<R>) {
+    if (result.output.has_value()) {
+      co_return std::any_cast<R>(result.output);
+    } else {
+      throw std::runtime_error("protocol never gave output");
     }
   }
 }

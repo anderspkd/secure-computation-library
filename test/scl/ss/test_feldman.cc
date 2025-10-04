@@ -33,13 +33,12 @@ TEST_CASE("Feldman", "[ss]") {
   std::size_t t = 4;
 
   auto secret = Field(123);
-  auto sb = feldmanSecretShare<Curve>(secret, 4, 24, prg);
+  auto sb = createFeldmanVerifiableSharing<Curve>(secret, 4, 24, prg);
   REQUIRE(sb.commitments[0] == secret * Curve::generator());
   REQUIRE(sb.shares.size() == 24);
   REQUIRE(sb.commitments.size() == t + 1);
   REQUIRE(feldmanVerify<Curve>({secret, sb.commitments}, 0));
-  REQUIRE(feldmanVerify<Curve>(secret, sb.commitments, 0));
-  REQUIRE(feldmanVerify(sb.getShare(22), 23));
+  REQUIRE(feldmanVerify<Curve>({sb.shares[22], sb.commitments}, 23));
   REQUIRE(shamirRecoverP(sb.shares.subVector(5)) == secret);
 }
 
@@ -50,8 +49,8 @@ TEST_CASE("Feldman hom", "[ss]") {
   auto s0 = Field(123);
   auto s1 = Field(44);
 
-  auto ss0 = feldmanSecretShare<Curve>(s0, t, 10, prg);
-  auto ss1 = feldmanSecretShare<Curve>(s1, t, 10, prg);
+  auto ss0 = createFeldmanVerifiableSharing<Curve>(s0, t, 10, prg);
+  auto ss1 = createFeldmanVerifiableSharing<Curve>(s1, t, 10, prg);
 
   auto ss2 = ss0.shares.add(ss1.shares);
   auto com2 = ss0.commitments.add(ss1.commitments);

@@ -33,8 +33,8 @@ TEST_CASE("Mersenne127 defs", "[math][ff]") {
 }
 
 TEST_CASE("Mersenne127 to string", "[math][ff]") {
-  REQUIRE(Field::zero().toString() == "0");
-  REQUIRE(Field::one().toString() == "1");
+  REQUIRE(Field::zero().toString() == "00");
+  REQUIRE(Field::one().toString() == "01");
 
   Field x(0x7b);
   REQUIRE(x.toString() == "7b");
@@ -48,6 +48,14 @@ TEST_CASE("Mersenne127 to string", "[math][ff]") {
   std::stringstream ss;
   ss << x;
   REQUIRE(ss.str() == "7b");
+}
+
+TEST_CASE("Mersenne127 hex") {
+  Field x = Field::fromString("1a0000000000000001");
+  REQUIRE(x.toString() == "1a0000000000000001");
+
+  Field y = Field::fromString("0123");
+  REQUIRE(y.toString() == "0123");
 }
 
 TEST_CASE("Mersenne127 from string", "[math][ff]") {

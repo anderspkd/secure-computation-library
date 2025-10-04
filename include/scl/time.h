@@ -61,12 +61,24 @@ inline long double timeToMillis(Time::Duration time) {
  * time wouldn't be accurate.
  */
 struct Clock {
-  virtual ~Clock();
+  virtual ~Clock() {}
 
   /**
    * @brief Read the value of the clock.
    */
   virtual Time::Duration read() const = 0;
+};
+
+class RealtimeClock final : public Clock {
+ public:
+  RealtimeClock() : m_start(Time::now()) {}
+
+  Time::Duration read() const override {
+    return Time::now() - m_start;
+  }
+
+ private:
+  Time::TimePoint m_start;
 };
 
 }  // namespace scl

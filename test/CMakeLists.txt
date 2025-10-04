@@ -55,7 +55,7 @@ set(SCL_SOURCE_FILES_TEST
   scl/net/tcp/test_config.cc
   scl/net/tcp/test_network.cc
 
-  # scl/protocol/test_protocol.cc
+  scl/test_protocol.cc
 
   scl/simulation/test_event.cc
   # scl/simulation/test_context.cc

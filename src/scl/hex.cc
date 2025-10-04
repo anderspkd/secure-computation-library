@@ -18,22 +18,25 @@
 #include "scl/hex.h"
 
 #include <cstdint>
+#include <iomanip>
 
 template <>
 std::string scl::details::toHexString(const __uint128_t& v) {
-  std::string str;
-  if (v == 0) {
-    str = "0";
-  } else {
-    std::stringstream ss;
-    auto top = static_cast<std::uint64_t>(v >> 64);
-    auto bot = static_cast<std::uint64_t>(v);
-    ss << std::hex;
-    if (top > 0) {
-      ss << top;
-    }
+  auto top = static_cast<std::uint64_t>(v >> 64);
+  auto bot = static_cast<std::uint64_t>(v);
+
+  std::stringstream ss;
+  ss << std::hex << std::setfill('0');
+  if (top) {
+    ss << top;
+    // have to add appropriate padding to the bottom word here
+    ss << std::setw(16);
     ss << bot;
-    str = ss.str();
+  } else {
+    ss << bot;
   }
-  return str;
+
+  auto str = ss.str();
+  // make sure the output has an even length
+  return str.length() % 2 ? '0' + str : str;
 }

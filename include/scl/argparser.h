@@ -38,6 +38,8 @@ namespace scl {
  *
  * The interface of ProgramOptions is pretty intuitive
  * @code
+ * #include <scl/argparser.h>
+ *
  * ProgramOptions opts = ...  //
  *
  * // check if "-foo 123" was passed in argv
@@ -58,6 +60,8 @@ namespace scl {
  * strings. Specialization is, of course, allowed.
  *
  * @code
+ * #include <scl/argparser.h>
+ *
  * struct FooStruct {
  *   int x;
  *   int y;
@@ -226,7 +230,7 @@ struct ProgramFlag {
  *
  * @code
  * // example.cc
- * #include <scl/cmdline.h>
+ * #include <scl/argparser.h>
  * #include <iostream>
  *
  * using namespace scl;
