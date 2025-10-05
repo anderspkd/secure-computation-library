@@ -19,7 +19,7 @@
 
 #include "scl/net/channel.h"
 
-namespace scl {
+namespace scl::details {
 
 /**
  * @brief A channel implementation using TCP.

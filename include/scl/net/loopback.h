@@ -24,7 +24,7 @@
 #include "scl/coro/task.h"
 #include "scl/net/channel.h"
 
-namespace scl {
+namespace scl::details {
 
 /**
  * @brief A loopback channel.

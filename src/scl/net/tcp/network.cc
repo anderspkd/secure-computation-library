@@ -148,7 +148,7 @@ Task<Network> scl::createTcpNetwork(const NetworkConfig& config) {
   const std::size_t id = config.id();
   const std::size_t n = config.networkSize();
 
-  channels[id] = LoopbackChannel::create();
+  channels[id] = details::LoopbackChannel::create();
 
   std::vector<Task<SocketAndId>> tasks;
 
@@ -168,7 +168,7 @@ Task<Network> scl::createTcpNetwork(const NetworkConfig& config) {
   details::sys_call::close(server_socket);
 
   for (const SocketAndId& sai : sais) {
-    channels[sai.id] = std::make_shared<TcpChannel>(sai.socket);
+    channels[sai.id] = std::make_shared<details::TcpChannel>(sai.socket);
   }
 
   co_return Network{channels, config.id()};

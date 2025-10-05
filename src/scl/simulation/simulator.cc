@@ -144,7 +144,7 @@ std::vector<std::shared_ptr<Channel>> createChannels(
 
   for (std::size_t remote_pid = 0; remote_pid < n; remote_pid++) {
     if (remote_pid == local_pid) {
-      channels.emplace_back(LoopbackChannel::create());
+      channels.emplace_back(details::LoopbackChannel::create());
     } else {
       ChannelId id(local_pid, remote_pid);
       channels.emplace_back(

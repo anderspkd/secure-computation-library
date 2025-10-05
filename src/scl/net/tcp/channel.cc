@@ -23,7 +23,7 @@
 
 using namespace scl;
 
-void TcpChannel::close() {
+void details::TcpChannel::close() {
   if (m_alive) {
     // ensures that we only attempt to close the socket once, even if closing
     // the somehow socket fails.
@@ -37,11 +37,11 @@ void TcpChannel::close() {
   }
 }
 
-Task<void> TcpChannel::send(Packet&& packet) {
+Task<void> details::TcpChannel::send(Packet&& packet) {
   co_await send(packet);
 }
 
-Task<void> TcpChannel::send(const Packet& packet) {
+Task<void> details::TcpChannel::send(const Packet& packet) {
   // Write the packet size to a buffer.
   const Packet::SizeType pkt_sz = packet.dataSize();
   const auto pkt_t_sz = sizeof(Packet::SizeType);
@@ -126,7 +126,7 @@ Task<bool> recvInto(int socket,
 
 }  // namespace
 
-Task<Packet> TcpChannel::recv() {
+Task<Packet> details::TcpChannel::recv() {
   unsigned char packet_size_buf[sizeof(Packet::SizeType)] = {0};
 
   // read size of the packet.
@@ -141,7 +141,7 @@ Task<Packet> TcpChannel::recv() {
   co_return packet;
 }
 
-Task<std::optional<Packet>> TcpChannel::recv(Time::Duration timeout) {
+Task<std::optional<Packet>> details::TcpChannel::recv(Time::Duration timeout) {
   unsigned char packet_size_buf[sizeof(Packet::SizeType)] = {0};
 
   // attempt to read the size of the packet. If we timeout here, we will simply
@@ -167,6 +167,6 @@ Task<std::optional<Packet>> TcpChannel::recv(Time::Duration timeout) {
   co_return packet;
 }
 
-Task<bool> TcpChannel::poll() {
+Task<bool> details::TcpChannel::poll() {
   co_return details::pollSocket(m_socket, POLLIN);
 }

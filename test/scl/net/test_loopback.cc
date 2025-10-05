@@ -25,7 +25,7 @@
 using namespace scl;
 
 TEST_CASE("Loopback to self close", "[net]") {
-  auto channel = LoopbackChannel::create();
+  auto channel = details::LoopbackChannel::create();
 
   Packet p;
   p << 1 << 2 << 3;
@@ -41,7 +41,7 @@ TEST_CASE("Loopback to self close", "[net]") {
 }
 
 TEST_CASE("Loopback send/recv", "[net]") {
-  auto channels = LoopbackChannel::createPaired();
+  auto channels = details::LoopbackChannel::createPaired();
   auto chl0 = channels[0];
   auto chl1 = channels[1];
 
