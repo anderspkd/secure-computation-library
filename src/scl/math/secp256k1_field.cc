@@ -23,7 +23,9 @@
 #include "scl/math/ff_ops.h"
 #include "scl/math/number.h"
 
-using Field = scl::Secp256k1Field;
+using namespace scl;
+
+using Field = Secp256k1Field;
 using Elem = Field::ValueType;
 
 #define NUM_LIMBS 4
@@ -35,7 +37,7 @@ using Elem = Field::ValueType;
     }                                          \
   } while (0)
 
-static const scl::details::RedParams<NUM_LIMBS> RD = {
+static const details::RedParams<NUM_LIMBS> RD = {
     // Prime
     {
         0xFFFFFFFEFFFFFC2F,  //
@@ -52,7 +54,7 @@ static const scl::details::RedParams<NUM_LIMBS> RD = {
     }};
 
 template <>
-scl::Number scl::order<scl::FF<Field>>() {
+Number scl::order<FF<Field>>() {
   return Number::fromString(
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
 }
@@ -61,41 +63,41 @@ scl::Number scl::order<scl::FF<Field>>() {
 #define PTR(X) (X).data()
 
 template <>
-void scl::details::convertTo<Field>(Elem& out, const int value) {
+void details::convertTo<Field>(Elem& out, const int value) {
   out = {0};
   montyInFromInt<NUM_LIMBS>(PTR(out), value, RD);
 }
 
 template <>
-void scl::details::convertTo<Field>(Elem& out, const std::string& src) {
+void details::convertTo<Field>(Elem& out, const std::string& src) {
   out = {0};
   montyFromString<NUM_LIMBS>(PTR(out), src, RD);
 }
 
 template <>
-void scl::details::add<Field>(Elem& out, const Elem& op) {
+void details::add<Field>(Elem& out, const Elem& op) {
   montyModAdd<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
-void scl::details::subtract<Field>(Elem& out, const Elem& op) {
+void details::subtract<Field>(Elem& out, const Elem& op) {
   montyModSub<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
-void scl::details::negate<Field>(Elem& out) {
+void details::negate<Field>(Elem& out) {
   montyModNeg<NUM_LIMBS>(PTR(out), RD);
 }
 
 template <>
-void scl::details::multiply<Field>(Elem& out, const Elem& op) {
+void details::multiply<Field>(Elem& out, const Elem& op) {
   montyModMul<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 #define ONE {0x1000003D1, 0, 0, 0}
 
 template <>
-void scl::details::invert<Field>(Elem& out) {
+void details::invert<Field>(Elem& out) {
   static const mp_limb_t PRIME_MINUS_2[NUM_LIMBS] = {
       0xFFFFFFFEFFFFFC2D,  //
       0xFFFFFFFFFFFFFFFF,  //
@@ -109,31 +111,31 @@ void scl::details::invert<Field>(Elem& out) {
 }
 
 template <>
-bool scl::details::equal<Field>(const Elem& in1, const Elem& in2) {
+bool details::equal<Field>(const Elem& in1, const Elem& in2) {
   return compareValues<NUM_LIMBS>(PTR(in1), PTR(in2)) == 0;
 }
 
 template <>
-void scl::details::fromBytes<Field>(Elem& dest, const unsigned char* src) {
+void details::fromBytes<Field>(Elem& dest, const unsigned char* src) {
   montyFromBytes<NUM_LIMBS>(PTR(dest), src, RD);
 }
 
 template <>
-void scl::details::toBytes<Field>(unsigned char* dest, const Elem& src) {
+void details::toBytes<Field>(unsigned char* dest, const Elem& src) {
   montyToBytes<NUM_LIMBS>(dest, PTR(src), RD);
 }
 
 template <>
-std::string scl::details::toString<Field>(const Elem& in) {
+std::string details::toString<Field>(const Elem& in) {
   return montyToString<NUM_LIMBS>(PTR(in), RD);
 }
 
-bool scl::details::isSmaller(const FF<Field>& lhs, const FF<Field>& rhs) {
+bool details::isSmaller(const FF<Field>& lhs, const FF<Field>& rhs) {
   auto c = compareValues<NUM_LIMBS>(PTR(lhs.value()), PTR(rhs.value()));
   return c <= 0;
 }
 
-scl::FF<Field> scl::details::sqrt(const FF<Field>& x) {
+FF<Field> details::sqrt(const FF<Field>& x) {
   // (p + 1) / 4. We assume the input is a square mod p, so x^{e} gives a square
   // root of x.
   static const mp_limb_t e[NUM_LIMBS] = {

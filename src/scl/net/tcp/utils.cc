@@ -21,7 +21,9 @@
 
 #include "./syscalls.h"
 
-int scl::details::createServerSocket(int port, int backlog) {
+using namespace scl;
+
+int details::createServerSocket(int port, int backlog) {
   int ssock = sys_call::socket(AF_INET, SOCK_STREAM, 0);
 
   if (ssock < 0) {
@@ -61,7 +63,7 @@ int scl::details::createServerSocket(int port, int backlog) {
   return ssock;
 }
 
-scl::details::Connection scl::details::acceptConnection(int server_socket) {
+details::Connection details::acceptConnection(int server_socket) {
   struct sockaddr sa;
   auto addrsize = sizeof(struct sockaddr_in);
   int sock = sys_call::accept(server_socket, &sa, (socklen_t*)&addrsize);
@@ -78,7 +80,7 @@ scl::details::Connection scl::details::acceptConnection(int server_socket) {
   return {sock, hostname};
 }
 
-int scl::details::connectAsClient(const std::string& hostname, int port) {
+int details::connectAsClient(const std::string& hostname, int port) {
   int sock = sys_call::socket(AF_INET, SOCK_STREAM, 0);
 
   if (sock < 0) {
@@ -106,7 +108,7 @@ int scl::details::connectAsClient(const std::string& hostname, int port) {
   return sock;
 }
 
-void scl::details::markSocketNonBlocking(int socket) {
+void details::markSocketNonBlocking(int socket) {
   auto flags = sys_call::fcntl(socket, F_GETFL, 0);
   if (flags == -1) {
     throw std::system_error(sys_call::getError(),
@@ -121,7 +123,7 @@ void scl::details::markSocketNonBlocking(int socket) {
   }
 }
 
-bool scl::details::pollSocket(int socket, short event) {
+bool details::pollSocket(int socket, short event) {
   struct pollfd fds{socket, POLLIN, 0};
 
   auto r = sys_call::poll(&fds, 1, 0);

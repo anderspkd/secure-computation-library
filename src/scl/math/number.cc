@@ -24,23 +24,25 @@
 
 #include <gmp.h>
 
-scl::Number::Number() {
+using namespace scl;
+
+Number::Number() {
   mpz_init(m_value);
 }
 
-scl::Number::Number(const Number& number) : Number() {
+Number::Number(const Number& number) : Number() {
   mpz_set(m_value, number.m_value);
 }
 
-scl::Number::Number(Number&& number) noexcept : Number() {
+Number::Number(Number&& number) noexcept : Number() {
   mpz_set(m_value, number.m_value);
 }
 
-scl::Number::~Number() {
+Number::~Number() {
   mpz_clear(m_value);
 }
 
-scl::Number scl::Number::random(std::size_t bits, PRG& prg) {
+Number Number::random(std::size_t bits, PRG& prg) {
   auto len = (bits - 1) / 8 + 2;
   auto data = std::make_unique<unsigned char[]>(len);
   prg.next(data.get(), len);
@@ -48,7 +50,7 @@ scl::Number scl::Number::random(std::size_t bits, PRG& prg) {
   // trim trailing bits to ensure the resulting number is atmost bits large
   data[1] &= (1 << (bits % 8)) - 1;
 
-  scl::Number r;
+  Number r;
   mpz_import(r.m_value, len - 1, 1, 1, 0, 0, data.get() + 1);
   if ((data[0] & 1) != 0) {
     mpz_neg(r.m_value, r.m_value);
@@ -56,20 +58,20 @@ scl::Number scl::Number::random(std::size_t bits, PRG& prg) {
   return r;
 }
 
-scl::Number scl::Number::randomPrime(std::size_t bits, PRG& prg) {
+Number Number::randomPrime(std::size_t bits, PRG& prg) {
   auto r = random(bits, prg);
   Number prime;
   mpz_nextprime(prime.m_value, r.m_value);
   return prime;
 }
 
-scl::Number scl::Number::fromString(const std::string& str) {
-  scl::Number num;
+Number Number::fromString(const std::string& str) {
+  Number num;
   mpz_set_str(num.m_value, str.c_str(), 16);
   return num;
 }
 
-scl::Number scl::Number::read(const unsigned char* buf) {
+Number Number::read(const unsigned char* buf) {
   std::uint32_t size_and_sign;
   std::memcpy(&size_and_sign, buf, sizeof(std::uint32_t));
 
@@ -84,51 +86,51 @@ scl::Number scl::Number::read(const unsigned char* buf) {
   return r;
 }
 
-scl::Number::Number(int value) : Number() {
+Number::Number(int value) : Number() {
   mpz_set_si(m_value, value);
 }
 
-scl::Number scl::Number::operator+(const Number& number) const {
-  scl::Number sum;
+Number Number::operator+(const Number& number) const {
+  Number sum;
   mpz_add(sum.m_value, m_value, number.m_value);
   return sum;
 }
 
-scl::Number scl::Number::operator-(const Number& number) const {
-  scl::Number diff;
+Number Number::operator-(const Number& number) const {
+  Number diff;
   mpz_sub(diff.m_value, m_value, number.m_value);
   return diff;
 }
 
-scl::Number scl::Number::operator-() const {
-  scl::Number neg;
+Number Number::operator-() const {
+  Number neg;
   mpz_neg(neg.m_value, m_value);
   return neg;
 }
 
-scl::Number scl::Number::operator*(const Number& number) const {
-  scl::Number prod;
+Number Number::operator*(const Number& number) const {
+  Number prod;
   mpz_mul(prod.m_value, m_value, number.m_value);
   return prod;
 }
 
-scl::Number scl::Number::operator/(const Number& number) const {
+Number Number::operator/(const Number& number) const {
   if (mpz_sgn(number.m_value) == 0) {
     throw std::logic_error("division by 0");
   }
-  scl::Number frac;
+  Number frac;
   mpz_div(frac.m_value, m_value, number.m_value);
   return frac;
 }
 
-scl::Number scl::Number::operator%(const Number& mod) const {
-  scl::Number res;
+Number Number::operator%(const Number& mod) const {
+  Number res;
   mpz_mod(res.m_value, m_value, mod.m_value);
   return res;
 }
 
-scl::Number scl::Number::operator<<(int shift) const {
-  scl::Number shifted;
+Number Number::operator<<(int shift) const {
+  Number shifted;
   if (shift < 0) {
     shifted = operator>>(-shift);
   } else {
@@ -137,8 +139,8 @@ scl::Number scl::Number::operator<<(int shift) const {
   return shifted;
 }
 
-scl::Number scl::Number::operator>>(int shift) const {
-  scl::Number shifted;
+Number Number::operator>>(int shift) const {
+  Number shifted;
   if (shift < 0) {
     shifted = operator<<(-shift);
   } else {
@@ -147,47 +149,47 @@ scl::Number scl::Number::operator>>(int shift) const {
   return shifted;
 }
 
-scl::Number scl::Number::operator^(const Number& number) const {
-  scl::Number xord;
+Number Number::operator^(const Number& number) const {
+  Number xord;
   mpz_xor(xord.m_value, m_value, number.m_value);
   return xord;
 }
 
-scl::Number scl::Number::operator|(const Number& number) const {
-  scl::Number ord;
+Number Number::operator|(const Number& number) const {
+  Number ord;
   mpz_ior(ord.m_value, m_value, number.m_value);
   return ord;
 }
 
-scl::Number scl::Number::operator&(const Number& number) const {
-  scl::Number andd;
+Number Number::operator&(const Number& number) const {
+  Number andd;
   mpz_and(andd.m_value, m_value, number.m_value);
   return andd;
 }
 
-scl::Number scl::Number::operator~() const {
-  scl::Number com;
+Number Number::operator~() const {
+  Number com;
   mpz_com(com.m_value, m_value);
   return com;
 }
 
-int scl::Number::compare(const Number& number) const {
+int Number::compare(const Number& number) const {
   return mpz_cmp(m_value, number.m_value);
 }
 
-std::size_t scl::Number::byteSize() const {
+std::size_t Number::byteSize() const {
   return (bitSize() - 1) / 8 + 1;
 }
 
-std::size_t scl::Number::bitSize() const {
+std::size_t Number::bitSize() const {
   return mpz_sizeinbase(m_value, 2);
 }
 
-bool scl::Number::testBit(std::size_t index) const {
+bool Number::testBit(std::size_t index) const {
   return mpz_tstbit(m_value, index);
 }
 
-std::string scl::Number::toString() const {
+std::string Number::toString() const {
   char* cstr;
   cstr = mpz_get_str(nullptr, 16, m_value);
   std::stringstream ss;
@@ -196,7 +198,7 @@ std::string scl::Number::toString() const {
   return ss.str();
 }
 
-void scl::Number::write(unsigned char* buf) const {
+void Number::write(unsigned char* buf) const {
   std::uint32_t size_and_sign = byteSize();
 
   if (mpz_sgn(m_value) < 0) {
@@ -207,19 +209,19 @@ void scl::Number::write(unsigned char* buf) const {
   mpz_export(buf + sizeof(std::uint32_t), NULL, 1, 1, 0, 0, m_value);
 }
 
-scl::Number scl::lcm(const Number& a, const Number& b) {
+Number scl::lcm(const Number& a, const Number& b) {
   Number lcm;
   mpz_lcm(lcm.m_value, a.m_value, b.m_value);
   return lcm;
 }
 
-scl::Number scl::gcd(const Number& a, const Number& b) {
+Number scl::gcd(const Number& a, const Number& b) {
   Number gcd;
   mpz_gcd(gcd.m_value, a.m_value, b.m_value);
   return gcd;
 }
 
-scl::Number scl::modInverse(const Number& val, const Number& mod) {
+Number scl::modInverse(const Number& val, const Number& mod) {
   if (mpz_sgn(mod.m_value) == 0) {
     throw std::invalid_argument("modulus cannot be 0");
   }
@@ -233,9 +235,7 @@ scl::Number scl::modInverse(const Number& val, const Number& mod) {
   return inv;
 }
 
-scl::Number scl::modExp(const Number& base,
-                        const Number& exp,
-                        const Number& mod) {
+Number scl::modExp(const Number& base, const Number& exp, const Number& mod) {
   Number r;
   mpz_powm(r.m_value, base.m_value, exp.m_value, mod.m_value);
   return r;

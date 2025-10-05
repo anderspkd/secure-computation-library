@@ -21,8 +21,10 @@
 #include <stdexcept>
 #include <string>
 
-scl::NetworkConfig scl::NetworkConfig::load(std::size_t my_id,
-                                            const std::string& filename) {
+using namespace scl;
+
+NetworkConfig NetworkConfig::load(std::size_t my_id,
+                                  const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
@@ -36,7 +38,7 @@ scl::NetworkConfig scl::NetworkConfig::load(std::size_t my_id,
 
   while (std::getline(file, line)) {
     auto split = line.find(',');
-    
+
     if (split == std::string::npos) {
       throw std::invalid_argument("invalid entry in config file");
     }
@@ -55,9 +57,9 @@ scl::NetworkConfig scl::NetworkConfig::load(std::size_t my_id,
   return NetworkConfig(my_id, info);
 }
 
-scl::NetworkConfig scl::NetworkConfig::localhost(std::size_t my_id,
-                                                 std::size_t size,
-                                                 std::size_t port_base) {
+NetworkConfig NetworkConfig::localhost(std::size_t my_id,
+                                       std::size_t size,
+                                       std::size_t port_base) {
   if (my_id >= size) {
     throw std::invalid_argument("invalid id");
   }
@@ -71,7 +73,7 @@ scl::NetworkConfig scl::NetworkConfig::localhost(std::size_t my_id,
   return NetworkConfig(my_id, info);
 }
 
-void scl::NetworkConfig::validate() {
+void NetworkConfig::validate() {
   auto n = networkSize();
 
   if (static_cast<std::size_t>(id()) >= n) {

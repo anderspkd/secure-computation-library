@@ -25,24 +25,34 @@
 #include "scl/simulation/event.h"
 #include "scl/simulation/network_description.h"
 
-void scl::details::Transport::send(Time::Duration ts,
-                                   ChannelId id,
-                                   Packet&& packet) {
+using namespace scl;
+
+void details::Transport::send(Time::Duration ts,
+                              ChannelId id,
+                              Packet&& packet) {
   const std::pair<Packet, Time::Duration> e{packet, ts};
   m_pqs[id].push(e);
 }
 
-void scl::details::Transport::send(Time::Duration ts,
-                                   ChannelId id,
-                                   const Packet& packet) {
+void details::Transport::send(Time::Duration ts,
+                              ChannelId id,
+                              const Packet& packet) {
   const std::pair<Packet, Time::Duration> e{packet, ts};
   m_pqs[id].push(e);
 }
 
-bool scl::details::Transport::ready(ChannelId id) const {
+bool details::Transport::ready(ChannelId id) const {
   // check if the other end of the channel contains anything.
   const auto sid = id.flip();
   return m_pqs.find(sid) != m_pqs.end() && !m_pqs.at(sid).empty();
+}
+
+bool details::Transport::ready(ChannelId id, Time::Duration limit) const {
+  const auto sid = id.flip();
+  if (ready(id)) {
+    return m_pqs.at(sid).front().second < limit;
+  }
+  return false;
 }
 
 namespace {
@@ -69,13 +79,13 @@ long double rttSeconds(std::size_t latency_us) {
 }
 
 // Utility function that does the reverse of the above.
-scl::Time::Duration convert(long double v) {
+Time::Duration convert(long double v) {
   const auto t0 = std::chrono::duration<long double>(v);
-  return std::chrono::duration_cast<scl::Time::Duration>(t0);
+  return std::chrono::duration_cast<Time::Duration>(t0);
 }
 
 // calculate the throughput of a channel.
-long double throughput(scl::NetworkDescription::ChannelParameters params) {
+long double throughput(NetworkDescription::ChannelParameters params) {
   const auto rtt_secs = rttSeconds(params.latency);
 
   // all of these calculations are taken from "The Macroscopic Behavior of the
@@ -98,9 +108,8 @@ long double throughput(scl::NetworkDescription::ChannelParameters params) {
 }
 
 // compute the time it takes to send n bytes on a channel.
-scl::Time::Duration recvTimeOffset(
-    std::size_t n,
-    scl::NetworkDescription::ChannelParameters params) {
+Time::Duration recvTimeOffset(std::size_t n,
+                              NetworkDescription::ChannelParameters params) {
   const long double total_size = completeDataSize(n);
   const long double tp = throughput(params);
 
@@ -116,20 +125,17 @@ scl::Time::Duration recvTimeOffset(
 // adjust a receiver's timestamp based on (1) when the data was sent, (2) how
 // much data was sent, and (3) the characteristics of the channel the data was
 // sent on.
-scl::Time::Duration computeDelay(
-    scl::Time::Duration rt,
-    scl::Time::Duration st,
-    std::size_t n,
-    scl::NetworkDescription::ChannelParameters params) {
-  return std::max(st + recvTimeOffset(n, params) - rt,
-                  scl::Time::Duration::zero());
+Time::Duration computeDelay(Time::Duration rt,
+                            Time::Duration st,
+                            std::size_t n,
+                            NetworkDescription::ChannelParameters params) {
+  return std::max(st + recvTimeOffset(n, params) - rt, Time::Duration::zero());
 }
 
 }  // namespace
 
-std::pair<scl::Packet, scl::Time::Duration> scl::details::Transport::recv(
-    Time::Duration ts,
-    ChannelId id) {
+std::pair<Packet, Time::Duration> details::Transport::recv(Time::Duration ts,
+                                                           ChannelId id) {
   const auto params = m_sim_ctx.getChannel(id);
 
   const auto sid = id.flip();
@@ -143,16 +149,14 @@ std::pair<scl::Packet, scl::Time::Duration> scl::details::Transport::recv(
 
 namespace {
 
-scl::Time::Duration smallestTimeDelta(
-    scl::NetworkDescription::ChannelParameters params) {
+Time::Duration smallestTimeDelta(NetworkDescription::ChannelParameters params) {
   return recvTimeOffset(1, params);
 }
 
 }  // namespace
 
-scl::details::Transport::PollResult scl::details::Transport::poll(
-    Time::Duration ts,
-    ChannelId id) const {
+details::Transport::PollResult details::Transport::poll(Time::Duration ts,
+                                                        ChannelId id) const {
   const auto stime = m_sim_ctx.getContext(id.remote).lastEvent()->time();
 
   const auto delta = smallestTimeDelta(m_sim_ctx.getChannel(id));

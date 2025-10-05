@@ -23,6 +23,7 @@
 #include "scl/coro/task.h"
 #include "scl/net/config.h"
 #include "scl/net/tcp/network.h"
+#include "scl/time.h"
 
 using namespace scl;
 
@@ -82,4 +83,18 @@ TEST_CASE("Network TCP", "[net]") {
 
   auto w = rt->run(recv(networks[0].party(2)));
   REQUIRE(w == 456);
+}
+
+TEST_CASE("Network TCP timeout recv", "[net]") {
+  using namespace std::chrono_literals;
+
+  auto rt = DefaultRuntime::create();
+
+  auto networks = connect3();
+
+  RealtimeClock clock;
+
+  rt->run(networks[0].party(1)->recv(500ms));
+
+  REQUIRE(clock.read() > 500ms);
 }

@@ -29,7 +29,7 @@
 using namespace scl;
 using namespace std::chrono_literals;
 
-TEST_CASE("SimulatedChannel send") {
+TEST_CASE("SimulatedChannel send", "[sim]") {
   auto nd = NetworkDescription::createDefaultLAN(2);
   auto ctx = details::SimulatorContext::create(nd, {});
 
@@ -63,7 +63,7 @@ TEST_CASE("SimulatedChannel send") {
   REQUIRE(rpkt.read<int>() == 3);
 }
 
-TEST_CASE("SimulatedChannel recv") {
+TEST_CASE("SimulatedChannel recv", "[sim]") {
   auto nd = NetworkDescription::createDefaultLAN(2);
   auto ctx = details::SimulatorContext::create(nd, {});
   auto tp = std::make_shared<details::Transport>(ctx);
@@ -95,4 +95,50 @@ TEST_CASE("SimulatedChannel recv") {
   rpkt = srt.run(channel->recv());
   REQUIRE(ctx0.lastEvent()->type() == scl::EventType::CHANNEL_RECV);
   REQUIRE(ctx0.lastEvent()->time() > 1000h);
+}
+
+TEST_CASE("SimulatedChannel recv timeout") {
+  using namespace std::chrono_literals;
+
+  auto nd = NetworkDescription::createDefaultLAN(2);
+  auto ctx = details::SimulatorContext::create(nd, {});
+  auto tp = std::make_shared<details::Transport>(ctx);
+  ChannelId id{0, 1};
+
+  auto channel = details::SimulatedChannel::create(id, ctx.getContext(0), tp);
+
+  details::SimulatorRuntime srt(ctx);
+
+  Packet pkt;
+  pkt << 1 << 2 << 3;
+
+  tp->send(100ms, id.flip(), pkt);
+  ctx.getContext(1).addEvent<BeginEvent>(100ms, "");
+
+  // should not time out, receiving time should be ~100ms
+  auto opt_rpkt = srt.run(channel->recv(200ms));
+
+  REQUIRE(opt_rpkt.has_value());
+  auto rpkt = opt_rpkt.value();
+
+  REQUIRE(rpkt.read<int>() == 1);
+  REQUIRE(rpkt.read<int>() == 2);
+  REQUIRE(rpkt.read<int>() == 3);
+
+  auto ctx0 = ctx.getContext(0);
+  REQUIRE(ctx0.lastEvent()->type() == EventType::CHANNEL_RECV);
+  REQUIRE(ctx0.lastEvent()->time() > 100ms);
+
+  tp->send(400ms, id.flip(), pkt);
+  // have to move the sender ahead of the receiver, otherwise the receiver just
+  // gets stuck in an infinite loop (which is correct behavior btw).
+  ctx.getContext(1).addEvent<BeginEvent>(500ms, "");
+
+  // should timeout
+  opt_rpkt = srt.run(channel->recv(200ms));
+
+  REQUIRE_FALSE(opt_rpkt.has_value());
+
+  REQUIRE(ctx0.lastEvent()->type() == EventType::CHANNEL_RECV_TIMEOUT);
+  REQUIRE(ctx0.lastEvent()->time() > 300ms);
 }

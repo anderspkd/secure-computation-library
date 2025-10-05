@@ -17,6 +17,8 @@
 
 #include "scl/primitives/sha3.h"
 
+using namespace scl;
+
 namespace {
 
 const uint64_t keccakf_rndc[24] = {
@@ -43,7 +45,7 @@ uint64_t RotLeft64(uint64_t x, uint64_t y) {
 
 }  // namespace
 
-void scl::details::keccakf(uint64_t state[25]) {
+void details::keccakf(uint64_t state[25]) {
   uint64_t t;
   uint64_t bc[5];
 

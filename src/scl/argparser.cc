@@ -15,33 +15,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/argparser.h"
-
 #include <vector>
 
+#include "scl/argparser.h"
+
+using namespace scl;
+
 template <>
-bool scl::ProgramOptions::get<bool>(std::string_view name) const {
+bool ProgramOptions::get<bool>(std::string_view name) const {
   const auto v = m_args.at(name);
   return v == "1" || v == "true";
 }
 
 template <>
-int scl::ProgramOptions::get<int>(std::string_view name) const {
+int ProgramOptions::get<int>(std::string_view name) const {
   return std::stoi(m_args.at(name).data());
 }
 
 template <>
-std::size_t scl::ProgramOptions::get<std::size_t>(std::string_view name) const {
+std::size_t ProgramOptions::get<std::size_t>(std::string_view name) const {
   return std::stoul(m_args.at(name).data());
 }
 
-bool scl::ProgramOptions::Parser::isArg(std::string_view name) const {
+bool ProgramOptions::Parser::isArg(std::string_view name) const {
   return std::any_of(m_args.begin(), m_args.end(), [&](auto a) {
     return a.name == name;
   });
 }
 
-bool scl::ProgramOptions::Parser::isFlag(std::string_view name) const {
+bool ProgramOptions::Parser::isFlag(std::string_view name) const {
   return std::any_of(m_flags.begin(), m_flags.end(), [&](auto f) {
     return f.name == name;
   });
@@ -73,9 +75,9 @@ bool hasDuplicates(const std::vector<ARG_OR_FLAG>& opts) {
 
 }  // namespace
 
-using ParseRet = std::variant<scl::ProgramOptions, std::string_view>;
+using ParseRet = std::variant<ProgramOptions, std::string_view>;
 
-ParseRet scl::ProgramOptions::Parser::parseArguments(int argc, char** argv) {
+ParseRet ProgramOptions::Parser::parseArguments(int argc, char** argv) {
   if (hasDuplicates(m_args)) {
     return "duplicate argument definition";
   }
@@ -135,9 +137,8 @@ ParseRet scl::ProgramOptions::Parser::parseArguments(int argc, char** argv) {
   return error_msg;
 }
 
-void scl::ProgramOptions::Parser::argListShort(
-    std::ostream& stream,
-    std::string_view program_name) const {
+void ProgramOptions::Parser::argListShort(std::ostream& stream,
+                                          std::string_view program_name) const {
   stream << "Usage: " << program_name << " ";
   forEachRequired(m_args, [&stream](const auto arg) {
     stream << "-" << arg.name << " " << arg.type_hint << " ";
@@ -155,7 +156,7 @@ std::string getPadding(std::size_t lead) {
   return std::string(psz, ' ');
 }
 
-void writeArg(std::ostream& stream, const scl::ProgramArg& arg) {
+void writeArg(std::ostream& stream, const ProgramArg& arg) {
   stream << " -" << arg.name << " '" << arg.type_hint << "'";
   if (!arg.description.empty()) {
     const auto pad_str = getPadding(arg.name.size() + arg.type_hint.size() + 5);
@@ -167,7 +168,7 @@ void writeArg(std::ostream& stream, const scl::ProgramArg& arg) {
   stream << std::endl;
 }
 
-void writeFlag(std::ostream& stream, const scl::ProgramFlag& flag) {
+void writeFlag(std::ostream& stream, const ProgramFlag& flag) {
   stream << " -" << flag.name;
   if (!flag.description.empty()) {
     const auto pad_str = getPadding(flag.name.size() + 2);
@@ -188,7 +189,7 @@ bool hasOptional(IT begin, IT end) {
 
 }  // namespace
 
-void scl::ProgramOptions::Parser::argListLong(std::ostream& stream) const {
+void ProgramOptions::Parser::argListLong(std::ostream& stream) const {
   if (!m_description.empty()) {
     stream << std::endl << m_description << std::endl;
   }
@@ -218,7 +219,7 @@ void scl::ProgramOptions::Parser::argListLong(std::ostream& stream) const {
   }
 }
 
-void scl::ProgramOptions::Parser::printHelp(std::string_view error_msg) {
+void ProgramOptions::Parser::printHelp(std::string_view error_msg) {
   bool error = !error_msg.empty();
 
   if (error) {

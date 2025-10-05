@@ -87,7 +87,7 @@ class Simulator final {
    * @brief Run the simulation.
    */
   template <ProtocolBuilder BUILDER>
-  void run(BUILDER& builder, NetworkDescription network_desc) {
+  void run(BUILDER builder, NetworkDescription network_desc) {
     auto protocol = builder();
     if (protocol.size() != network_desc.size()) {
       throw std::logic_error("protocols do not match network definition");
@@ -101,7 +101,7 @@ class Simulator final {
   template <typename HOOK>
     requires(std::convertible_to<HOOK, SimulationHook::HookType>)
   void addHook(EventType trigger, HOOK hook) {
-    m_hooks.emplace_back(trigger, hook);
+    m_hooks.emplace_back(SimulationHook{.trigger = trigger, .hook = hook});
   }
 
   /**
@@ -110,7 +110,7 @@ class Simulator final {
   template <typename HOOK>
     requires(std::convertible_to<HOOK, SimulationHook::HookType>)
   void addHook(HOOK hook) {
-    m_hooks.emplace_back({}, hook);
+    m_hooks.emplace_back(SimulationHook{.trigger = {}, .hook = hook});
   }
 
  private:

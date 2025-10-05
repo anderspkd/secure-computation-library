@@ -18,22 +18,28 @@
 #include "scl/simulation/channel.h"
 
 #include "scl/coro/runtime.h"
+#include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
 #include "scl/simulation/transport.h"
 #include "scl/time.h"
 
-void scl::details::SimulatedChannel::close() {
-  m_ctx.addEvent<scl::CloseEvent>(m_ctx.elapsedTime(), m_id);
+using namespace scl;
+
+// This suspends a coroutine, while enabling it to be resumed again at any time.
+#define SUSPEND co_await []() { return true; }
+
+void details::SimulatedChannel::close() {
+  m_ctx.addEvent<CloseEvent>(m_ctx.elapsedTime(), m_id);
 }
 
-scl::Task<void> scl::details::SimulatedChannel::send(Packet&& packet) {
+Task<void> details::SimulatedChannel::send(Packet&& packet) {
   const auto et = m_ctx.elapsedTime();
   m_ctx.addEvent<SendEvent>(et, m_id, packet.size());
   m_transport->send(et, m_id, std::move(packet));
   co_return;
 }
 
-scl::Task<void> scl::details::SimulatedChannel::send(const Packet& packet) {
+Task<void> details::SimulatedChannel::send(const Packet& packet) {
   const auto et = m_ctx.elapsedTime();
   m_ctx.addEvent<SendEvent>(et, m_id, packet.size());
   m_transport->send(et, m_id, packet);
@@ -44,64 +50,55 @@ namespace {
 
 // transient event signaling that this party is currently blocked while
 // receiving.
-class RecvPendingEvent final : public scl::ChannelEvent {
+class RecvPendingEvent final : public ChannelEvent {
  public:
-  RecvPendingEvent(scl::Time::Duration timestamp, scl::ChannelId id)
-      : ChannelEvent(timestamp, id), m_offset(scl::Time::Duration::zero()) {}
+  RecvPendingEvent(Time::Duration timestamp, ChannelId id)
+      : ChannelEvent(timestamp, id), m_offset(Time::Duration::zero()) {}
 
   void write(std::ostream&) override {}
 
-  scl::EventType type() const override {
-    return scl::EventType::TRANSIENT;
+  EventType type() const override {
+    return EventType::TRANSIENT;
   }
 
-  scl::Time::Duration time() const override {
-    return scl::ChannelEvent::time() + m_offset;
+  Time::Duration time() const override {
+    return ChannelEvent::time() + m_offset;
   }
 
-  void bumpOffset(scl::Time::Duration t) {
-    if (t > m_offset) {
-      m_offset = t;
-    }
+  void increaseOffset(Time::Duration t) {
+    m_offset += t;
   }
 
  private:
-  scl::Time::Duration m_offset;
+  Time::Duration m_offset;
 };
 
-// Awaitable that checks if the transport is ready.
-struct ReadyChecker {
-  scl::details::Transport* transport;
-  scl::ChannelId id;
-  RecvPendingEvent* event;
-  scl::details::Context& ctx;
-
-  bool operator()() {
-    const auto is_ready = transport->ready(id);
-    if (!is_ready) {
-      // transport not being ready means the sender hasn't sent anything
-      // yet. This also means that anything that does get sent, wont get sent
-      // before whatever the time is at the sender. And so we can safely advance
-      // our clock.
-      event->bumpOffset(ctx.elapsedTimeOf(id.remote));
-    }
-    return is_ready;
+// Waits (i.e., suspends) until the transport has data ready for us
+Task<void> waitForData(details::Transport* transport,
+                       ChannelId id,
+                       RecvPendingEvent* event,
+                       details::Context& ctx) {
+  while (!transport->ready(id)) {
+    // If there's no data for us, then we can safely advance our clock ahead to
+    // match the sender's.
+    const auto diff = std::max(ctx.elapsedTimeOf(id.remote) - event->time(),
+                               Time::Duration::zero());
+    event->increaseOffset(diff);
+    SUSPEND;
   }
-};
+}
 
 }  // namespace
 
-scl::Task<scl::Packet> scl::details::SimulatedChannel::recv() {
+Task<Packet> details::SimulatedChannel::recv() {
   const auto et = m_ctx.elapsedTime();
 
   m_ctx.addEvent<RecvPendingEvent>(et, m_id);
   RecvPendingEvent* re = dynamic_cast<RecvPendingEvent*>(m_ctx.lastEvent());
 
-  ReadyChecker rc{m_transport.get(), m_id, re, m_ctx};
-  co_await rc;
+  co_await waitForData(m_transport.get(), m_id, re, m_ctx);
 
   auto [pkt, delay] = m_transport->recv(re->time(), m_id);
-
   m_ctx.addEvent<RecvEvent>(re->time() + delay, m_id, pkt.size());
 
   co_return pkt;
@@ -109,47 +106,85 @@ scl::Task<scl::Packet> scl::details::SimulatedChannel::recv() {
 
 namespace {
 
-// Ready checker which capable of timing out
-struct TimeoutReadyChecker {
-  scl::details::Transport* transport;
-  scl::ChannelId id;
-  RecvPendingEvent* event;
-  scl::details::Context& ctx;
-  scl::Time::Duration timeout_rem;
+// Performs a similar action as waitForData, except that it is allowed to
+// timeout. The return value indicates if a timeout happened or not. If no
+// timeout happened, then it is assumed that data can be read from the
+// transport, and that this data wasn't sent too far in the future.
+Task<bool> waitOrTimeout(details::Transport* transport,
+                         ChannelId id,
+                         RecvPendingEvent* event,
+                         details::Context& ctx,
+                         Time::Duration timeout) {
+  using namespace std::chrono_literals;
+  const static auto timeout_wait_interval = 20ms;
 
-  bool operator()() {
-    const auto t = ctx.elapsedTimeOf(id.remote);
-    if (event->time() > t) {
-      return transport->ready(id);
+  while (timeout >= Time::Duration::zero()) {
+    const auto ready = transport->ready(id, event->time() + timeout);
+    if (!ready) {
+      const auto stime = ctx.elapsedTimeOf(id.remote);
+
+      if (stime >= event->time()) {
+        // sender_time >= our_time. Two cases, based on how far ahead the sender
+        // is of us.
+        //
+        //          |---------- time ----------|
+        //            |          |          |
+        // case 1:    us      timeout     sender
+        // case 2:    us      sender     timeout
+        //
+        // In the first case, we know that we're gonna timeout, so we can
+        // advance our clock to the timeout mark, and return true.
+        //
+        // In the second case, we can advance our clock a little bit (see the
+        // bumpTime function) and then suspend. We need to move our clock a
+        // little bit to avoid deadlocks.
+
+        if (stime > event->time() + timeout) {
+          // case 1
+          event->increaseOffset(timeout);
+          co_return true;
+        }
+
+        // case 2
+        event->increaseOffset(timeout_wait_interval);
+        timeout -= timeout_wait_interval;
+      }
+
+      SUSPEND;
     }
 
-    const auto is_ready = transport->ready(id);
-    if (!is_ready) {
-      // Since the transport is not ready, we can safely advance our time to the
-      // time of the sender.
-      event->bumpOffset(ctx.elapsedTimeOf(id.remote));
-    }
-    return is_ready;
+    // there is data available within the timeout
+    co_return false;
   }
-};
+
+  // timeout reached
+  co_return true;
+}
 
 }  // namespace
 
-scl::Task<std::optional<scl::Packet>> scl::details::SimulatedChannel::recv(
+Task<std::optional<Packet>> details::SimulatedChannel::recv(
     Time::Duration timeout) {
-  // const auto et = m_ctx.elapsedTime();
+  const auto et = m_ctx.elapsedTime();
 
-  // m_ctx.addEvent<RecvPendingEvent>(et, m_id);
-  // RecvPendingEvent* re = dynamic_cast<RecvPendingEvent*>(m_ctx.lastEvent());
+  m_ctx.addEvent<RecvPendingEvent>(et, m_id);
+  RecvPendingEvent* re = dynamic_cast<RecvPendingEvent*>(m_ctx.lastEvent());
 
-  // TimeoutReadyChecker trc{m_transport.get(), m_id, re, m_ctx, timeout};
-  // co_await trc;
+  bool timed_out =
+      co_await waitOrTimeout(m_transport.get(), m_id, re, m_ctx, timeout);
 
-  (void)timeout;
-  co_return {};
+  if (timed_out) {
+    // we've timed out. womp womp.
+    m_ctx.addEvent<RecvTimeoutEvent>(re->time(), m_id);
+    co_return {};
+  }
+
+  auto [pkt, delay] = m_transport->recv(re->time(), m_id);
+  m_ctx.addEvent<RecvEvent>(re->time() + delay, m_id, pkt.size());
+  co_return pkt;
 }
 
-scl::Task<bool> scl::details::SimulatedChannel::poll() {
+Task<bool> details::SimulatedChannel::poll() {
   const auto et = m_ctx.elapsedTime();
   Transport::PollResult pr;
 

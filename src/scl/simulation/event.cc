@@ -23,6 +23,8 @@
 #include "scl/simulation/channel_id.h"
 #include "scl/time.h"
 
+using namespace scl;
+
 namespace {
 
 void writeNumeric(std::ostream& stream, std::string_view key, std::size_t n) {
@@ -35,12 +37,12 @@ void writeString(std::ostream& stream,
   stream << "\"" << key << "\":" << "\"" << val << "\"";
 }
 
-void writeTimestamp(std::ostream& stream, scl::Time::Duration t) {
+void writeTimestamp(std::ostream& stream, Time::Duration t) {
   // "t":<timestamp in milis>
-  writeNumeric(stream, "t", scl::timeToMillis(t));
+  writeNumeric(stream, "t", timeToMillis(t));
 }
 
-void writeChannelId(std::ostream& stream, scl::ChannelId id) {
+void writeChannelId(std::ostream& stream, ChannelId id) {
   stream << "\"id\":" << "[" << id.local << "," << id.remote << "]";
 }
 
@@ -50,7 +52,7 @@ void writeChannelId(std::ostream& stream, scl::ChannelId id) {
 #define JSON_OBJ_END stream << "}"
 #define JSON_COMMA stream << ","
 
-void scl::BeginEvent::write(std::ostream& stream) {
+void BeginEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "BEGIN");
   JSON_COMMA;
@@ -60,7 +62,7 @@ void scl::BeginEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::EndEvent::write(std::ostream& stream) {
+void EndEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "END");
   JSON_COMMA;
@@ -70,7 +72,7 @@ void scl::EndEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::StartEvent::write(std::ostream& stream) {
+void StartEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "START");
   JSON_COMMA;
@@ -78,7 +80,7 @@ void scl::StartEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::StopEvent::write(std::ostream& stream) {
+void StopEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "STOP");
   JSON_COMMA;
@@ -86,7 +88,7 @@ void scl::StopEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::KilledEvent::write(std::ostream& stream) {
+void KilledEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "KILLED");
   JSON_COMMA;
@@ -96,7 +98,7 @@ void scl::KilledEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::CancelledEvent::write(std::ostream& stream) {
+void CancelledEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "CANCELLED");
   JSON_COMMA;
@@ -104,7 +106,7 @@ void scl::CancelledEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::CloseEvent::write(std::ostream& stream) {
+void CloseEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "CHANNEL_CLOSE");
   JSON_COMMA;
@@ -114,7 +116,7 @@ void scl::CloseEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::SendEvent::write(std::ostream& stream) {
+void SendEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "CHANNEL_SEND");
   JSON_COMMA;
@@ -126,7 +128,7 @@ void scl::SendEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::RecvEvent::write(std::ostream& stream) {
+void RecvEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "CHANNEL_RECV");
   JSON_COMMA;
@@ -138,7 +140,7 @@ void scl::RecvEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::RecvTimeoutEvent::write(std::ostream& stream) {
+void RecvTimeoutEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "CHANNEL_RECV_TIMEOUT");
   JSON_COMMA;
@@ -148,7 +150,7 @@ void scl::RecvTimeoutEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::PollEvent::write(std::ostream& stream) {
+void PollEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "CHANNEL_POLL");
   JSON_COMMA;
@@ -160,11 +162,11 @@ void scl::PollEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
-void scl::SleepEvent::write(std::ostream& stream) {
+void SleepEvent::write(std::ostream& stream) {
   JSON_OBJ_START;
   writeString(stream, "type", "SLEEP");
   JSON_COMMA;
-  writeNumeric(stream, "duration", scl::timeToMillis(duration()));
+  writeNumeric(stream, "duration", timeToMillis(duration()));
   JSON_COMMA;
   writeTimestamp(stream, time());
   JSON_OBJ_END;
@@ -179,20 +181,20 @@ namespace {
 // This "event" serves as a backstop in order to ensure that an EventList always
 // contains at least one event, and that this event is meaningful (hence the
 // initialization with a timestamp of 0)
-struct InitialEvent final : public scl::Event {
-  InitialEvent() : scl::Event(scl::Time::Duration::zero()) {}
+struct InitialEvent final : public Event {
+  InitialEvent() : Event(Time::Duration::zero()) {}
 
   void write(std::ostream&) override {}
 
   // mark this event as TRANSIENT so that it gets removed once real events
   // arrive.
-  scl::EventType type() const override {
-    return scl::EventType::TRANSIENT;
+  EventType type() const override {
+    return EventType::TRANSIENT;
   }
 };
 
 }  // namespace
 
-scl::details::EventList::EventList() {
+details::EventList::EventList() {
   add<InitialEvent>();
 }

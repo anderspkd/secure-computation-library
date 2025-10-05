@@ -60,10 +60,7 @@ class Channel {
    * @param timeout the timeout.
    * @return the received packet.
    */
-  virtual Task<std::optional<Packet>> recv(Time::Duration timeout) {
-    (void)timeout;
-    co_return {};
-  }
+  virtual Task<std::optional<Packet>> recv(Time::Duration timeout) = 0;
 
   /**
    * @brief Check if there is something to receive on this channel.

@@ -58,10 +58,8 @@ set(SCL_SOURCE_FILES_TEST
   scl/test_protocol.cc
 
   scl/simulation/test_event.cc
-  # scl/simulation/test_context.cc
-  # scl/simulation/test_config.cc
+  scl/simulation/test_transport.cc
   scl/simulation/test_channel.cc
-  # scl/simulation/test_simulator.cc
 )
 
 Include(FetchContent)

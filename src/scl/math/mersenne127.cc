@@ -24,33 +24,33 @@
 #include "scl/hex.h"
 #include "scl/math/ff_ops.h"
 
+using namespace scl;
+
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
 
 // The prime p = 2^127 - 1.
 static const u128 p = (((u128)0x7FFFFFFFFFFFFFFF) << 64) | 0xFFFFFFFFFFFFFFFF;
 
-using Mersenne127 = scl::Mersenne127;
-
 template <>
-void scl::details::convertTo<Mersenne127>(u128& out, const int value) {
+void details::convertTo<Mersenne127>(u128& out, const int value) {
   out = value < 0 ? value + p : value;
 }
 
 template <>
-void scl::details::convertTo<Mersenne127>(u128& out, const std::string& src) {
+void details::convertTo<Mersenne127>(u128& out, const std::string& src) {
   out = fromHexString<u128>(src);
   out = out % p;
 }
 
 template <>
-void scl::details::add<Mersenne127>(u128& out, const u128& op) {
+void details::add<Mersenne127>(u128& out, const u128& op) {
   modAdd(out, op, p);
 }
 
 template <>
-void scl::details::subtract<Mersenne127>(u128& out, const u128& op) {
-  details::modSub(out, op, p);
+void details::subtract<Mersenne127>(u128& out, const u128& op) {
+  modSub(out, op, p);
 }
 
 namespace {
@@ -83,7 +83,7 @@ u256 multiplyFull(const u128 x, const u128 y) {
 }  // namespace
 
 template <>
-void scl::details::multiply<Mersenne127>(u128& out, const u128& op) {
+void details::multiply<Mersenne127>(u128& out, const u128& op) {
   u256 z = multiplyFull(out, op);
   out = z.high << 1;
   u128 b = z.low;
@@ -95,33 +95,32 @@ void scl::details::multiply<Mersenne127>(u128& out, const u128& op) {
 }
 
 template <>
-void scl::details::negate<Mersenne127>(u128& out) {
+void details::negate<Mersenne127>(u128& out) {
   modNeg(out, p);
 }
 
 template <>
-void scl::details::invert<Mersenne127>(u128& out) {
+void details::invert<Mersenne127>(u128& out) {
   modInv<u128, __int128_t>(out, out, p);
 }
 
 template <>
-bool scl::details::equal<Mersenne127>(const u128& in1, const u128& in2) {
+bool details::equal<Mersenne127>(const u128& in1, const u128& in2) {
   return in1 == in2;
 }
 
 template <>
-void scl::details::fromBytes<Mersenne127>(u128& dest,
-                                          const unsigned char* src) {
+void details::fromBytes<Mersenne127>(u128& dest, const unsigned char* src) {
   dest = *(const u128*)src;
   dest = dest % p;
 }
 
 template <>
-void scl::details::toBytes<Mersenne127>(unsigned char* dest, const u128& src) {
+void details::toBytes<Mersenne127>(unsigned char* dest, const u128& src) {
   std::memcpy(dest, &src, sizeof(u128));
 }
 
 template <>
-std::string scl::details::toString<Mersenne127>(const u128& in) {
+std::string details::toString<Mersenne127>(const u128& in) {
   return toHexString(in);
 }

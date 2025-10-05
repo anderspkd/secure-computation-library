@@ -30,24 +30,25 @@
 #include "scl/net/loopback.h"
 #include "scl/net/tcp/channel.h"
 
+using namespace scl;
+
 namespace {
 
-scl::Task<void> writePartyId(int socket, std::uint32_t party_id) {
-  scl::details::sys_call::write(socket, &party_id, sizeof(std::uint32_t));
+Task<void> writePartyId(int socket, std::uint32_t party_id) {
+  details::sys_call::write(socket, &party_id, sizeof(std::uint32_t));
   co_return;
 }
 
-scl::Task<std::uint32_t> readPartyId(int socket) {
+Task<std::uint32_t> readPartyId(int socket) {
   std::uint32_t party_id;
   while (true) {
     auto read =
-        scl::details::sys_call::read(socket, &party_id, sizeof(std::uint32_t));
+        details::sys_call::read(socket, &party_id, sizeof(std::uint32_t));
     if (read < 0) {
-      const auto err = scl::details::sys_call::getError();
+      const auto err = details::sys_call::getError();
       if (err == EAGAIN || err == EWOULDBLOCK) {
-        co_await [sock = socket]() {
-          return scl::details::pollSocket(sock, POLLIN);
-        };
+        co_await
+            [sock = socket]() { return details::pollSocket(sock, POLLIN); };
       }
     } else {
       break;
@@ -61,12 +62,12 @@ struct SocketAndId {
   std::size_t id;
 };
 
-scl::Task<SocketAndId> acceptConnection(int server_socket) {
+Task<SocketAndId> acceptConnection(int server_socket) {
   using namespace std::chrono_literals;
   while (true) {
-    if (scl::details::pollSocket(server_socket, POLLIN)) {
-      auto conn = scl::details::acceptConnection(server_socket);
-      scl::details::markSocketNonBlocking(conn.socket);
+    if (details::pollSocket(server_socket, POLLIN)) {
+      auto conn = details::acceptConnection(server_socket);
+      details::markSocketNonBlocking(conn.socket);
 
       auto id = co_await readPartyId(conn.socket);
 
@@ -77,15 +78,14 @@ scl::Task<SocketAndId> acceptConnection(int server_socket) {
   }
 }
 
-scl::Task<SocketAndId> establishConnection(scl::ConnectionInfo party,
-                                           std::size_t my_id) {
+Task<SocketAndId> establishConnection(ConnectionInfo party, std::size_t my_id) {
   using namespace std::chrono_literals;
   std::size_t attempts = 100;  // max attempts.
 
   while (attempts > 0) {
     int socket = -1;
 
-    socket = scl::details::connectAsClient(party.hostname, (int)party.port);
+    socket = details::connectAsClient(party.hostname, (int)party.port);
     // TODO: What errors to retry on?
 
     attempts--;
@@ -93,7 +93,7 @@ scl::Task<SocketAndId> establishConnection(scl::ConnectionInfo party,
     if (socket == -1) {
       co_await 100ms;
     } else {
-      scl::details::markSocketNonBlocking(socket);
+      details::markSocketNonBlocking(socket);
       co_await writePartyId(socket, my_id);
       co_return {socket, party.id};
     }
@@ -104,7 +104,7 @@ scl::Task<SocketAndId> establishConnection(scl::ConnectionInfo party,
 
 class BatchTask final {
  public:
-  BatchTask(std::vector<scl::Task<SocketAndId>>&& tasks)
+  BatchTask(std::vector<Task<SocketAndId>>&& tasks)
       : m_tasks(std::move(tasks)), m_runtime(nullptr) {}
 
   bool await_ready() const noexcept {
@@ -131,18 +131,18 @@ class BatchTask final {
     return results;
   }
 
-  void setRuntime(scl::Runtime* runtime) {
+  void setRuntime(Runtime* runtime) {
     m_runtime = runtime;
   }
 
  private:
-  std::vector<scl::Task<SocketAndId>> m_tasks;
-  scl::Runtime* m_runtime;
+  std::vector<Task<SocketAndId>> m_tasks;
+  Runtime* m_runtime;
 };
 
 }  // namespace
 
-scl::Task<scl::Network> scl::createTcpNetwork(const NetworkConfig& config) {
+Task<Network> scl::createTcpNetwork(const NetworkConfig& config) {
   std::vector<std::shared_ptr<Channel>> channels(config.networkSize());
 
   const std::size_t id = config.id();

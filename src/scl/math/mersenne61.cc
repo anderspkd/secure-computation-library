@@ -24,37 +24,37 @@
 #include "scl/hex.h"
 #include "scl/math/ff_ops.h"
 
+using namespace scl;
+
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
 
 // The prime p = 2^61 - 1
 static const u64 p = 0x1FFFFFFFFFFFFFFF;
 
-using Mersenne61 = scl::Mersenne61;
-
 template <>
-void scl::details::convertTo<Mersenne61>(u64& out, const int value) {
+void details::convertTo<Mersenne61>(u64& out, const int value) {
   out = value < 0 ? value + p : value;
 }
 
 template <>
-void scl::details::convertTo<Mersenne61>(u64& out, const std::string& src) {
+void details::convertTo<Mersenne61>(u64& out, const std::string& src) {
   out = fromHexString<u64>(src);
   out = out % p;
 }
 
 template <>
-void scl::details::add<Mersenne61>(u64& out, const u64& op) {
+void details::add<Mersenne61>(u64& out, const u64& op) {
   modAdd(out, op, p);
 }
 
 template <>
-void scl::details::subtract<Mersenne61>(u64& out, const u64& op) {
+void details::subtract<Mersenne61>(u64& out, const u64& op) {
   modSub(out, op, p);
 }
 
 template <>
-void scl::details::multiply<Mersenne61>(u64& out, const u64& op) {
+void details::multiply<Mersenne61>(u64& out, const u64& op) {
   u128 z = (u128)out * op;
   u64 a = z >> 61;
   u64 b = (u64)z;
@@ -67,32 +67,32 @@ void scl::details::multiply<Mersenne61>(u64& out, const u64& op) {
 }
 
 template <>
-void scl::details::negate<Mersenne61>(u64& out) {
+void details::negate<Mersenne61>(u64& out) {
   modNeg(out, p);
 }
 
 template <>
-void scl::details::invert<Mersenne61>(u64& out) {
+void details::invert<Mersenne61>(u64& out) {
   modInv<u64, std::int64_t>(out, out, p);
 }
 
 template <>
-bool scl::details::equal<Mersenne61>(const u64& in1, const u64& in2) {
+bool details::equal<Mersenne61>(const u64& in1, const u64& in2) {
   return in1 == in2;
 }
 
 template <>
-void scl::details::fromBytes<Mersenne61>(u64& dest, const unsigned char* src) {
+void details::fromBytes<Mersenne61>(u64& dest, const unsigned char* src) {
   dest = *(const u64*)src;
   dest = dest % p;
 }
 
 template <>
-void scl::details::toBytes<Mersenne61>(unsigned char* dest, const u64& src) {
+void details::toBytes<Mersenne61>(unsigned char* dest, const u64& src) {
   std::memcpy(dest, &src, sizeof(u64));
 }
 
 template <>
-std::string scl::details::toString<Mersenne61>(const u64& in) {
+std::string details::toString<Mersenne61>(const u64& in) {
   return toHexString(in);
 }

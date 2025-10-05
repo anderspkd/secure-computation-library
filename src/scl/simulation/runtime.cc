@@ -19,33 +19,33 @@
 
 #include <coroutine>
 
-void scl::details::SimulatorRuntime::schedule(
-    std::coroutine_handle<> coroutine,
-    std::function<bool()>&& predicate) {
+using namespace scl;
+
+void details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
+                                         std::function<bool()>&& predicate) {
   m_tq.emplace_back(coroutine, std::move(predicate), m_current_pid);
 }
 
-void scl::details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
-                                              Time::Duration delay) {
+void details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
+                                         Time::Duration delay) {
   auto ctx = m_sim_ctx.getContext(m_current_pid);
   const auto et = ctx.lastEvent()->time();
   ctx.addEvent<SleepEvent>(et + delay, delay);
   this->deschedule(coroutine);
 }
 
-void scl::details::SimulatorRuntime::scheduleWithId(
+void details::SimulatorRuntime::scheduleWithId(
     std::coroutine_handle<> coroutine,
     std::size_t pid) {
   m_tq.emplace_back(coroutine, []() { return true; }, pid);
 }
 
-void scl::details::SimulatorRuntime::deschedule(
-    std::coroutine_handle<> coroutine) {
+void details::SimulatorRuntime::deschedule(std::coroutine_handle<> coroutine) {
   m_tq.remove_if(
       [&coroutine](const Coro& coro) { return coro.coroutine == coroutine; });
 }
 
-std::coroutine_handle<> scl::details::SimulatorRuntime::next() {
+std::coroutine_handle<> details::SimulatorRuntime::next() {
   auto beg = m_tq.begin();
   const auto end = m_tq.end();
 

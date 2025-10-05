@@ -80,6 +80,8 @@ class TcpChannel final : public Channel {
    */
   Task<Packet> recv() override;
 
+  Task<std::optional<Packet>> recv(Time::Duration timeout) override;
+
   /**
    * @brief Check if this channel has data ready for recovering.
    * @return true if there's data to receive and false otherwise.

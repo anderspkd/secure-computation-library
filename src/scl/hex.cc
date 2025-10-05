@@ -20,8 +20,10 @@
 #include <cstdint>
 #include <iomanip>
 
+using namespace scl;
+
 template <>
-std::string scl::details::toHexString(const __uint128_t& v) {
+std::string details::toHexString(const __uint128_t& v) {
   auto top = static_cast<std::uint64_t>(v >> 64);
   auto bot = static_cast<std::uint64_t>(v);
 

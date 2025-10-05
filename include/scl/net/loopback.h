@@ -19,6 +19,7 @@
 
 #include <deque>
 #include <memory>
+#include <stdexcept>
 
 #include "scl/coro/task.h"
 #include "scl/net/channel.h"
@@ -110,6 +111,10 @@ class LoopbackChannel final : public Channel {
     auto packet = m_in->front();
     m_in->pop_front();
     co_return packet;
+  }
+
+  Task<std::optional<Packet>> recv(Time::Duration /* ignored */) override {
+    co_return co_await recv();
   }
 
   /**

@@ -27,6 +27,9 @@
 
 namespace scl::details {
 
+/**
+ * @brief Handles the movement of packets between parties in a simulation.
+ */
 class Transport {
  public:
   Transport(SimulatorContext& sim_ctx) : m_sim_ctx(sim_ctx) {}
@@ -35,6 +38,7 @@ class Transport {
   void send(Time::Duration ts, ChannelId id, Packet&& pkt);
 
   bool ready(ChannelId id) const;
+  bool ready(ChannelId id, Time::Duration limit) const;
 
   std::pair<Packet, Time::Duration> recv(Time::Duration ts, ChannelId id);
 

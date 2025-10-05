@@ -25,8 +25,10 @@
 #include "scl/math/naf.h"
 #include "scl/math/secp256k1.h"
 
-using Curve = scl::Secp256k1;
-using Field = scl::FF<Curve::Field>;
+using namespace scl;
+
+using Curve = Secp256k1;
+using Field = FF<Curve::Field>;
 using Point = Curve::ValueType;
 
 #define POINT_AT_INFINITY          \
@@ -41,7 +43,7 @@ using Point = Curve::ValueType;
 #define GET_Z(point) (point)[2]
 
 template <>
-void scl::details::setPointAtInfinity<Curve>(Point& out) {
+void details::setPointAtInfinity<Curve>(Point& out) {
   out = POINT_AT_INFINITY;
 }
 
@@ -59,9 +61,7 @@ bool valid(const Field& x, const Field& y) {
 }  // namespace
 
 template <>
-void scl::details::setAffine<Curve>(Point& out,
-                                    const Field& x,
-                                    const Field& y) {
+void details::setAffine<Curve>(Point& out, const Field& x, const Field& y) {
   if (valid(x, y)) {
     out = {x, y, Field::one()};
   } else {
@@ -70,7 +70,7 @@ void scl::details::setAffine<Curve>(Point& out,
 }
 
 template <>
-std::array<Field, 2> scl::details::toAffine<Curve>(const Point& point) {
+std::array<Field, 2> details::toAffine<Curve>(const Point& point) {
   if (GET_Z(point) == Field::one()) {
     return {GET_X(point), GET_Y(point)};
   }
@@ -79,7 +79,7 @@ std::array<Field, 2> scl::details::toAffine<Curve>(const Point& point) {
 }
 
 template <>
-bool scl::details::equal<Curve>(const Point& in1, const Point& in2) {
+bool details::equal<Curve>(const Point& in1, const Point& in2) {
   const auto& Z1 = GET_Z(in1);
   const auto& Z2 = GET_Z(in2);
   // (X1, Y1, Z1) eqv (X2, Y2, Z2) <==> (X1 * Z2, Y1 * Z2) == (X2 * Z1, Y2 * Z2)
@@ -88,12 +88,12 @@ bool scl::details::equal<Curve>(const Point& in1, const Point& in2) {
 }
 
 template <>
-bool scl::details::isPointAtInfinity<Curve>(const Point& point) {
+bool details::isPointAtInfinity<Curve>(const Point& point) {
   return GET_Z(point) == Field::zero();
 }
 
 template <>
-std::string scl::details::toString<Curve>(const Point& point) {
+std::string details::toString<Curve>(const Point& point) {
   std::string str;
   if (isPointAtInfinity<Curve>(point)) {
     str = "EC{POINT_AT_INFINITY}";
@@ -107,7 +107,7 @@ std::string scl::details::toString<Curve>(const Point& point) {
 }
 
 template <>
-void scl::details::setGenerator<Curve>(Point& out) {
+void details::setGenerator<Curve>(Point& out) {
   static const Point gen = {
       Field::fromString(
           "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
@@ -227,7 +227,7 @@ void addMixed(Field& x1,
 }  // namespace
 
 template <>
-void scl::details::dbl<Curve>(Point& out) {
+void details::dbl<Curve>(Point& out) {
   // https://eprint.iacr.org/2015/1060.pdf algorithm 9.
 
   static const Field b3(3 * 7);
@@ -262,7 +262,7 @@ void scl::details::dbl<Curve>(Point& out) {
 }
 
 template <>
-void scl::details::add<Curve>(Point& out, const Point& in) {
+void details::add<Curve>(Point& out, const Point& in) {
   // https://eprint.iacr.org/2015/1060.pdf algorithm 7, 8
 
   if (GET_Z(in) == Field::one()) {
@@ -278,7 +278,7 @@ void scl::details::add<Curve>(Point& out, const Point& in) {
 }
 
 template <>
-void scl::details::negate<Curve>(Point& out) {
+void details::negate<Curve>(Point& out) {
   if (GET_Y(out) == Field::zero()) {
     setPointAtInfinity<Curve>(out);
   } else {
@@ -287,14 +287,14 @@ void scl::details::negate<Curve>(Point& out) {
 }
 
 template <>
-void scl::details::subtract<Curve>(Point& out, const Point& in) {
+void details::subtract<Curve>(Point& out, const Point& in) {
   Point copy(in);
   negate<Curve>(copy);
   add<Curve>(out, copy);
 }
 
 template <>
-void scl::details::scalarMultiply<Curve>(Point& out, const Number& scalar) {
+void details::scalarMultiply<Curve>(Point& out, const Number& scalar) {
   if (!isPointAtInfinity<Curve>(out)) {
     const auto n = scalar.bitSize();
     Point res;
@@ -311,8 +311,8 @@ void scl::details::scalarMultiply<Curve>(Point& out, const Number& scalar) {
 }
 
 template <>
-void scl::details::scalarMultiply<Curve>(Point& out,
-                                         const FF<Curve::Scalar>& scalar) {
+void details::scalarMultiply<Curve>(Point& out,
+                                    const FF<Curve::Scalar>& scalar) {
   if (!isPointAtInfinity<Curve>(out)) {
     Point res;
     setPointAtInfinity<Curve>(res);
@@ -348,14 +348,14 @@ Field computeOtherCoordinate(const Field& x) {
   static const Field CURVE_B(7);
 
   auto y_sqr = x * x * x + CURVE_B;
-  auto z = scl::details::sqrt(y_sqr);
+  auto z = details::sqrt(y_sqr);
   return z;
 }
 
 }  // namespace
 
 template <>
-void scl::details::fromBytes<Curve>(Point& out, const unsigned char* src) {
+void details::fromBytes<Curve>(Point& out, const unsigned char* src) {
   const auto flags = *src;
 
   if (IS_POINT_AT_INFINITY(flags)) {
@@ -393,9 +393,9 @@ void scl::details::fromBytes<Curve>(Point& out, const unsigned char* src) {
 #define MARK_SELECT_SMALLER(buf) (*(buf) |= SELECT_SMALLER_FLAG)
 
 template <>
-void scl::details::toBytes<Curve>(unsigned char* dest,
-                                  const Point& in,
-                                  bool compress) {
+void details::toBytes<Curve>(unsigned char* dest,
+                             const Point& in,
+                             bool compress) {
   // Make sure flag byte is zeroed.
   *dest = 0;
 

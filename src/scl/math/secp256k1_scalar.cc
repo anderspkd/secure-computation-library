@@ -27,7 +27,9 @@
 #include "scl/math/ff.h"
 #include "scl/math/ff_ops.h"
 
-using Field = scl::Secp256k1Scalar;
+using namespace scl;
+
+using Field = Secp256k1Scalar;
 using Elem = Field::ValueType;
 
 constexpr static std::size_t NUM_LIMBS = std::tuple_size<Elem>{};
@@ -40,12 +42,12 @@ constexpr static std::size_t NUM_LIMBS = std::tuple_size<Elem>{};
   } while (0)
 
 template <>
-scl::Number scl::order<scl::FF<Field>>() {
+Number scl::order<FF<Field>>() {
   return Number::fromString(
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 }
 
-static const scl::details::RedParams<NUM_LIMBS> RD = {
+static const details::RedParams<NUM_LIMBS> RD = {
     // Prime
     {
         0xBFD25E8CD0364141,  //
@@ -64,41 +66,41 @@ static const scl::details::RedParams<NUM_LIMBS> RD = {
 #define PTR(X) (X).data()
 
 template <>
-void scl::details::convertTo<Field>(Elem& out, const int value) {
+void details::convertTo<Field>(Elem& out, const int value) {
   out = {0};
   montyInFromInt<NUM_LIMBS>(PTR(out), value, RD);
 }
 
 template <>
-void scl::details::convertTo<Field>(Elem& out, const std::string& src) {
+void details::convertTo<Field>(Elem& out, const std::string& src) {
   out = {0};
   montyFromString<NUM_LIMBS>(PTR(out), src, RD);
 }
 
 template <>
-void scl::details::add<Field>(Elem& out, const Elem& op) {
+void details::add<Field>(Elem& out, const Elem& op) {
   montyModAdd<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
-void scl::details::subtract<Field>(Elem& out, const Elem& op) {
+void details::subtract<Field>(Elem& out, const Elem& op) {
   montyModSub<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 template <>
-void scl::details::negate<Field>(Elem& out) {
+void details::negate<Field>(Elem& out) {
   montyModNeg<NUM_LIMBS>(PTR(out), RD);
 }
 
 template <>
-void scl::details::multiply<Field>(Elem& out, const Elem& op) {
+void details::multiply<Field>(Elem& out, const Elem& op) {
   montyModMul<NUM_LIMBS>(PTR(out), PTR(op), RD);
 }
 
 #define ONE {0x402DA1732FC9BEBF, 0x4551231950B75FC4, 0x1, 0}
 
 template <>
-void scl::details::invert<Field>(Elem& out) {
+void details::invert<Field>(Elem& out) {
   static const mp_limb_t PRIME_MINUS_2[NUM_LIMBS] = {
       0xBFD25E8CD036413F,  //
       0xBAAEDCE6AF48A03B,  //
@@ -112,22 +114,22 @@ void scl::details::invert<Field>(Elem& out) {
 }
 
 template <>
-bool scl::details::equal<Field>(const Elem& in1, const Elem& in2) {
+bool details::equal<Field>(const Elem& in1, const Elem& in2) {
   return compareValues<NUM_LIMBS>(PTR(in1), PTR(in2)) == 0;
 }
 
 template <>
-void scl::details::fromBytes<Field>(Elem& dest, const unsigned char* src) {
+void details::fromBytes<Field>(Elem& dest, const unsigned char* src) {
   montyFromBytes<NUM_LIMBS>(PTR(dest), src, RD);
 }
 
 template <>
-void scl::details::toBytes<Field>(unsigned char* dest, const Elem& src) {
+void details::toBytes<Field>(unsigned char* dest, const Elem& src) {
   montyToBytes<NUM_LIMBS>(dest, PTR(src), RD);
 }
 
 template <>
-std::string scl::details::toString<Field>(const Elem& in) {
+std::string details::toString<Field>(const Elem& in) {
   return montyToString<NUM_LIMBS>(PTR(in), RD);
 }
 
@@ -142,7 +144,7 @@ bool testBit(const mp_limb_t* in, std::size_t pos) {
 
 }  // namespace
 
-scl::FF<Field> scl::details::fromMonty(const FF<Field>& x) {
+FF<Field> details::fromMonty(const FF<Field>& x) {
   mp_limb_t padded[2 * NUM_LIMBS] = {0};
   SCL_COPY(padded, PTR(x.value()), NUM_LIMBS);
   montyRedc<NUM_LIMBS>(padded, RD);
@@ -169,8 +171,8 @@ void sub1(mp_limb_t* out) {
 
 // Compute a NAF encoding of a field element using the simpel algorithm provided
 // here: https://en.wikipedia.org/wiki/Non-adjacent_form#Converting_to_NAF
-scl::details::NafEncoding<Field> scl::details::toNaf(const FF<Field>& x) {
-  using NafEnc = scl::details::NafEncoding<Field>;
+details::NafEncoding<Field> details::toNaf(const FF<Field>& x) {
+  using NafEnc = details::NafEncoding<Field>;
 
   auto val = fromMonty(x).value();
 

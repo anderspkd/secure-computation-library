@@ -17,7 +17,9 @@
 
 #include "./ff_ops_gmp.h"
 
-std::size_t scl::details::findFirstNonZero(const std::string& s) {
+using namespace scl;
+
+std::size_t details::findFirstNonZero(const std::string& s) {
   int n = 0;
   for (const auto c : s) {
     if (c != '0') {

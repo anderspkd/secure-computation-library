@@ -29,6 +29,8 @@
 #include "scl/simulation/transport.h"
 #include "scl/time.h"
 
+using namespace scl;
+
 namespace {
 
 // This class holds all the protocols we're going to simulate, and suspends
@@ -36,15 +38,14 @@ namespace {
 // assign an initial pid (party identifier) to each protocol coroutine.
 class ProtocolBatch final {
  public:
-  ProtocolBatch(std::vector<scl::Task<void>>&& protocols)
+  ProtocolBatch(std::vector<Task<void>>&& protocols)
       : m_protocols(std::move(protocols)) {}
 
   // ready when all protocols are ready, i.e., have finished running.
   bool await_ready() const noexcept {
-    return std::all_of(
-        m_protocols.begin(),
-        m_protocols.end(),
-        [](const scl::Task<void>& task) { return task.ready(); });
+    return std::all_of(m_protocols.begin(),
+                       m_protocols.end(),
+                       [](const Task<void>& task) { return task.ready(); });
   }
 
   // The coroutine passed here is the "simulate" function further down in this
@@ -53,8 +54,8 @@ class ProtocolBatch final {
   // make sure that each protocol object gets their own party ID. This allows
   // the runtime to tell which coroutine belongs to what party.
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> coroutine) {
-    scl::details::SimulatorRuntime* rt =
-        dynamic_cast<scl::details::SimulatorRuntime*>(m_runtime);
+    details::SimulatorRuntime* rt =
+        dynamic_cast<details::SimulatorRuntime*>(m_runtime);
 
     for (std::size_t pid = 0; pid < m_protocols.size(); pid++) {
       m_protocols[pid].setRuntime(m_runtime);
@@ -70,22 +71,22 @@ class ProtocolBatch final {
   void await_resume() {
     std::for_each(m_protocols.begin(),
                   m_protocols.end(),
-                  [](const scl::Task<void>& task) { task.result(); });
+                  [](const Task<void>& task) { task.result(); });
   }
 
-  void setRuntime(scl::Runtime* runtime) {
+  void setRuntime(Runtime* runtime) {
     m_runtime = runtime;
   }
 
  private:
-  std::vector<scl::Task<void>> m_protocols;
-  scl::Runtime* m_runtime;
+  std::vector<Task<void>> m_protocols;
+  Runtime* m_runtime;
 };
 
 // Main per-party protocol loop.
-scl::Task<void> runProtocol(std::unique_ptr<scl::Protocol> protocol,
-                            scl::details::Context ctx,
-                            scl::Env&& env) {
+Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
+                       details::Context ctx,
+                       Env&& env) {
   // Executing a protocol for a party goes more or less as follows:
   // 1. Emit a START event
   // 2. Emit a BEGIN event (signals the beginning of a Protocol)
@@ -98,16 +99,16 @@ scl::Task<void> runProtocol(std::unique_ptr<scl::Protocol> protocol,
   // 8. Emit a STOP event.
 
   try {
-    ctx.addEvent<scl::StartEvent>();
+    ctx.addEvent<StartEvent>();
 
     while (protocol) {
-      ctx.addEvent<scl::BeginEvent>(ctx.lastEvent()->time(), protocol->name());
+      ctx.addEvent<BeginEvent>(ctx.lastEvent()->time(), protocol->name());
 
       ctx.startClock();
       auto next = co_await protocol->run(env);
       const auto et = ctx.elapsedTime();
 
-      ctx.addEvent<scl::EndEvent>(et, protocol->name());
+      ctx.addEvent<EndEvent>(et, protocol->name());
 
       if (next.output.has_value()) {
         // TODO: handle output
@@ -123,31 +124,31 @@ scl::Task<void> runProtocol(std::unique_ptr<scl::Protocol> protocol,
       protocol = std::move(next.next);
     }
 
-    ctx.addEvent<scl::StopEvent>(ctx.lastEvent()->time());
+    ctx.addEvent<StopEvent>(ctx.lastEvent()->time());
 
   } catch (std::exception& e) {
     // all exceptions are caught and discarded, but we make sure to record an
     // event.
-    ctx.addEvent<scl::KilledEvent>(ctx.lastEvent()->time(), e.what());
+    ctx.addEvent<KilledEvent>(ctx.lastEvent()->time(), e.what());
   }
 }
 
 // create the channels for a party.
-std::vector<std::shared_ptr<scl::Channel>> createChannels(
-    scl::details::Context ctx,
-    std::shared_ptr<scl::details::Transport> transport,
+std::vector<std::shared_ptr<Channel>> createChannels(
+    details::Context ctx,
+    std::shared_ptr<details::Transport> transport,
     std::size_t local_pid,
     std::size_t n) {
-  std::vector<std::shared_ptr<scl::Channel>> channels;
+  std::vector<std::shared_ptr<Channel>> channels;
   channels.reserve(n);
 
   for (std::size_t remote_pid = 0; remote_pid < n; remote_pid++) {
     if (remote_pid == local_pid) {
-      channels.emplace_back(scl::LoopbackChannel::create());
+      channels.emplace_back(LoopbackChannel::create());
     } else {
-      scl::ChannelId id(local_pid, remote_pid);
+      ChannelId id(local_pid, remote_pid);
       channels.emplace_back(
-          scl::details::SimulatedChannel::create(id, ctx, transport));
+          details::SimulatedChannel::create(id, ctx, transport));
     }
   }
 
@@ -155,11 +156,10 @@ std::vector<std::shared_ptr<scl::Channel>> createChannels(
 }
 
 // create the networks used by all parties.
-std::vector<scl::Network> createNetworks(
-    scl::details::SimulatorContext& sim_ctx) {
+std::vector<Network> createNetworks(details::SimulatorContext& sim_ctx) {
   const auto n = sim_ctx.numberOfParties();
-  auto transport = std::make_shared<scl::details::Transport>(sim_ctx);
-  std::vector<scl::Network> networks;
+  auto transport = std::make_shared<details::Transport>(sim_ctx);
+  std::vector<Network> networks;
   networks.reserve(n);
 
   for (std::size_t pid = 0; pid < n; pid++) {
@@ -173,31 +173,30 @@ std::vector<scl::Network> createNetworks(
 
 // Clock implementation which will provide a party with a sensible value, when
 // called.
-class FakeClock final : public scl::Clock {
+class FakeClock final : public Clock {
  public:
-  FakeClock(scl::details::Context ctx) : m_ctx(ctx) {}
+  FakeClock(details::Context ctx) : m_ctx(ctx) {}
 
-  scl::Time::Duration read() const override {
+  Time::Duration read() const override {
     return m_ctx.elapsedTime();
   }
 
  private:
-  scl::details::Context m_ctx;
+  details::Context m_ctx;
 };
 
 // performs setup stuff for the simulation
-scl::Task<void> simulate(
-    std::vector<std::unique_ptr<scl::Protocol>>&& protocols,
-    scl::details::SimulatorContext& sim_ctx) {
-  std::vector<scl::Task<void>> protocol_tasks;
-  std::vector<scl::Network> networks = createNetworks(sim_ctx);
+Task<void> simulate(std::vector<std::unique_ptr<Protocol>>&& protocols,
+                    details::SimulatorContext& sim_ctx) {
+  std::vector<Task<void>> protocol_tasks;
+  std::vector<Network> networks = createNetworks(sim_ctx);
 
   for (std::size_t pid = 0; pid < protocols.size(); pid++) {
     const auto ctx = sim_ctx.getContext(pid);
     protocol_tasks.emplace_back(
         runProtocol(std::move(protocols[pid]),
                     ctx,
-                    scl::Env{networks[pid], std::make_unique<FakeClock>(ctx)}));
+                    Env{networks[pid], std::make_unique<FakeClock>(ctx)}));
   }
 
   co_await ProtocolBatch(std::move(protocol_tasks));
@@ -205,8 +204,8 @@ scl::Task<void> simulate(
 
 }  // namespace
 
-void scl::Simulator::run(std::vector<std::unique_ptr<Protocol>>&& protocols,
-                         NetworkDescription network_definition) {
+void Simulator::run(std::vector<std::unique_ptr<Protocol>>&& protocols,
+                    NetworkDescription network_definition) {
   if (!protocols.empty()) {
     auto sim_ctx = details::SimulatorContext::create(network_definition,
                                                      std::move(m_hooks));

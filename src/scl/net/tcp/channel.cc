@@ -21,7 +21,9 @@
 #include "./utils.h"
 #include "scl/coro/runtime.h"
 
-void scl::TcpChannel::close() {
+using namespace scl;
+
+void TcpChannel::close() {
   if (m_alive) {
     // ensures that we only attempt to close the socket once, even if closing
     // the somehow socket fails.
@@ -35,11 +37,11 @@ void scl::TcpChannel::close() {
   }
 }
 
-scl::Task<void> scl::TcpChannel::send(Packet&& packet) {
+Task<void> TcpChannel::send(Packet&& packet) {
   co_await send(packet);
 }
 
-scl::Task<void> scl::TcpChannel::send(const Packet& packet) {
+Task<void> TcpChannel::send(const Packet& packet) {
   // Write the packet size to a buffer.
   const Packet::SizeType pkt_sz = packet.dataSize();
   const auto pkt_t_sz = sizeof(Packet::SizeType);
@@ -77,19 +79,20 @@ scl::Task<void> scl::TcpChannel::send(const Packet& packet) {
 
 namespace {
 
-scl::Task<void> recvInto(int socket, unsigned char* dst, std::size_t nbytes) {
+Task<void> recvInto(int socket, unsigned char* dst, std::size_t nbytes) {
   std::size_t rem = nbytes;
+
   while (rem > 0) {
-    const auto read = scl::details::sys_call::read(socket, dst, rem);
+    const auto read = details::sys_call::read(socket, dst, rem);
     if (read < 0) {
-      const auto err = scl::details::sys_call::getError();
+      const auto err = details::sys_call::getError();
+
       if (err == EAGAIN || err == EWOULDBLOCK) {
-        co_await [socket = socket]() {
-          return scl::details::pollSocket(socket, POLLIN);
-        };
+        co_await [socket]() { return details::pollSocket(socket, POLLIN); };
       } else {
         throw std::system_error(err, std::generic_category(), "recv failed");
       }
+
     } else {
       rem -= read;
       dst += read;
@@ -97,9 +100,33 @@ scl::Task<void> recvInto(int socket, unsigned char* dst, std::size_t nbytes) {
   }
 }
 
+Task<bool> recvInto(int socket,
+                    unsigned char* dst,
+                    std::size_t nbytes,
+                    Time::Duration timeout) {
+  const auto start = Time::now();
+  bool ready = false;
+
+  co_await [&ready, timeout, start, socket]() {
+    if (Time::now() - start >= timeout) {
+      return true;
+    } else {
+      ready = details::pollSocket(socket, POLLIN);
+      return ready;
+    }
+  };
+
+  if (ready) {
+    co_await recvInto(socket, dst, nbytes);
+    co_return true;
+  }
+
+  co_return false;
+}
+
 }  // namespace
 
-scl::Task<scl::Packet> scl::TcpChannel::recv() {
+Task<Packet> TcpChannel::recv() {
   unsigned char packet_size_buf[sizeof(Packet::SizeType)] = {0};
 
   // read size of the packet.
@@ -114,6 +141,32 @@ scl::Task<scl::Packet> scl::TcpChannel::recv() {
   co_return packet;
 }
 
-scl::Task<bool> scl::TcpChannel::poll() {
+Task<std::optional<Packet>> TcpChannel::recv(Time::Duration timeout) {
+  unsigned char packet_size_buf[sizeof(Packet::SizeType)] = {0};
+
+  // attempt to read the size of the packet. If we timeout here, we will simply
+  // skip the rest of the function.
+  bool timed_out = co_await recvInto(m_socket,
+                                     packet_size_buf,
+                                     sizeof(Packet::SizeType),
+                                     timeout);
+
+  // exit early if we timed out
+  if (timed_out) {
+    co_return {};
+  }
+
+  // otherwise behave as normal recv.
+  Packet::SizeType packet_size;
+  std::memcpy(&packet_size, packet_size_buf, sizeof(Packet::SizeType));
+
+  Packet packet(packet_size);
+  co_await recvInto(m_socket, packet.get(), packet_size);
+  packet.setWritePtr(packet_size);
+
+  co_return packet;
+}
+
+Task<bool> TcpChannel::poll() {
   co_return details::pollSocket(m_socket, POLLIN);
 }
