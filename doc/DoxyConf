@@ -19,7 +19,7 @@ INPUT                  = doc/mainpage.md \
                          include/scl/coro
 
 FILE_PATTERNS          = *.h
-EXCLUDE_SYMBOLS        = SCL_*,details::*,*::details::*
+EXCLUDE_SYMBOLS        = SCL_*
 
 REPEAT_BRIEF           = NO
 
