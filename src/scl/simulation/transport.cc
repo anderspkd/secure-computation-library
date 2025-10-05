@@ -158,7 +158,6 @@ Time::Duration smallestTimeDelta(NetworkDescription::ChannelParameters params) {
 details::Transport::PollResult details::Transport::poll(Time::Duration ts,
                                                         ChannelId id) const {
   const auto stime = m_sim_ctx.getContext(id.remote).lastEvent()->time();
-
   const auto delta = smallestTimeDelta(m_sim_ctx.getChannel(id));
 
   // we split the logic into two branches, based on whether the sender's local
