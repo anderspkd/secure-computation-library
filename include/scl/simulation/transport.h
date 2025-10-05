@@ -29,21 +29,42 @@ namespace scl::details {
 
 /**
  * @brief Handles the movement of packets between parties in a simulation.
+ * @ingroup ss
  */
 class Transport {
  public:
   Transport(SimulatorContext& sim_ctx) : m_sim_ctx(sim_ctx) {}
 
+  /**
+   * @brief Queue data for sending.
+   */
   void send(Time::Duration ts, ChannelId id, const Packet& pkt);
+
+  /**
+   * @brief Queue data for sending.
+   */
   void send(Time::Duration ts, ChannelId id, Packet&& pkt);
 
+  /**
+   * @brief Check if there is data available for receiving.
+   */
   bool ready(ChannelId id) const;
+
+  /**
+   * @brief Check if there is data available for receiving within a timelimit.
+   */
   bool ready(ChannelId id, Time::Duration limit) const;
 
+  /**
+   * @brief Receive data.
+   */
   std::pair<Packet, Time::Duration> recv(Time::Duration ts, ChannelId id);
 
   enum class PollResult { NA, DATA, NO_DATA };
 
+  /**
+   * @brief Check if it is possible to receive data at
+   */
   PollResult poll(Time::Duration ts, ChannelId id) const;
 
  private:
