@@ -69,6 +69,9 @@ struct Clock {
   virtual Time::Duration read() const = 0;
 };
 
+/**
+ * @brief A Clock implementation based on real time.
+ */
 class RealtimeClock final : public Clock {
  public:
   RealtimeClock() : m_start(Time::now()) {}

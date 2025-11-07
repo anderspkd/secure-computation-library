@@ -26,7 +26,6 @@
 #include "./utils.h"
 #include "scl/coro/runtime.h"
 #include "scl/net/channel.h"
-#include "scl/net/config.h"
 #include "scl/net/loopback.h"
 #include "scl/net/tcp/channel.h"
 

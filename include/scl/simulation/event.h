@@ -31,6 +31,7 @@ namespace scl {
 
 /**
  * @brief Event types.
+ * @ingroup eval-sim
  */
 enum class EventType {
   /**
@@ -101,6 +102,7 @@ enum class EventType {
 
 /**
  * @brief Base class for all events.
+ * @ingroup eval-sim
  *
  * All events in SCL's simulator inheret from Event. The most basic Event is
  * effectively just a timestamp telling us when the event was generated.
@@ -137,6 +139,7 @@ class Event {
 
 /**
  * @brief Event issued when a party starts executing a Protocol.
+ * @ingroup eval-sim
  * @see EndEvent
  */
 class BeginEvent final : public Event {
@@ -167,6 +170,7 @@ class BeginEvent final : public Event {
 
 /**
  * @brief Event issued when a party finishes executing a Protocol.
+ * @ingroup eval-sim
  * @see BeginEvent
  */
 class EndEvent final : public Event {
@@ -197,6 +201,7 @@ class EndEvent final : public Event {
 
 /**
  * @brief Event issued when a party starts running.
+ * @ingroup eval-sim
  * @see StopEvent
  */
 class StartEvent final : public Event {
@@ -213,6 +218,7 @@ class StartEvent final : public Event {
 
 /**
  * @brief Event issued when a party stops running.
+ * @ingroup eval-sim
  * @see StartEvent
  */
 class StopEvent final : public Event {
@@ -226,6 +232,7 @@ class StopEvent final : public Event {
 
 /**
  * @brief Event issued if a party throws an uncaught exception.
+ * @ingroup eval-sim
  */
 class KilledEvent final : public Event {
  public:

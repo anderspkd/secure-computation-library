@@ -266,12 +266,24 @@ class Bitmap {
  */
 template <>
 struct Serializer<Bitmap> {
+
+  /**
+   * @brief Returns the size of a bitmap.
+   */
   static std::size_t sizeOf(const Bitmap& bm) {
     return Serializer<Bitmap::ContainerType>::sizeOf(bm.m_bits);
   }
+
+  /**
+   * @brief Write the bitmap to a buffer.
+   */
   static std::size_t write(const Bitmap& bm, unsigned char* buf) {
     return Serializer<Bitmap::ContainerType>::write(bm.m_bits, buf);
   }
+
+  /**
+   * @brief Reads a bitmap from a buffer.
+   */
   static std::size_t read(Bitmap& bm, const unsigned char* buf) {
     return Serializer<Bitmap::ContainerType>::read(bm.m_bits, buf);
   }

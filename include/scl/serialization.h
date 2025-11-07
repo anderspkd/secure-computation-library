@@ -75,15 +75,25 @@ concept Serializable =
 template <typename T>
   requires(std::is_trivially_copyable_v<T>)
 struct Serializer<T> {
+
+  /**
+   * @brief Determine the size of a value.
+   */
   static constexpr std::size_t sizeOf(const T& /* ignored */) {
     return sizeof(T);
   }
 
+  /**
+   * @brief Write the value to a buffer.
+   */
   static constexpr std::size_t write(const T& obj, unsigned char* out) {
     std::memcpy(out, &obj, sizeof(T));
     return sizeOf(obj);
   }
 
+  /**
+   * @brief Read a value from a buffer.
+   */
   static constexpr std::size_t read(T& obj, const unsigned char* in) {
     std::memcpy(&obj, in, sizeof(T));
     return sizeOf(obj);
@@ -95,8 +105,16 @@ struct Serializer<T> {
  */
 template <Serializable T>
 struct Serializer<std::vector<T>> {
+
+  /**
+   * @brief Type used to denote the size of the vector.
+   */
   using VecSizeType = std::uint32_t;
 
+
+  /**
+   * @brief Get the bytes required to write \p vec with this serializer.
+   */
   static constexpr std::size_t sizeOf(const std::vector<T>& vec) {
     auto total_size = sizeof(VecSizeType);
     for (const auto& v : vec) {
@@ -105,6 +123,9 @@ struct Serializer<std::vector<T>> {
     return total_size;
   }
 
+  /**
+   * @brief Write a vector to a buffer.
+   */
   static constexpr std::size_t write(const std::vector<T>& vec,
                                      unsigned char* out) {
     const auto vec_size = static_cast<VecSizeType>(vec.size());
@@ -115,6 +136,9 @@ struct Serializer<std::vector<T>> {
     return written;
   }
 
+  /**
+   * @brief Read a vector from a buffer.
+   */
   static constexpr std::size_t read(std::vector<T>& vec,
                                     const unsigned char* in) {
     VecSizeType vec_size = 0;

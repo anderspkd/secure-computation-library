@@ -20,7 +20,6 @@
 #include <coroutine>
 #include <utility>
 
-#include "scl/coro/batch.h"
 #include "scl/coro/promise.h"
 
 namespace scl {

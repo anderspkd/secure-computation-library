@@ -19,7 +19,7 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <stdexcept>
 
-#include "scl/net/config.h"
+#include "scl/net/tcp/config.h"
 
 using namespace scl;
 
@@ -65,7 +65,7 @@ TEST_CASE("Config configure all parties local", "[net]") {
   REQUIRE(cfg.networkSize() == 5);
   std::size_t i = 0;
   for (const auto& ci : cfg.parties()) {
-    REQUIRE(ci.port == DEFAULT_PORT_OFFSET + i++);
+    REQUIRE(ci.port == DEFAULT_LOCALHOST_PORT_OFFSET + i++);
     REQUIRE(ci.hostname == "127.0.0.1");
   }
 }

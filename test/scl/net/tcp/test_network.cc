@@ -18,10 +18,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <thread>
 
-#include "scl/coro/batch.h"
 #include "scl/coro/runtime.h"
 #include "scl/coro/task.h"
-#include "scl/net/config.h"
+#include "scl/net/tcp/config.h"
 #include "scl/net/tcp/network.h"
 #include "scl/time.h"
 

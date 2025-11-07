@@ -24,6 +24,9 @@
 
 namespace scl::details {
 
+/**
+ * @brief Coroutine runtime used in simulations.
+ */
 class SimulatorRuntime final : public Runtime {
  private:
   static const std::size_t MANAGE_PID = static_cast<std::size_t>(-1);

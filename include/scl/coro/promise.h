@@ -23,7 +23,6 @@
 #include <utility>
 #include <variant>
 
-#include "scl/coro/batch.h"
 #include "scl/coro/future.h"
 #include "scl/coro/sleep_awaiter.h"
 

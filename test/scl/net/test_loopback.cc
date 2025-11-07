@@ -17,7 +17,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "scl/coro/batch.h"
 #include "scl/coro/runtime.h"
 #include "scl/coro/task.h"
 #include "scl/net/loopback.h"

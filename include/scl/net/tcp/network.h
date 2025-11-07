@@ -18,8 +18,8 @@
 #pragma once
 
 #include "scl/coro/task.h"
-#include "scl/net/config.h"
 #include "scl/net/network.h"
+#include "scl/net/tcp/config.h"
 
 namespace scl {
 

@@ -29,7 +29,10 @@ using namespace scl;
 #define SUSPEND co_await []() { return true; }
 
 void details::SimulatedChannel::close() {
-  m_ctx.addEvent<CloseEvent>(m_ctx.elapsedTime(), m_id);
+  if (!m_closed) {
+    m_ctx.addEvent<CloseEvent>(m_ctx.elapsedTime(), m_id);
+    m_closed = true;
+  }
 }
 
 Task<void> details::SimulatedChannel::send(Packet&& packet) {

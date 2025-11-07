@@ -140,12 +140,22 @@ struct Result {
     return Result{.next = std::move(next), .output = output};
   }
 
+  /**
+   * @brief A pointer to the next Protocol to run.
+   */
   std::unique_ptr<Protocol> next;
+
+  /**
+   * @brief The protocols output.
+   */
   std::any output;
 };
 
 /**
  * @brief Run a protocol.
+ *
+ * This function runs a protocol. A provided callback is invoked every time the
+ * protocol produces an output.
  */
 template <typename CALLBACK>
 Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
@@ -162,6 +172,14 @@ Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
   }
 }
 
+/**
+ * @brief Run a protocol that returns a value.
+ *
+ * This function runs a protocol, returning the non-void value returned by its
+ * last step.
+ *
+ * @throws std::runtime_error if the provided protocol has no output.
+ */
 template <typename R>
 Task<R> runProtocol(std::unique_ptr<Protocol> protocol, Env& env) {
   Result result;

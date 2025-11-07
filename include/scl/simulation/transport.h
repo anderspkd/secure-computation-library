@@ -29,7 +29,7 @@ namespace scl::details {
 
 /**
  * @brief Handles the movement of packets between parties in a simulation.
- * @ingroup ss
+ * @ingroup net-sim
  */
 class Transport {
  public:

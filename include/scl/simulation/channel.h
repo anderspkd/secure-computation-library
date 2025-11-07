@@ -25,8 +25,19 @@
 
 namespace scl::details {
 
+/**
+ * @brief Channel implementation for simulations.
+ * @ingroup net-sim
+ *
+ * SimulatedChannel implements Channel for non-local parties in simulations. The
+ * main responsibilities of this class are (1) calling a Transport object with
+ * the stuff to be sent/received, and (2) generating the right Events.
+ */
 class SimulatedChannel final : public Channel {
  public:
+  /**
+   * @brief Create a new SimulatedChannel.
+   */
   static std::shared_ptr<Channel> create(ChannelId id,
                                          Context ctx,
                                          std::shared_ptr<Transport> transport) {
@@ -36,19 +47,44 @@ class SimulatedChannel final : public Channel {
   SimulatedChannel(ChannelId id,
                    Context ctx,
                    std::shared_ptr<Transport> transport)
-      : m_id(id), m_ctx(ctx), m_transport(transport) {}
+      : m_id(id), m_ctx(ctx), m_transport(transport), m_closed(false) {}
 
+  /**
+   * @brief Closes the channel.
+   */
   void close() override;
+
+  /**
+   * @brief Send a packet.
+   */
   Task<void> send(Packet&& packet) override;
+
+  /**
+   * @brief Send a packet.
+   */
   Task<void> send(const Packet& packet) override;
+
+  /**
+   * @brief Recv a packet.
+   */
   Task<Packet> recv() override;
+
+  /**
+   * @brief Attempt to receive a packet within a provied timeout.
+   */
   Task<std::optional<Packet>> recv(Time::Duration timeout) override;
+
+  /**
+   * @brief Poll the channel for data.
+   */
   Task<bool> poll() override;
 
  private:
   ChannelId m_id;
   Context m_ctx;
   std::shared_ptr<Transport> m_transport;
+
+  bool m_closed;
 };
 
 }  // namespace scl::details

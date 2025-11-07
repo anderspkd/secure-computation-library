@@ -124,12 +124,21 @@ class ProgramOptions {
   std::unordered_map<std::string_view, bool> m_flags;
 };
 
+/**
+ * @brief Get a command-line provided option as a boolean.
+ */
 template <>
 bool ProgramOptions::get<bool>(std::string_view name) const;
 
+/**
+ * @brief Get a command-line provided option as an int.
+ */
 template <>
 int ProgramOptions::get<int>(std::string_view name) const;
 
+/**
+ * @brief Get a command-line provided option as an std::string.
+ */
 template <>
 std::size_t ProgramOptions::get<std::size_t>(std::string_view name) const;
 
