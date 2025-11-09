@@ -48,8 +48,7 @@ struct Time {
  * @brief Convert a timestamp to milliseconds.
  */
 inline long double timeToMillis(Time::Duration time) {
-  using namespace std::chrono;
-  return duration<long double, std::milli>(time).count();
+  return std::chrono::duration<long double, std::milli>(time).count();
 }
 
 /**

@@ -32,7 +32,8 @@ class SimulatorRuntime final : public Runtime {
   static const std::size_t MANAGE_PID = static_cast<std::size_t>(-1);
 
  public:
-  SimulatorRuntime(SimulatorContext& sim_ctx) : m_sim_ctx(sim_ctx) {}
+  SimulatorRuntime(SimulatorContext& sim_ctx)
+      : m_sim_ctx(sim_ctx), m_current_pid(MANAGE_PID) {}
 
   void schedule(std::coroutine_handle<> coroutine,
                 std::function<bool()>&& predicate) override;

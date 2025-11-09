@@ -25,9 +25,6 @@
 
 using namespace scl;
 
-// This suspends a coroutine, while enabling it to be resumed again at any time.
-#define SUSPEND co_await []() { return true; }
-
 void details::SimulatedChannel::close() {
   if (!m_closed) {
     m_ctx.addEvent<CloseEvent>(m_ctx.elapsedTime(), m_id);
@@ -87,7 +84,9 @@ Task<void> waitForData(details::Transport* transport,
     const auto diff = std::max(ctx.elapsedTimeOf(id.remote) - event->time(),
                                Time::Duration::zero());
     event->increaseOffset(diff);
-    SUSPEND;
+
+    // Suspend this coroutine.
+    co_await []() { return true; };
   }
 }
 
@@ -128,7 +127,7 @@ Task<bool> waitOrTimeout(details::Transport* transport,
 
       if (stime >= event->time()) {
         // sender_time >= our_time. Two cases, based on how far ahead the sender
-        // is of us.
+        // is relative to us.
         //
         //          |---------- time ----------|
         //            |          |          |
@@ -138,8 +137,8 @@ Task<bool> waitOrTimeout(details::Transport* transport,
         // In the first case, we know that we're gonna timeout, so we can
         // advance our clock to the timeout mark, and return true.
         //
-        // In the second case, we can advance our clock a little bit (see the
-        // bumpTime function) and then suspend. We need to move our clock a
+        // In the second case, we can advance our clock a little bit (the
+        // timeout_wait_interval) and then suspend. We need to move our clock a
         // little bit to avoid deadlocks.
 
         if (stime > event->time() + timeout) {
@@ -153,7 +152,8 @@ Task<bool> waitOrTimeout(details::Transport* transport,
         timeout -= timeout_wait_interval;
       }
 
-      SUSPEND;
+      // Suspend this coroutine.
+      co_await []() { return true; };
     }
 
     // there is data available within the timeout

@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <iostream>
 
 #include "scl/simulation/event.h"
 #include "scl/simulation/network_description.h"
@@ -94,6 +95,10 @@ class SimulatorContext final {
    */
   std::size_t numberOfParties() const {
     return m_network_desc.size();
+  }
+
+  Simulator::Result toResult() {
+    return Simulator::Result{std::move(m_events)};
   }
 
  private:

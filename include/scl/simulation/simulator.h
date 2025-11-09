@@ -45,6 +45,19 @@ concept ProtocolBuilder = requires(BUILDER builder) {
  */
 class Simulator final {
  public:
+  class Result final {
+   public:
+    Result(std::vector<EventList>&& events) : m_events(std::move(events)) {}
+    std::size_t numberOfParties() const {
+      return m_events.size();
+    }
+    EventList& operator[](std::size_t i) {
+      return m_events[i];
+    }
+
+   private:
+    std::vector<EventList> m_events;
+  };
   /**
    * @brief A simulation hook.
    *
@@ -66,7 +79,7 @@ class Simulator final {
    * sim.addHook(EventType::BEGIN_EVENT, printHook);
    * @endcode
    */
-  struct SimulationHook {
+  struct SimulationHook final {
     /**
      * @brief Type definition of hook functions.
      */
@@ -87,12 +100,12 @@ class Simulator final {
    * @brief Run the simulation.
    */
   template <ProtocolBuilder BUILDER>
-  void run(BUILDER builder, NetworkDescription network_desc) {
+  Result run(BUILDER builder, NetworkDescription network_desc) {
     auto protocol = builder();
     if (protocol.size() != network_desc.size()) {
       throw std::logic_error("protocols do not match network definition");
     }
-    run(std::move(protocol), network_desc);
+    return run(std::move(protocol), network_desc);
   }
 
   /**
@@ -116,8 +129,8 @@ class Simulator final {
  private:
   std::vector<SimulationHook> m_hooks;
 
-  void run(std::vector<std::unique_ptr<Protocol>>&& protocols,
-           NetworkDescription network_desc);
+  Result run(std::vector<std::unique_ptr<Protocol>>&& protocols,
+             NetworkDescription network_desc);
 };
 
 }  // namespace scl

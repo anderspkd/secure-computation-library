@@ -31,6 +31,10 @@ void writeNumeric(std::ostream& stream, std::string_view key, std::size_t n) {
   stream << "\"" << key << "\":" << n;
 }
 
+void writeNumeric(std::ostream& stream, std::string_view key, long double n) {
+  stream << "\"" << key << "\":" << n;
+}
+
 void writeString(std::ostream& stream,
                  std::string_view key,
                  std::string_view val) {
@@ -195,6 +199,6 @@ struct InitialEvent final : public Event {
 
 }  // namespace
 
-details::EventList::EventList() {
+EventList::EventList() {
   add<InitialEvent>();
 }

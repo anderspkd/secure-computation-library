@@ -410,8 +410,6 @@ class SleepEvent final : public Event {
   Time::Duration m_duration;
 };
 
-namespace details {
-
 /**
  * @brief Tracks events added by a party during simulation.
  *
@@ -474,5 +472,4 @@ class EventList final {
   std::vector<std::unique_ptr<Event>> m_events;
 };
 
-}  // namespace details
 }  // namespace scl

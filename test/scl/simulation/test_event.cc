@@ -29,7 +29,7 @@ using namespace scl;
 using namespace std::chrono_literals;
 
 TEST_CASE("Event write tests", "[sim]") {
-  details::EventList evl;
+  EventList evl;
 
   evl.add<StartEvent>();
   evl.add<StopEvent>(123s);
@@ -72,7 +72,7 @@ struct TransientEvent final : public scl::Event {
 }  // namespace
 
 TEST_CASE("EventList removes TRANSIENT events", "[sim]") {
-  details::EventList evl;
+  EventList evl;
 
   evl.add<TransientEvent>();
 

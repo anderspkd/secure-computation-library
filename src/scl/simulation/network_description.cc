@@ -31,6 +31,11 @@ const ChannelDescription DEFAULT_LAN_PARAMS = {.bandwith = 100000000000,
                                                .latency_jitter = 0,
                                                .loss = 0.0};
 
+const ChannelDescription DEFAULT_WAN_PARAMS = {.bandwith = 1000000000,
+                                               .latency = 10000,
+                                               .latency_jitter = 0,
+                                               .loss = 0.0};
+
 const ChannelDescription DEFAULT_LOCAL_PARAMS = {
     .bandwith = std::numeric_limits<std::size_t>::max(),
     .latency = 0,
@@ -46,6 +51,21 @@ NetworkDescription NetworkDescription::createDefaultLAN(std::size_t size) {
     for (std::size_t j = i + 1; j < size; j++) {
       channels[ChannelId(i, j)] = DEFAULT_LAN_PARAMS;
       channels[ChannelId(j, i)] = DEFAULT_LAN_PARAMS;
+    }
+  }
+
+  return NetworkDescription{channels, ignored, size};
+}
+
+NetworkDescription NetworkDescription::createDefaultWAN(std::size_t size) {
+  std::unordered_map<ChannelId, ChannelDescription> channels;
+  std::unordered_map<ChannelId, JitterSampler> ignored;
+
+  for (std::size_t i = 0; i < size; i++) {
+    channels[ChannelId(i, i)] = DEFAULT_LOCAL_PARAMS;
+    for (std::size_t j = i + 1; j < size; j++) {
+      channels[ChannelId(i, j)] = DEFAULT_WAN_PARAMS;
+      channels[ChannelId(j, i)] = DEFAULT_WAN_PARAMS;
     }
   }
 

@@ -18,6 +18,7 @@
 #include "scl/simulation/simulator.h"
 
 #include <algorithm>
+#include <iostream>
 #include <memory>
 
 #include "scl/net/loopback.h"
@@ -86,7 +87,7 @@ class ProtocolBatch final {
 // Main per-party protocol loop.
 Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
                        details::Context ctx,
-                       Env&& env) {
+                       Env env) {
   // Executing a protocol for a party goes more or less as follows:
   // 1. Emit a START event
   // 2. Emit a BEGIN event (signals the beginning of a Protocol)
@@ -171,8 +172,8 @@ std::vector<Network> createNetworks(details::SimulatorContext& sim_ctx) {
   return networks;
 }
 
-// Clock implementation which will provide a party with a sensible value, when
-// called.
+// Ensures that parties get a sensible value when reading their clock in a
+// simulation.
 class FakeClock final : public Clock {
  public:
   FakeClock(details::Context ctx) : m_ctx(ctx) {}
@@ -199,18 +200,23 @@ Task<void> simulate(std::vector<std::unique_ptr<Protocol>>&& protocols,
                     Env{networks[pid], std::make_unique<FakeClock>(ctx)}));
   }
 
+  // runs the simulation.
   co_await ProtocolBatch(std::move(protocol_tasks));
 }
 
 }  // namespace
 
-void Simulator::run(std::vector<std::unique_ptr<Protocol>>&& protocols,
-                    NetworkDescription network_definition) {
+Simulator::Result Simulator::run(
+    std::vector<std::unique_ptr<Protocol>>&& protocols,
+    NetworkDescription network_definition) {
   if (!protocols.empty()) {
     auto sim_ctx = details::SimulatorContext::create(network_definition,
                                                      std::move(m_hooks));
     auto runtime = std::make_unique<details::SimulatorRuntime>(sim_ctx);
 
     runtime->run(simulate(std::move(protocols), sim_ctx));
+    return sim_ctx.toResult();
   }
+
+  return Simulator::Result({});
 }

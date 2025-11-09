@@ -78,12 +78,6 @@ long double rttSeconds(std::size_t latency_us) {
   return std::chrono::microseconds(2 * latency_us) / 1.0s;
 }
 
-// Utility function that does the reverse of the above.
-Time::Duration convert(long double v) {
-  const auto t0 = std::chrono::duration<long double>(v);
-  return std::chrono::duration_cast<Time::Duration>(t0);
-}
-
 // calculate the throughput of a channel.
 long double throughput(NetworkDescription::ChannelParameters params) {
   const auto rtt_secs = rttSeconds(params.latency);
@@ -107,17 +101,23 @@ long double throughput(NetworkDescription::ChannelParameters params) {
   return std::min(tp, (long double)params.bandwidth);
 }
 
+// Utility function that does the reverse of the above.
+Time::Duration convert(long double v) {
+  const auto t0 = std::chrono::duration<long double>(v);
+  return std::chrono::duration_cast<Time::Duration>(t0);
+}
+
 // compute the time it takes to send n bytes on a channel.
 Time::Duration recvTimeOffset(std::size_t n,
                               NetworkDescription::ChannelParameters params) {
   const long double total_size = completeDataSize(n);
   const long double tp = throughput(params);
 
-  // the min here is needed in case we're sending very small amounts of
+  // the max here is needed in case we're sending very small amounts of
   // data. I.e., regardless of how good the channel is, we cannot send data
   // faster than the latency.
   const long double delay =
-      std::min(total_size / tp, rttSeconds(params.latency));
+      std::max(total_size / tp, rttSeconds(params.latency));
 
   return convert(delay);
 }
@@ -129,7 +129,9 @@ Time::Duration computeDelay(Time::Duration rt,
                             Time::Duration st,
                             std::size_t n,
                             NetworkDescription::ChannelParameters params) {
-  return std::max(st + recvTimeOffset(n, params) - rt, Time::Duration::zero());
+  const auto x = st + recvTimeOffset(n, params) - rt;
+  std::cout << recvTimeOffset(n, params) << "\n";
+  return std::max(x, Time::Duration::zero());
 }
 
 }  // namespace

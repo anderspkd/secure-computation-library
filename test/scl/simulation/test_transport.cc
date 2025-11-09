@@ -28,7 +28,7 @@ using namespace scl;
 using namespace std::chrono_literals;
 
 TEST_CASE("Transport send", "[sim]") {
-  auto nd = NetworkDescription::createDefaultLAN(2);
+  auto nd = NetworkDescription::createDefaultWAN(2);
   auto ctx = details::SimulatorContext::create(nd, {});
   ChannelId id{0, 1};
 
@@ -49,6 +49,7 @@ TEST_CASE("Transport send", "[sim]") {
   auto [p, delay] = transport.recv(0s, id.flip());
   REQUIRE(p.read<int>() == 123);
   REQUIRE(delay >= 100ms);
+  std::cout << delay << "\n";
 }
 
 TEST_CASE("Transport ready w. limit", "[sim]") {
