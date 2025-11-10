@@ -115,6 +115,8 @@ TEST_CASE("SimulatedChannel recv timeout") {
   tp->send(100ms, id.flip(), pkt);
   ctx.getContext(1).addEvent<BeginEvent>(100ms, "");
 
+  ctx.getContext(0).addEvent<BeginEvent>(0ms, "");
+
   // should not time out, receiving time should be ~100ms
   auto opt_rpkt = srt.run(channel->recv(200ms));
 
