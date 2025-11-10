@@ -20,10 +20,9 @@
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
-#include <utility>
 #include <vector>
 
-#include "scl/coro/task.h"
+#include "scl/coro.h"
 #include "scl/net/channel.h"
 
 namespace scl {

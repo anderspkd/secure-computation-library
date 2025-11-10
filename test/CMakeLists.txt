@@ -46,7 +46,7 @@ set(SCL_SOURCE_FILES_TEST
   scl/ss/test_feldman.cc
   scl/ss/test_pedersen.cc
 
-  scl/coro/test_task.cc
+  scl/test_coro.cc
 
   scl/net/test_loopback.cc
   scl/net/test_packet.cc

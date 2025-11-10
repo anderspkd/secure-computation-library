@@ -19,7 +19,6 @@
 
 #include "./syscalls.h"
 #include "./utils.h"
-#include "scl/coro/runtime.h"
 
 using namespace scl;
 

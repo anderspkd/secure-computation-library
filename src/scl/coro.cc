@@ -15,11 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "scl/coro/runtime.h"
-
 #include <coroutine>
 
-#include "scl/coro/task.h"
+#include "scl/coro.h"
 
 using namespace scl;
 
@@ -47,4 +45,10 @@ void DefaultRuntime::deschedule(std::coroutine_handle<> coroutine) {
   m_tq.remove_if([&coroutine](const Pair& pair) {
     return std::get<0>(pair) == coroutine;
   });
+}
+
+std::coroutine_handle<> details::SleepAwaiter::await_suspend(
+    std::coroutine_handle<> handle) {
+  m_runtime->schedule(handle, m_duration);
+  return m_runtime->next();
 }

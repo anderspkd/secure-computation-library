@@ -21,7 +21,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "scl/coro/task.h"
+#include "scl/coro.h"
 #include "scl/net/network.h"
 #include "scl/time.h"
 

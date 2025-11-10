@@ -73,7 +73,7 @@ set(SCL_SOURCE_FILES
   src/scl/math/secp256k1_curve.cc
   src/scl/math/number.cc
 
-  src/scl/coro/runtime.cc
+  src/scl/coro.cc
 
   src/scl/net/tcp/config.cc
   src/scl/net/tcp/utils.cc

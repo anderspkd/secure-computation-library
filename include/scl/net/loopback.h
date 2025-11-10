@@ -19,9 +19,8 @@
 
 #include <deque>
 #include <memory>
-#include <stdexcept>
 
-#include "scl/coro/task.h"
+#include "scl/coro.h"
 #include "scl/net/channel.h"
 
 namespace scl::details {
@@ -138,4 +137,4 @@ class LoopbackChannel final : public Channel {
   std::shared_ptr<Buffer> m_out;
 };
 
-}  // namespace scl
+}  // namespace scl::details

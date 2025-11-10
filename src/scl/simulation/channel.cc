@@ -17,7 +17,7 @@
 
 #include "scl/simulation/channel.h"
 
-#include "scl/coro/runtime.h"
+#include "scl/coro.h"
 #include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
 #include "scl/simulation/transport.h"

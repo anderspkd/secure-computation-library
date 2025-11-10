@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "scl/coro/task.h"
+#include "scl/coro.h"
 #include "scl/net/network.h"
 #include "scl/net/tcp/config.h"
 

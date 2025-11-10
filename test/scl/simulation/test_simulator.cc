@@ -16,10 +16,12 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
+#include <iostream>
 
+#include "scl/coro.h"
 #include "scl/protocol.h"
-#include "scl/simulation/context.h"
 #include "scl/simulation/network_description.h"
+#include "scl/simulation/simulator.h"
 
 using namespace scl;
 using namespace std::chrono_literals;
@@ -34,7 +36,7 @@ class PingPongProtocol final : public Protocol {
     if (m_is_sender) {
       Packet pkt;
       pkt << 123;
-      // co_await 100ms;
+      co_await 100ms;
       co_await env.network.other()->send(pkt);
     } else {
       auto pkt = co_await env.network.other()->recv();

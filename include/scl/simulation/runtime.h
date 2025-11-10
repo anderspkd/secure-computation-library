@@ -19,7 +19,7 @@
 
 #include <coroutine>
 
-#include "scl/coro/runtime.h"
+#include "scl/coro.h"
 #include "scl/simulation/context.h"
 
 namespace scl::details {
