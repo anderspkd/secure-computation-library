@@ -23,7 +23,7 @@
 #include "scl/simulation/channel_id.h"
 #include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
-#include "scl/simulation/network_description.h"
+#include "scl/simulation/params.h"
 
 using namespace scl;
 
@@ -64,9 +64,9 @@ static constexpr std::size_t IP_HEADER_SIZE_BYTES = 20;
 static constexpr std::size_t MSS_BYTES = 1460;
 static constexpr std::size_t WINDOW_SIZE_BYTES = 65535;
 
-// computes the actual on-the-wire size when sending n bytes, by taking into
-// account the size of a TCP/IP header, and the maximum segment size.
-long double completeDataSize(std::size_t n) {
+// computes the actual on-the-wire size in bits when sending n bytes, by taking
+// into account the size of a TCP/IP header, and the maximum segment size.
+long double completeDataSizeBits(std::size_t n) {
   const std::size_t packets = std::ceil((double)n / (double)MSS_BYTES);
   return 8 * (n + packets * (TCP_HEADER_SIZE_BYTES + IP_HEADER_SIZE_BYTES));
 }
@@ -79,8 +79,8 @@ long double rttSeconds(std::size_t latency_us) {
 }
 
 // calculate the throughput of a channel.
-long double throughput(NetworkDescription::ChannelParameters params) {
-  const auto rtt_secs = rttSeconds(params.latency);
+long double throughput(std::size_t bw, std::size_t lat, float pl) {
+  const auto rtt_secs = rttSeconds(lat);
 
   // all of these calculations are taken from "The Macroscopic Behavior of the
   // TCP Congestion Avoidance Algorithm" by Mathis, Semke and Mahdavi.
@@ -88,17 +88,17 @@ long double throughput(NetworkDescription::ChannelParameters params) {
   // https://cseweb.ucsd.edu/classes/wi01/cse222/papers/mathis-tcpmodel-ccr97.pdf
 
   long double tp;
-  if (params.loss == 0) {
+  if (pl == 0) {
     tp = 8 * WINDOW_SIZE_BYTES / rtt_secs;
   } else {
     const long double C = std::sqrt(3.0 / 2.0);
     tp = 8 * MSS_BYTES / rtt_secs;
-    tp *= C / std::sqrt(params.loss);
+    tp *= C / std::sqrt(pl);
   }
 
   // whatever throughput we calculate cannot exceed the bandwidth of the
   // channel.
-  return std::min(tp, (long double)params.bandwidth);
+  return std::min(tp, (long double)bw);
 }
 
 // Utility function that does the reverse of the above.
@@ -108,16 +108,13 @@ Time::Duration convert(long double v) {
 }
 
 // compute the time it takes to send n bytes on a channel.
-Time::Duration recvTimeOffset(std::size_t n,
-                              NetworkDescription::ChannelParameters params) {
-  const long double total_size = completeDataSize(n);
-  const long double tp = throughput(params);
-
-  // the max here is needed in case we're sending very small amounts of
-  // data. I.e., regardless of how good the channel is, we cannot send data
-  // faster than the latency.
-  const long double delay =
-      std::max(total_size / tp, rttSeconds(params.latency));
+Time::Duration recvTimeOffset(std::size_t n, ChannelParams params) {
+  const auto bw = params.bandwidth();
+  const auto lat = params.latency();
+  const auto pl = params.packetLoss();
+  const long double total_size = completeDataSizeBits(n);
+  const long double tp = throughput(bw, lat, pl);
+  const long double delay = rttSeconds(lat) + total_size / tp;
 
   return convert(delay);
 }
@@ -128,9 +125,9 @@ Time::Duration recvTimeOffset(std::size_t n,
 Time::Duration computeDelay(Time::Duration rt,
                             Time::Duration st,
                             std::size_t n,
-                            NetworkDescription::ChannelParameters params) {
-  const auto x = st + recvTimeOffset(n, params) - rt;
-  std::cout << recvTimeOffset(n, params) << "\n";
+                            ChannelParams params) {
+  const auto offset = recvTimeOffset(n, params);
+  const auto x = st + offset - rt;
   return std::max(x, Time::Duration::zero());
 }
 
@@ -151,7 +148,7 @@ std::pair<Packet, Time::Duration> details::Transport::recv(Time::Duration ts,
 
 namespace {
 
-Time::Duration smallestTimeDelta(NetworkDescription::ChannelParameters params) {
+Time::Duration smallestTimeDelta(ChannelParams params) {
   return recvTimeOffset(1, params);
 }
 

@@ -18,16 +18,19 @@
 #include "scl/simulation/context.h"
 
 #include "scl/simulation/event.h"
+#include "scl/simulation/params.h"
 
 using namespace scl;
 
 details::SimulatorContext details::SimulatorContext::create(
-    NetworkDescription network_desc,
+    std::size_t number_of_parties,
+    NetworkParams network_params,
     std::vector<Simulator::SimulationHook>&& hooks) {
-  SimulatorContext ctx{network_desc};
+  SimulatorContext ctx{network_params};
 
-  ctx.m_events.resize(network_desc.size());
-  ctx.m_clocks.resize(network_desc.size());
+  ctx.m_number_of_parties = number_of_parties;
+  ctx.m_events.resize(number_of_parties);
+  ctx.m_clocks.resize(number_of_parties);
   ctx.m_hooks = std::move(hooks);
 
   return ctx;

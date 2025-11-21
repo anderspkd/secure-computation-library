@@ -19,10 +19,9 @@
 
 #include <cstddef>
 #include <type_traits>
-#include <iostream>
 
 #include "scl/simulation/event.h"
-#include "scl/simulation/network_description.h"
+#include "scl/simulation/params.h"
 #include "scl/simulation/simulator.h"
 
 namespace scl::details {
@@ -39,7 +38,8 @@ class SimulatorContext final {
    * @brief Create a new simulation context object.
    */
   static SimulatorContext create(
-      NetworkDescription network_desc,
+      std::size_t number_of_parties,
+      NetworkParams network_params,
       std::vector<Simulator::SimulationHook>&& hooks);
 
   /**
@@ -86,15 +86,15 @@ class SimulatorContext final {
   /**
    * @brief Get the channel parameters of a channel.
    */
-  NetworkDescription::ChannelParameters getChannel(ChannelId cid) {
-    return m_network_desc.getChannel(cid);
+  ChannelParams getChannel(ChannelId cid) {
+    return m_network_params.channel(cid);
   }
 
   /**
    * @brief Get the number of parties in this simulation.
    */
   std::size_t numberOfParties() const {
-    return m_network_desc.size();
+    return m_number_of_parties;
   }
 
   Simulator::Result toResult() {
@@ -102,13 +102,14 @@ class SimulatorContext final {
   }
 
  private:
-  NetworkDescription m_network_desc;
+  std::size_t m_number_of_parties;
+  NetworkParams m_network_params;
   std::vector<EventList> m_events;
   std::vector<Time::TimePoint> m_clocks;
   std::vector<Simulator::SimulationHook> m_hooks;
 
-  SimulatorContext(NetworkDescription network_desc)
-      : m_network_desc(network_desc) {}
+  SimulatorContext(NetworkParams network_params)
+      : m_network_params(network_params) {}
 
   void runHooks(std::size_t pid, Event* event);
 };

@@ -52,8 +52,7 @@ namespace {
 // receiving.
 class RecvPendingEvent final : public ChannelEvent {
  public:
-  RecvPendingEvent(Time::Duration timestamp, ChannelId id)
-      : ChannelEvent(timestamp, id), m_offset(Time::Duration::zero()) {}
+  using ChannelEvent::ChannelEvent;
 
   void write(std::ostream&) override {}
 
@@ -70,7 +69,7 @@ class RecvPendingEvent final : public ChannelEvent {
   }
 
  private:
-  Time::Duration m_offset;
+  Time::Duration m_offset = Time::Duration::zero();
 };
 
 // Waits (i.e., suspends) until the transport has data ready for us

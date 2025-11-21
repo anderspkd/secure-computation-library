@@ -21,15 +21,15 @@
 
 #include "scl/simulation/channel_id.h"
 #include "scl/simulation/context.h"
-#include "scl/simulation/network_description.h"
+#include "scl/simulation/params.h"
 #include "scl/simulation/transport.h"
 
 using namespace scl;
 using namespace std::chrono_literals;
 
 TEST_CASE("Transport send", "[sim]") {
-  auto nd = NetworkDescription::createDefaultWAN(2);
-  auto ctx = details::SimulatorContext::create(nd, {});
+  auto nd = NetworkParams::create(2);
+  auto ctx = details::SimulatorContext::create(2, nd, {});
   ChannelId id{0, 1};
 
   details::Transport transport(ctx);
@@ -49,12 +49,11 @@ TEST_CASE("Transport send", "[sim]") {
   auto [p, delay] = transport.recv(0s, id.flip());
   REQUIRE(p.read<int>() == 123);
   REQUIRE(delay >= 100ms);
-  std::cout << delay << "\n";
 }
 
 TEST_CASE("Transport ready w. limit", "[sim]") {
-  auto nd = NetworkDescription::createDefaultLAN(2);
-  auto ctx = details::SimulatorContext::create(nd, {});
+  auto nd = NetworkParams::create(2);
+  auto ctx = details::SimulatorContext::create(2, nd, {});
   ChannelId id{0, 1};
   auto sid = id.flip();
 

@@ -16,11 +16,13 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
+#include <initializer_list>
 #include <iostream>
 
 #include "scl/coro.h"
 #include "scl/protocol.h"
-#include "scl/simulation/network_description.h"
+#include "scl/simulation/event.h"
+#include "scl/simulation/params.h"
 #include "scl/simulation/simulator.h"
 
 using namespace scl;
@@ -49,10 +51,22 @@ class PingPongProtocol final : public Protocol {
   bool m_is_sender;
 };
 
+void assertEvents(EventList& event_list,
+                  std::initializer_list<EventType> events) {
+  REQUIRE(events.size() == event_list.size());
+
+  auto got_it = event_list.cbegin();
+  auto exp_it = events.begin();
+
+  while (got_it != event_list.cend()) {
+    REQUIRE((*got_it++)->type() == (*exp_it++));
+  }
+}
+
 }  // namespace
 
 TEST_CASE("Simulator test", "[sim]") {
-  auto nd = NetworkDescription::createDefaultWAN(2);
+  auto nd = NetworkParams::create(2);
 
   Simulator sim;
   auto res = sim.run(
@@ -64,15 +78,24 @@ TEST_CASE("Simulator test", "[sim]") {
       },
       nd);
 
-  std::cout << "Party 0:\n";
-  for (const auto& e : res[0]) {
-    e->write(std::cout);
-    std::cout << "\n";
-  }
+  REQUIRE(res.numberOfParties() == 2);
 
-  std::cout << "\n\nParty 1:\n";
-  for (const auto& e : res[1]) {
-    e->write(std::cout);
-    std::cout << "\n";
-  }
+  // validate the trace of party 0.
+  // should be START, BEGIN, RECV, END, STOP
+  assertEvents(res[0],
+               {EventType::START,
+                EventType::BEGIN,
+                EventType::CHANNEL_RECV,
+                EventType::END,
+                EventType::STOP});
+
+  // validate trace of party 1
+  // should be START, BEGIN, SLEEP, SEND, END, STOP
+  assertEvents(res[1],
+               {EventType::START,
+                EventType::BEGIN,
+                EventType::SLEEP,
+                EventType::CHANNEL_SEND,
+                EventType::END,
+                EventType::STOP});
 }

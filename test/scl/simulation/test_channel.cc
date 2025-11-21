@@ -22,7 +22,7 @@
 #include "scl/simulation/channel.h"
 #include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
-#include "scl/simulation/network_description.h"
+#include "scl/simulation/params.h"
 #include "scl/simulation/runtime.h"
 #include "scl/simulation/transport.h"
 
@@ -30,8 +30,8 @@ using namespace scl;
 using namespace std::chrono_literals;
 
 TEST_CASE("SimulatedChannel send", "[sim]") {
-  auto nd = NetworkDescription::createDefaultLAN(2);
-  auto ctx = details::SimulatorContext::create(nd, {});
+  auto nd = NetworkParams::create(2);
+  auto ctx = details::SimulatorContext::create(2, nd, {});
 
   auto tp = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
@@ -64,8 +64,8 @@ TEST_CASE("SimulatedChannel send", "[sim]") {
 }
 
 TEST_CASE("SimulatedChannel recv", "[sim]") {
-  auto nd = NetworkDescription::createDefaultLAN(2);
-  auto ctx = details::SimulatorContext::create(nd, {});
+  auto nd = NetworkParams::create(2);
+  auto ctx = details::SimulatorContext::create(2, nd, {});
   auto tp = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
   auto channel = details::SimulatedChannel::create(id, ctx.getContext(0), tp);
@@ -100,8 +100,8 @@ TEST_CASE("SimulatedChannel recv", "[sim]") {
 TEST_CASE("SimulatedChannel recv timeout") {
   using namespace std::chrono_literals;
 
-  auto nd = NetworkDescription::createDefaultLAN(2);
-  auto ctx = details::SimulatorContext::create(nd, {});
+  auto nd = NetworkParams::create(2);
+  auto ctx = details::SimulatorContext::create(2, nd, {});
   auto tp = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
 
@@ -130,17 +130,16 @@ TEST_CASE("SimulatedChannel recv timeout") {
   auto ctx0 = ctx.getContext(0);
   REQUIRE(ctx0.lastEvent()->type() == EventType::CHANNEL_RECV);
   REQUIRE(ctx0.lastEvent()->time() > 100ms);
+  REQUIRE(ctx0.lastEvent()->time() < 150ms);
 
   tp->send(400ms, id.flip(), pkt);
-  // have to move the sender ahead of the receiver, otherwise the receiver just
-  // gets stuck in an infinite loop (which is correct behavior btw).
-  ctx.getContext(1).addEvent<BeginEvent>(500ms, "");
+  ctx.getContext(1).addEvent<BeginEvent>(400ms, "");
 
   // should timeout
-  opt_rpkt = srt.run(channel->recv(200ms));
+  opt_rpkt = srt.run(channel->recv(100ms));
 
   REQUIRE_FALSE(opt_rpkt.has_value());
 
   REQUIRE(ctx0.lastEvent()->type() == EventType::CHANNEL_RECV_TIMEOUT);
-  REQUIRE(ctx0.lastEvent()->time() > 300ms);
+  REQUIRE(ctx0.lastEvent()->time() > 200ms);
 }

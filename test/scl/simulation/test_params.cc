@@ -19,3 +19,13 @@
 
 #include "scl/simulation/params.h"
 
+using namespace scl;
+
+TEST_CASE("Network params", "[sim]") {
+  auto np = NetworkParams::create(2);
+
+  ChannelId cid(0, 1);
+
+  REQUIRE(np.channel(cid).bandwidth() == np.channel(cid.flip()).bandwidth());
+  REQUIRE(np.channel(cid).latency() == np.channel(cid.flip()).latency());
+}

@@ -26,25 +26,69 @@
 
 namespace scl {
 
-class ChannelDesc final {
+/**
+ * @brief Provider for a communication channels paramters.
+ * @ingroup eval-sim
+ *
+ * A ChannelParams object describes the characteristics of a particular
+ * communication channel in terms of its bandwidth and latency.
+ *
+ * A communication channel is either "deterministic" or "probabilistic", with
+ * respect to its parameters. Concretely, either the channel's parameters are
+ * fixed or they are sampled from some distribution.
+ *
+ * Note that the packet loss of a channel is a (by its nature) probabilistic
+ * parameter regardless of the type of the other parameters.
+ *
+ * The units used is as follows:
+ * - bits per second for bandwidth.
+ * - microseconds for latency.
+ * - percentage, as a value between 0 and 1 for packet loss.
+ */
+class ChannelParams final {
  public:
-  ChannelDesc createDet(std::size_t bandwidth, std::size_t latency) {
-    return ChannelDesc(DetParams{bandwidth, latency});
-  }
-  ChannelDesc createProp(std::normal_distribution<> bandwidth,
-                         std::normal_distribution<> latency) {
-    std::random_device rd{};
-    std::mt19937 rg{rd()};
-    return ChannelDesc(PropParams{rg, bandwidth, latency});
+  /**
+   * @brief Create a deterministic channel description.
+   */
+  static ChannelParams createDet(std::size_t bandwidth,
+                                 std::size_t latency,
+                                 float packet_loss) {
+    return ChannelParams(DetParams{bandwidth, latency, packet_loss});
   }
 
+  /**
+   * @brief Create a probabilistic channel description.
+   */
+  static ChannelParams createProb(std::normal_distribution<> bandwidth,
+                                  std::normal_distribution<> latency,
+                                  float packet_loss) {
+    std::random_device rd{};
+    std::mt19937 rg{rd()};
+    return ChannelParams(PropParams{rg, bandwidth, latency, packet_loss});
+  }
+
+  ChannelParams() {}
+
+  /**
+   * @brief Bandwidth of the channel.
+   */
   std::size_t bandwidth();
+
+  /**
+   * @brief Latency of the channel.
+   */
   std::size_t latency();
+
+  /**
+   * @brief The packet loss percentage of this channel.
+   */
+  float packetLoss();
 
  private:
   struct DetParams final {
     std::size_t bandwidth;
     std::size_t latency;
+    float packet_loss;
   };
 
   struct PropParams final {
@@ -52,126 +96,64 @@ class ChannelDesc final {
 
     std::normal_distribution<> bandwidth;
     std::normal_distribution<> latency;
+    float packet_loss;
   };
 
-  ChannelDesc(DetParams params) : m_params(params) {}
-  ChannelDesc(PropParams params) : m_params(params) {}
+  ChannelParams(DetParams params) : m_params{params} {}
+  ChannelParams(PropParams params) : m_params{params} {}
+
+  bool deterministicChannel() const {
+    return m_params.index() == 0;
+  }
 
   std::variant<DetParams, PropParams> m_params;
 };
 
-// TODO: Create a simplier, and more extensible network description. Potentially
-// shorten the name as well.
-//
-// The new object (interface shown below) should provide the "raw" link
-// bandwidth and latency on a given channel. I guess it is possible to
-// dynamically adjust the bandwidth of a channel depending on usage, but I think
-// that task is better done elsewhere (e.g., in the Transport).
-//
-// NetworkDesc:
-//   std::size_t latency(ChannelId cid);
-//   std::size_t bandwidth(ChannelId cid);
-//
-// ChannelDesc:
-//   virtual std::size_t latency();
-//   virtual std::size_t bandwidth();
-//
-// NetworkDesc is internally composed of a list of ChannelDesc. The definition
-// of ChannelDesc allows the user to either provide some constant value, or to
-// sample the value from a distribution.
-
 /**
- * @brief Describes the characterists of a channel.
+ * @brief A parameter collection for a network.
+ * @ingroup eval-sim
+ *
+ * NetworkParams can be viewed as a collection of ChannelParams (as that is what
+ * it ultimately is).
  */
-struct ChannelDescription final {
-  /**
-   * @brief The channel bandwidth, in bits/s.
-   */
-  std::size_t bandwith;
-
-  /**
-   * @brief The channel latency, in microseconds.
-   */
-  std::size_t latency;
-
-  /**
-   * @brief The latency variance, in microseconds.
-   */
-  std::size_t latency_jitter;
-
-  /**
-   * @brief The channel package loss, a value in [0, 1).
-   */
-  float loss;
-};
-
-/**
- * @brief Describes a network in terms of its channels.
- */
-class NetworkDescription final {
+class NetworkParams final {
  public:
   /**
-   * @brief The parameters of a channel at a given point in time.
+   * @brief Create a set of network parameters with some sane defaults.
+   *
+   * This creates a new set of network parameters supporting a specified number
+   * of parties. The provided \p bandwidth and \p latency arguments determine
+   * the bandwidth and latency for all channels that are not "loopback"
+   * channels.
+   *
+   * The default values provide a sane "WAN"-like default of 1Mbps bandwidth,
+   * 50ms latency and 0.1% packet loss.
    */
-  struct ChannelParameters {
-    /**
-     * @brief The current channel bandwidth.
-     */
-    std::size_t bandwidth;
-
-    /**
-     * @brief The current channel latency.
-     */
-    std::size_t latency;
-
-    /**
-     * @brief The current channel packege loss.
-     */
-    float loss;
-  };
+  static NetworkParams create(std::size_t number_of_parties,
+                              std::size_t bandwidth = 1000000,
+                              std::size_t latency = 50000,
+                              float packet_loss = 0.01);
 
   /**
-   * @brief Create a default LAN network.
+   * @brief Read network parameters from a file.
    */
-  static NetworkDescription createDefaultLAN(std::size_t size);
+  static NetworkParams fromFile(const std::string& filename);
 
   /**
-   * @brief Create a default WAN network.
+   * @brief Construct network parameters from a set of channel parameters.
    */
-  static NetworkDescription createDefaultWAN(std::size_t size);
+  NetworkParams(const std::unordered_map<ChannelId, ChannelParams>& channels)
+      : m_channels(channels) {}
 
   /**
-   * @brief The size of the network.
+   * @brief Get the parameters of a channel.
    */
-  std::size_t size() const {
-    return m_size;
+  ChannelParams channel(ChannelId id) const {
+    return m_channels.at(id);
   }
 
-  /**
-   * @brief Get the parameters of a particular channel.
-   */
-  ChannelParameters getChannel(ChannelId id);
-
  private:
-  struct JitterSampler {
-    std::mt19937 rg;
-    std::normal_distribution<> dist;
-
-    std::size_t operator()() {
-      return std::lround(dist(rg));
-    }
-  };
-
-  std::unordered_map<ChannelId, ChannelDescription> m_channels;
-  std::unordered_map<ChannelId, JitterSampler> m_samplers;
-
-  std::size_t m_size;
-
-  NetworkDescription(
-      const std::unordered_map<ChannelId, ChannelDescription>& channels,
-      const std::unordered_map<ChannelId, JitterSampler>& samplers,
-      std::size_t size)
-      : m_channels(channels), m_samplers(samplers), m_size(size) {}
+  std::unordered_map<ChannelId, ChannelParams> m_channels;
 };
 
 }  // namespace scl

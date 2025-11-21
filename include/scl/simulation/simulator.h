@@ -20,17 +20,17 @@
 #include <concepts>
 #include <functional>
 #include <memory>
-#include <stdexcept>
 #include <vector>
 
 #include "scl/protocol.h"
 #include "scl/simulation/event.h"
-#include "scl/simulation/network_description.h"
+#include "scl/simulation/params.h"
 
 namespace scl {
 
 /**
  * @brief Concept for protocol builder objects.
+ * @ingroup eval-sim
  *
  * A "ProtocolBuilder" is any type which, when invoked, returns an std::vector
  * of Protocol objects.
@@ -42,15 +42,20 @@ concept ProtocolBuilder = requires(BUILDER builder) {
 
 /**
  * @brief The simulator.
+ * @ingroup eval-sim
  */
 class Simulator final {
  public:
+  /**
+   * @brief The result of a simulation.
+   */
   class Result final {
    public:
     Result(std::vector<EventList>&& events) : m_events(std::move(events)) {}
     std::size_t numberOfParties() const {
       return m_events.size();
     }
+
     EventList& operator[](std::size_t i) {
       return m_events[i];
     }
@@ -58,6 +63,7 @@ class Simulator final {
    private:
     std::vector<EventList> m_events;
   };
+
   /**
    * @brief A simulation hook.
    *
@@ -100,12 +106,9 @@ class Simulator final {
    * @brief Run the simulation.
    */
   template <ProtocolBuilder BUILDER>
-  Result run(BUILDER builder, NetworkDescription network_desc) {
+  Result run(BUILDER builder, NetworkParams network_params) {
     auto protocol = builder();
-    if (protocol.size() != network_desc.size()) {
-      throw std::logic_error("protocols do not match network definition");
-    }
-    return run(std::move(protocol), network_desc);
+    return run(std::move(protocol), network_params);
   }
 
   /**
@@ -130,7 +133,7 @@ class Simulator final {
   std::vector<SimulationHook> m_hooks;
 
   Result run(std::vector<std::unique_ptr<Protocol>>&& protocols,
-             NetworkDescription network_desc);
+             NetworkParams network_params);
 };
 
 }  // namespace scl

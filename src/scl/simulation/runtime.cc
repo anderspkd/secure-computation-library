@@ -19,6 +19,8 @@
 
 #include <coroutine>
 
+#include "scl/time.h"
+
 using namespace scl;
 
 void details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
@@ -31,7 +33,7 @@ void details::SimulatorRuntime::schedule(std::coroutine_handle<> coroutine,
   auto ctx = m_sim_ctx.getContext(m_current_pid);
   const auto et = ctx.lastEvent()->time();
   ctx.addEvent<SleepEvent>(et + delay, delay);
-  this->deschedule(coroutine);
+  this->schedule(coroutine);
 }
 
 void details::SimulatorRuntime::scheduleWithId(

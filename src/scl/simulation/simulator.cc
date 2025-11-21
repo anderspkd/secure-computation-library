@@ -18,7 +18,6 @@
 #include "scl/simulation/simulator.h"
 
 #include <algorithm>
-#include <iostream>
 #include <memory>
 
 #include "scl/net/loopback.h"
@@ -208,9 +207,10 @@ Task<void> simulate(std::vector<std::unique_ptr<Protocol>>&& protocols,
 
 Simulator::Result Simulator::run(
     std::vector<std::unique_ptr<Protocol>>&& protocols,
-    NetworkDescription network_definition) {
+    NetworkParams network_params) {
   if (!protocols.empty()) {
-    auto sim_ctx = details::SimulatorContext::create(network_definition,
+    auto sim_ctx = details::SimulatorContext::create(protocols.size(),
+                                                     network_params,
                                                      std::move(m_hooks));
     auto runtime = std::make_unique<details::SimulatorRuntime>(sim_ctx);
 
