@@ -20,10 +20,65 @@
 #include <cstddef>
 #include <random>
 #include <unordered_map>
+#include <variant>
 
 #include "scl/simulation/channel_id.h"
 
 namespace scl {
+
+class ChannelDesc final {
+ public:
+  ChannelDesc createDet(std::size_t bandwidth, std::size_t latency) {
+    return ChannelDesc(DetParams{bandwidth, latency});
+  }
+  ChannelDesc createProp(std::normal_distribution<> bandwidth,
+                         std::normal_distribution<> latency) {
+    std::random_device rd{};
+    std::mt19937 rg{rd()};
+    return ChannelDesc(PropParams{rg, bandwidth, latency});
+  }
+
+  std::size_t bandwidth();
+  std::size_t latency();
+
+ private:
+  struct DetParams final {
+    std::size_t bandwidth;
+    std::size_t latency;
+  };
+
+  struct PropParams final {
+    std::mt19937 rg;
+
+    std::normal_distribution<> bandwidth;
+    std::normal_distribution<> latency;
+  };
+
+  ChannelDesc(DetParams params) : m_params(params) {}
+  ChannelDesc(PropParams params) : m_params(params) {}
+
+  std::variant<DetParams, PropParams> m_params;
+};
+
+// TODO: Create a simplier, and more extensible network description. Potentially
+// shorten the name as well.
+//
+// The new object (interface shown below) should provide the "raw" link
+// bandwidth and latency on a given channel. I guess it is possible to
+// dynamically adjust the bandwidth of a channel depending on usage, but I think
+// that task is better done elsewhere (e.g., in the Transport).
+//
+// NetworkDesc:
+//   std::size_t latency(ChannelId cid);
+//   std::size_t bandwidth(ChannelId cid);
+//
+// ChannelDesc:
+//   virtual std::size_t latency();
+//   virtual std::size_t bandwidth();
+//
+// NetworkDesc is internally composed of a list of ChannelDesc. The definition
+// of ChannelDesc allows the user to either provide some constant value, or to
+// sample the value from a distribution.
 
 /**
  * @brief Describes the characterists of a channel.

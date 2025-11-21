@@ -16,16 +16,11 @@
 
 cmake_minimum_required(VERSION 3.30)
 
-project(scl VERSION 0.1.0 DESCRIPTION "Secure Computation Library" LANGUAGES CXX)
+project(scl VERSION 0.2.0 DESCRIPTION "Secure Computation Library" LANGUAGES CXX)
 
 option(SCL_BUILD_TESTS
   "Build tests for SCL"
   ON)
-
-option(
-  SCL_BUILD_TEST_WITH_COVERAGE
-  "Build test with coverage. Implies SCL_BUILD_TESTS=ON"
-  OFF)
 
 option(
   SCL_BUILD_WITH_ADDRESS_SANITIZATION
@@ -48,11 +43,6 @@ option(
   SCL_EXPORT_COMPILE_COMMANDS
   "Generate compile_commands.json"
   ON)
-
-if(SCL_BUILD_TEST_WITH_COVERAGE)
-  set(SCL_BUILD_TESTS ON)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo)
-endif()
 
 find_library(GMP gmp libgmp REQUIRED)
 
@@ -81,7 +71,7 @@ set(SCL_SOURCE_FILES
   src/scl/net/tcp/network.cc
 
   src/scl/simulation/event.cc
-  src/scl/simulation/network_description.cc
+  src/scl/simulation/params.cc
   src/scl/simulation/context.cc
   src/scl/simulation/transport.cc
   src/scl/simulation/channel.cc
@@ -101,22 +91,17 @@ target_compile_options(scl PUBLIC "-Wall")
 target_compile_options(scl PUBLIC "-Wextra")
 target_compile_options(scl PUBLIC "-pedantic")
 
-## indicates that SCL is being built with some extra flags that will
-## produce a non-optimal build.
-set(SCL_SPECIAL_BUILD OFF)
+if(CMAKE_BUILD_TYPE MATCHES Release)
+  set(SCL_SPECIAL_BUILD OFF)
+else()
+  ## indicates that SCL is being built with some extra flags that will
+  ## produce a non-optimal build.
+  set(SCL_SPECIAL_BUILD ON)
+endif()
 
 if(SCL_BUILD_WITH_ADDRESS_SANITIZATION)
   target_compile_options(scl PUBLIC "-fsanitize=address")
   target_link_libraries(scl PUBLIC "-fsanitize=address")
-  set(SCL_SPECIAL_BUILD ON)
-endif()
-
-if(SCL_BUILD_TEST_WITH_COVERAGE)
-  target_compile_options(scl PUBLIC "-O0")
-  target_compile_options(scl PUBLIC "-g")
-  target_compile_options(scl PUBLIC "--coverage")
-  target_compile_options(scl PUBLIC "-fno-inline")
-  target_link_libraries(scl PUBLIC gcov)
   set(SCL_SPECIAL_BUILD ON)
 endif()
 

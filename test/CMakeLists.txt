@@ -87,31 +87,3 @@ target_link_libraries(scl_test
   PRIVATE pthread
   PRIVATE gmp)
 catch_discover_tests(scl_test)
-
-if(SCL_BUILD_TEST_WITH_COVERAGE)
-
-  if (NOT SCL_GCOV_BIN)
-    set(SCL_GCOV_BIN "gcov")
-  endif()
-
-  ## stuff that SCL uses, but which we are not interested in
-  ## generating coverage of.
-  set(SCL_COVERAGE_EXCLUDES "")
-  list(APPEND SCL_COVERAGE_EXCLUDES "'/usr/*'")
-  list(APPEND SCL_COVERAGE_EXCLUDES "'${CMAKE_BINARY_DIR}/*'")
-  list(APPEND SCL_COVERAGE_EXCLUDES "'${CMAKE_SOURCE_DIR}/test/*'")
-
-  add_custom_target(coverage
-    COMMAND lcov --ignore-errors mismatch --gcov-tool ${SCL_GCOV_BIN} -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR} -z
-    COMMAND lcov --ignore-errors mismatch --gcov-tool ${SCL_GCOV_BIN} -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR} -c -i -o cov.base
-    COMMAND scl_test
-    COMMAND lcov --ignore-errors mismatch --gcov-tool ${SCL_GCOV_BIN} -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR} -c -o cov.cap
-    COMMAND lcov --ignore-errors mismatch --gcov-tool ${SCL_GCOV_BIN} -a cov.base -a cov.cap -o cov.total
-    COMMAND wc -l cov.total
-    COMMAND lcov --ignore-errors mismatch --gcov-tool ${SCL_GCOV_BIN} --remove cov.total ${SCL_COVERAGE_EXCLUDES} -o cov.info
-    COMMAND genhtml --demangle-cpp --ignore-errors mismatch -o coverage cov.info
-
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    BYPRODUCTS cov.base cov.cap cov.total cov.info)
-
-endif()
