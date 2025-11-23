@@ -113,7 +113,7 @@ class ECDSA {
    * @return an ECDSA signature.
    */
   template <typename DIGEST>
-  static Signature<ECDSA> Sign(const SecretKey& secret_key,
+  static Signature<ECDSA> sign(const SecretKey& secret_key,
                                const DIGEST& digest,
                                PRG& prg) {
     const auto k = SecretKey::random(prg);
