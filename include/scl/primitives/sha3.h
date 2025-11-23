@@ -27,7 +27,7 @@ namespace scl {
 
 /**
  * @brief SHA3 hash function.
- * @tparam DigestSize the output size in bits. Must be either 256, 384 or 512
+ * @ingroup prim
  */
 template <std::size_t BITS>
 class Sha3 final : public IUFHash<Sha3<BITS>> {

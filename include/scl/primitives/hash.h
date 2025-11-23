@@ -25,6 +25,7 @@ namespace scl {
 
 /**
  * @brief A default hash function given a digest size.
+ * @ingroup prim
  *
  * This type defults to one of the three instantiations of SHA3 that SCL
  * provides.

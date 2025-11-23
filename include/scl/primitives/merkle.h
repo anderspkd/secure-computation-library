@@ -26,6 +26,7 @@ namespace scl {
 
 /**
  * @brief A Merkle tree proof.
+ * @ingroup prim
  *
  * A MerkleProof is used to prove that a specific leaf recides in a Merkle tree,
  * represented by its root. A proof is a path through the tree, from the leaf in
@@ -47,6 +48,7 @@ struct MerkleProof {
 
 /**
  * @brief Serializer for MerkleProof.
+ * @ingroup prim
  */
 template <typename DIGEST>
 struct Serializer<MerkleProof<DIGEST>> {
@@ -81,6 +83,7 @@ struct Serializer<MerkleProof<DIGEST>> {
 
 /**
  * @brief Merkle tree hash.
+ * @ingroup prim
  *
  * MerkleTree can be used to construct a Merkle hash over a list of
  * values. MerkleTree is parameterized by two types: The leaf type, which must

@@ -28,6 +28,7 @@ namespace scl {
 
 /**
  * @brief SHA256 hash function.
+ * @ingroup prim
  */
 class Sha256 final : public IUFHash<Sha256> {
  public:

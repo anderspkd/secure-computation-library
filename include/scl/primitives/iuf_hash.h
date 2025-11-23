@@ -27,6 +27,7 @@ namespace scl {
 
 /**
  * @brief IUF (Init-Update-Finalize) interface for hash functions.
+ * @ingroup prim
  * @tparam HASH hash implementation.
  *
  * IUFHash provides a CRTP style interface for a hash function implementation

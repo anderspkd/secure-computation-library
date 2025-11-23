@@ -29,6 +29,7 @@ namespace scl {
 
 /**
  * @brief Pseudorandom generator.
+ * @ingroup prim
  *
  * @code
  * #include <scl/primitives/prg.h>

@@ -25,7 +25,7 @@ namespace scl {
 
 /**
  * @brief A signature for some signature scheme.
- * @tparam SIGNATURE_SCHEME the signature scheme.
+ * @ingroup prim
  */
 template <typename SIGNATURE_SCHEME>
 struct Signature;
@@ -34,6 +34,7 @@ class ECDSA;
 
 /**
  * @brief An ECDSA signature.
+ * @ingroup prim
  */
 template <>
 struct Signature<ECDSA> {
@@ -80,6 +81,7 @@ struct Signature<ECDSA> {
 
 /**
  * @brief The ECDSA signature scheme.
+ * @ingroup prim
  */
 class ECDSA {
  public:

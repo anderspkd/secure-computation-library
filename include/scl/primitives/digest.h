@@ -27,12 +27,14 @@ namespace scl {
 
 /**
  * @brief A digest of some bitsize.
+ * @ingroup prim
  */
 template <std::size_t BITS>
 using Digest = std::array<unsigned char, BITS / 8>;
 
 /**
  * @brief Convert a digest to a hex string.
+ * @ingroup prim
  */
 template <typename DIGEST>
 std::string digestToString(const DIGEST& digest) {
