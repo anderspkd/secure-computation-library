@@ -28,8 +28,9 @@ namespace scl {
 
 /**
  * @brief A container for data to be sent on a Channel.
+ * @ingroup net
  *
- * <p>A Packet is container that serializes all writes and deserializes all
+ * A Packet is container that serializes all writes and deserializes all
  * reads. Packet can therefore be used to construct content that is meant to be
  * sent over a Channel. Example usage:
  *
@@ -47,17 +48,6 @@ namespace scl {
  *
  * auto v = p.read<int>();              // read the integer written above
  * auto f = p.read<math::FF<T>>();      // read the FF element.
- * @endcode
- *
- * <p>Packet is essentially a struct with the following format
- *
- * @code
- * struct Packet {
- *   unsigned char* buffer;    // data
- *   std::size_t cap;          // number of bytes allocated
- *   std::ptrdiff_t read_ptr;  // pointer into buffer
- *   std::ptrdiff_t write_ptr; // pointer into buffer
- * };
  * @endcode
  */
 class Packet {

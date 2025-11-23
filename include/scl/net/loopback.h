@@ -27,6 +27,7 @@ namespace scl::details {
 
 /**
  * @brief A loopback channel.
+ * @ingroup net
  *
  * This Channel implementation defines a channel which connects to in-memory
  * buffers. This channel is useful as a channel used by a party that talks with

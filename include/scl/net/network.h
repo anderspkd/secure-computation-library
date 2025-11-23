@@ -29,6 +29,7 @@ namespace scl {
 
 /**
  * @brief A Network.
+ * @ingroup net
  *
  * <p>A Network is effectively a list of Channel's with a bunch of helper
  * functions and is the main interface that an MPC protocol will use to
