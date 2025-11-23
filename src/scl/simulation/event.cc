@@ -188,7 +188,9 @@ namespace {
 struct InitialEvent final : public Event {
   InitialEvent() : Event(Time::Duration::zero()) {}
 
-  void write(std::ostream&) override {}
+  void write(std::ostream& os) override {
+    os << "uh oh: " << time().count();
+  }
 
   // mark this event as TRANSIENT so that it gets removed once real events
   // arrive.

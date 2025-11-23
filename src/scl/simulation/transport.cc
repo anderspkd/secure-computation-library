@@ -75,7 +75,7 @@ long double completeDataSizeBits(std::size_t n) {
 // struct to a long double.
 long double rttSeconds(std::size_t latency_us) {
   using namespace std::chrono_literals;
-  return std::chrono::microseconds(2 * latency_us) / 1.0s;
+  return (std::chrono::microseconds(2 * latency_us) / 1.0s);
 }
 
 // calculate the throughput of a channel.

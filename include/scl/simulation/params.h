@@ -53,7 +53,7 @@ class ChannelParams final {
   static ChannelParams createDet(std::size_t bandwidth,
                                  std::size_t latency,
                                  float packet_loss) {
-    return ChannelParams(DetParams{bandwidth, latency, packet_loss});
+    return ChannelParams(DetParams{bandwidth, latency}, packet_loss);
   }
 
   /**
@@ -64,7 +64,7 @@ class ChannelParams final {
                                   float packet_loss) {
     std::random_device rd{};
     std::mt19937 rg{rd()};
-    return ChannelParams(PropParams{rg, bandwidth, latency, packet_loss});
+    return ChannelParams(PropParams{rg, bandwidth, latency}, packet_loss);
   }
 
   ChannelParams() {}
@@ -72,23 +72,24 @@ class ChannelParams final {
   /**
    * @brief Bandwidth of the channel.
    */
-  std::size_t bandwidth();
+  std::size_t bandwidth() const;
 
   /**
    * @brief Latency of the channel.
    */
-  std::size_t latency();
+  std::size_t latency() const;
 
   /**
    * @brief The packet loss percentage of this channel.
    */
-  float packetLoss();
+  float packetLoss() const {
+    return m_packet_loss;
+  }
 
  private:
   struct DetParams final {
     std::size_t bandwidth;
     std::size_t latency;
-    float packet_loss;
   };
 
   struct PropParams final {
@@ -96,17 +97,19 @@ class ChannelParams final {
 
     std::normal_distribution<> bandwidth;
     std::normal_distribution<> latency;
-    float packet_loss;
   };
 
-  ChannelParams(DetParams params) : m_params{params} {}
-  ChannelParams(PropParams params) : m_params{params} {}
+  ChannelParams(DetParams params, float packet_loss)
+      : m_params{params}, m_packet_loss{packet_loss} {}
+  ChannelParams(PropParams params, float packet_loss)
+      : m_params{params}, m_packet_loss{packet_loss} {}
 
   bool deterministicChannel() const {
     return m_params.index() == 0;
   }
 
-  std::variant<DetParams, PropParams> m_params;
+  mutable std::variant<DetParams, PropParams> m_params;
+  float m_packet_loss;
 };
 
 /**

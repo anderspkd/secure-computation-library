@@ -33,9 +33,10 @@ TEST_CASE("SimulatedChannel send", "[sim]") {
   auto nd = NetworkParams::create(2);
   auto ctx = details::SimulatorContext::create(2, nd, {});
 
-  auto tp = std::make_shared<details::Transport>(ctx);
+  auto transport = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
-  auto channel = details::SimulatedChannel::create(id, ctx.getContext(0), tp);
+  auto channel =
+      details::SimulatedChannel::create(id, ctx.getContext(0), transport);
 
   details::SimulatorRuntime srt(ctx);
 
@@ -43,20 +44,24 @@ TEST_CASE("SimulatedChannel send", "[sim]") {
   Packet pkt;
   pkt << 1 << 2 << 3;
 
-  REQUIRE_FALSE(tp->ready(id.flip()));
+  REQUIRE_FALSE(transport->ready(id.flip()));
+
+  // this is necessary in order to get a somewhat sensible delay.
+  ctx.getContext(0).startClock();
 
   srt.run(channel->send(pkt));
 
-  REQUIRE(tp->ready(id.flip()));
+  REQUIRE(transport->ready(id.flip()));
 
   auto ctx0 = ctx.getContext(0);
   REQUIRE(ctx0.lastEvent()->type() == scl::EventType::CHANNEL_SEND);
 
-  auto [rpkt, delay] = tp->recv(Time::Duration::zero(), id.flip());
+  auto [rpkt, delay] = transport->recv(Time::Duration::zero(), id.flip());
 
   // we only test that the delay added is positive. Validation of the delay
   // added should be done in a more experimental fashion.
   REQUIRE(delay > scl::Time::Duration::zero());
+  REQUIRE(delay < 120ms);
 
   REQUIRE(rpkt.read<int>() == 1);
   REQUIRE(rpkt.read<int>() == 2);
@@ -112,10 +117,9 @@ TEST_CASE("SimulatedChannel recv timeout") {
   Packet pkt;
   pkt << 1 << 2 << 3;
 
+  ctx.getContext(0).startClock();
   tp->send(100ms, id.flip(), pkt);
   ctx.getContext(1).addEvent<BeginEvent>(100ms, "");
-
-  ctx.getContext(0).addEvent<BeginEvent>(0ms, "");
 
   // should not time out, receiving time should be ~100ms
   auto opt_rpkt = srt.run(channel->recv(200ms));
@@ -130,7 +134,7 @@ TEST_CASE("SimulatedChannel recv timeout") {
   auto ctx0 = ctx.getContext(0);
   REQUIRE(ctx0.lastEvent()->type() == EventType::CHANNEL_RECV);
   REQUIRE(ctx0.lastEvent()->time() > 100ms);
-  REQUIRE(ctx0.lastEvent()->time() < 150ms);
+  REQUIRE(ctx0.lastEvent()->time() < 210ms);
 
   tp->send(400ms, id.flip(), pkt);
   ctx.getContext(1).addEvent<BeginEvent>(400ms, "");

@@ -26,7 +26,7 @@
 
 using namespace scl;
 
-std::size_t ChannelParams::bandwidth() {
+std::size_t ChannelParams::bandwidth() const {
   if (deterministicChannel()) {
     auto& p = std::get<DetParams>(m_params);
     return p.bandwidth;
@@ -36,7 +36,7 @@ std::size_t ChannelParams::bandwidth() {
   }
 }
 
-std::size_t ChannelParams::latency() {
+std::size_t ChannelParams::latency() const {
   if (deterministicChannel()) {
     auto& p = std::get<DetParams>(m_params);
     return p.latency;
