@@ -22,6 +22,8 @@
 #include <exception>
 #include <functional>
 #include <list>
+#include <memory>
+#include <stdexcept>
 #include <utility>
 #include <variant>
 
