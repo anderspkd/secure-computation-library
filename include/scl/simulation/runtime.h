@@ -26,6 +26,7 @@ namespace scl::details {
 
 /**
  * @brief Coroutine runtime used in simulations.
+ * @ingroup eval-sim
  */
 class SimulatorRuntime final : public Runtime {
  private:

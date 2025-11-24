@@ -24,6 +24,7 @@ namespace scl {
 
 /**
  * @brief Wrapper for time related types.
+ * @ingroup util
  */
 struct Time {
   /**
@@ -46,6 +47,7 @@ struct Time {
 
 /**
  * @brief Convert a timestamp to milliseconds.
+ * @ingroup util
  */
 inline long double timeToMillis(Time::Duration time) {
   return std::chrono::duration<long double, std::milli>(time).count();
@@ -53,6 +55,7 @@ inline long double timeToMillis(Time::Duration time) {
 
 /**
  * @brief Clock interface.
+ * @ingroup util
  *
  * Clock is used within protocols to get the time elapsed since the protocol was
  * first started. The reason for requiring an interface to get this information
@@ -70,6 +73,7 @@ struct Clock {
 
 /**
  * @brief A Clock implementation based on real time.
+ * @ingroup util
  */
 class RealtimeClock final : public Clock {
  public:

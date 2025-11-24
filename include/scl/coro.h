@@ -38,6 +38,7 @@ namespace details {
 
 /**
  * @brief Awaiter interface for suspending coroutines for some amount of time.
+ * @ingroup util
  */
 class SleepAwaiter {
  public:
@@ -81,6 +82,7 @@ class SleepAwaiter {
 
 /**
  * @brief Concept that a future type must satisfy.
+ * @ingroup util
  */
 template <typename FUTURE>
 concept FutureAwaitableType = requires(FUTURE future) {
@@ -89,6 +91,7 @@ concept FutureAwaitableType = requires(FUTURE future) {
 
 /**
  * @brief The awaiter for future events.
+ * @ingroup util
  * @tparam FUTURE_EVENT the type of the future event.
  *
  * \p FUTURE_EVENT must be a subclass of FutureEvent.
@@ -134,6 +137,7 @@ class FutureAwaiter final {
 
 /**
  * @brief Base type for the promise_type of Tasks.
+ * @ingroup util
  */
 class TaskPromiseBase {
   /**
@@ -235,6 +239,7 @@ class TaskPromiseBase {
 
 /**
  * @brief Task promise type for general non-void return types.
+ * @ingroup util
  */
 template <typename RESULT>
 class TaskPromise final : public TaskPromiseBase {
@@ -278,6 +283,7 @@ class TaskPromise final : public TaskPromiseBase {
 
 /**
  * @brief Task promise specialization for Tasks returning void.
+ * @ingroup util
  */
 template <>
 class TaskPromise<void> final : public TaskPromiseBase {
@@ -318,6 +324,7 @@ class TaskPromise<void> final : public TaskPromiseBase {
 
 /**
  * @brief Remove a handle from a runtime.
+ * @ingroup util
  * @param runtime the runtime.
  * @param handle handle for the coroutine.
  *
@@ -331,6 +338,7 @@ void removeHandle(Runtime* runtime, std::coroutine_handle<> handle);
 
 /**
  * @brief A coroutine task.
+ * @ingroup util
  * @tparam RESULT the type of the return value of the coroutine.
  *
  * coro::Task specifies a coroutine which returns a value of type \p RESULT.
@@ -474,6 +482,7 @@ inline Task<void> TaskPromise<void>::get_return_object() {
 
 /**
  * @brief Interface for a coroutine runtime.
+ * @ingroup util
  *
  * <p>A coroutine runtime should be able to handle scheduling and descheduling
  * of coroutines, as well as determination of which coroutines gets to run next.
@@ -561,6 +570,7 @@ class Runtime {
 
 /**
  * @brief A Default implementation for a coroutine runtime.
+ * @ingroup util
  */
 class DefaultRuntime final : public Runtime {
   using Pair = std::pair<std::coroutine_handle<>, std::function<bool()>>;

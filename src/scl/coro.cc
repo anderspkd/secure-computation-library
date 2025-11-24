@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <coroutine>
-
 #include "scl/coro.h"
+
+#include <coroutine>
 
 using namespace scl;
 

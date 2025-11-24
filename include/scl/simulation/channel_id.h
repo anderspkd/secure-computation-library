@@ -24,6 +24,7 @@ namespace scl {
 
 /**
  * @brief Identifier used for Channels.
+ * @ingroup eval-sim
  */
 struct ChannelId final {
   /**

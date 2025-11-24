@@ -266,7 +266,6 @@ class Bitmap {
  */
 template <>
 struct Serializer<Bitmap> {
-
   /**
    * @brief Returns the size of a bitmap.
    */

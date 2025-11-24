@@ -26,6 +26,7 @@ namespace scl {
 
 /**
  * @brief Serializer type.
+ * @ingroup util
  *
  * A type \p T is serializable if it <code>Serializer<T></code> contains three
  * static functions.
@@ -60,6 +61,7 @@ struct Serializer;
 
 /**
  * @brief Serializable concept.
+ * @ingroup util
  */
 template <typename T>
 concept Serializable =
@@ -71,11 +73,11 @@ concept Serializable =
 
 /**
  * @brief Serializer for trivially copyable types.
+ * @ingroup util
  */
 template <typename T>
   requires(std::is_trivially_copyable_v<T>)
 struct Serializer<T> {
-
   /**
    * @brief Determine the size of a value.
    */
@@ -102,15 +104,14 @@ struct Serializer<T> {
 
 /**
  * @brief Serializer for STL vectors of something serializable.
+ * @ingroup util
  */
 template <Serializable T>
 struct Serializer<std::vector<T>> {
-
   /**
    * @brief Type used to denote the size of the vector.
    */
   using VecSizeType = std::uint32_t;
-
 
   /**
    * @brief Get the bytes required to write \p vec with this serializer.

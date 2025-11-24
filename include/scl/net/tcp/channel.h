@@ -93,4 +93,4 @@ class TcpChannel final : public Channel {
   int m_socket;
 };
 
-}  // namespace scl
+}  // namespace scl::details

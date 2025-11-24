@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <vector>
-
 #include "scl/argparser.h"
+
+#include <vector>
 
 using namespace scl;
 

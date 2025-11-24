@@ -259,6 +259,7 @@ class KilledEvent final : public Event {
 
 /**
  * @brief Event issued if a party gets killed by a user specified hook.
+ * @ingroup eval-sim
  */
 class CancelledEvent final : public Event {
  public:
@@ -271,6 +272,7 @@ class CancelledEvent final : public Event {
 
 /**
  * @brief Base class for events related to channel actions.
+ * @ingroup eval-sim
  */
 class ChannelEvent : public Event {
  public:
@@ -293,6 +295,7 @@ class ChannelEvent : public Event {
 
 /**
  * @brief Event issued when a party closes a channel.
+ * @ingroup eval-sim
  */
 class CloseEvent final : public ChannelEvent {
  public:
@@ -305,6 +308,7 @@ class CloseEvent final : public ChannelEvent {
 
 /**
  * @brief Base class for events related to data transfers on a channel.
+ * @ingroup eval-sim
  */
 class ChannelDataEvent : public ChannelEvent {
  public:
@@ -327,6 +331,7 @@ class ChannelDataEvent : public ChannelEvent {
 
 /**
  * @brief Event issued when a party sends data on a channel.
+ * @ingroup eval-sim
  */
 class SendEvent final : public ChannelDataEvent {
  public:
@@ -339,6 +344,7 @@ class SendEvent final : public ChannelDataEvent {
 
 /**
  * @brief Event issued when a party finishes receiving data.
+ * @ingroup eval-sim
  */
 class RecvEvent final : public ChannelDataEvent {
  public:
@@ -351,6 +357,7 @@ class RecvEvent final : public ChannelDataEvent {
 
 /**
  * @brief Event issued when a party times out during a recv call.
+ * @ingroup eval-sim
  */
 class RecvTimeoutEvent final : public ChannelEvent {
  public:
@@ -363,6 +370,7 @@ class RecvTimeoutEvent final : public ChannelEvent {
 
 /**
  * @brief Event issued by a party when it issues call to Channel::poll.
+ * @ingroup eval-sim
  */
 class PollEvent final : public ChannelEvent {
  public:
@@ -387,6 +395,7 @@ class PollEvent final : public ChannelEvent {
 
 /**
  * @brief Event issued when a party sleeps.
+ * @ingroup eval-sim
  */
 class SleepEvent final : public Event {
  public:
@@ -412,6 +421,7 @@ class SleepEvent final : public Event {
 
 /**
  * @brief Tracks events added by a party during simulation.
+ * @ingroup eval-sim
  *
  * EventList is mostly just a wrapper around an STL vector of Event
  * pointers. Minor book keeping is done to ensure that all events of type

@@ -61,7 +61,6 @@ std::string toHexString(It begin, It end) {
   return ss.str();
 }
 
-
 #define SCL_TO_HEX(v, c)                                                \
   do {                                                                  \
     if ((c) >= '0' && (c) <= '9')                                       \

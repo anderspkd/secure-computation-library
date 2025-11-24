@@ -69,7 +69,9 @@ TEMPLATE_TEST_CASE("Polynomial evaluate", "[math][ss]", FIELD_DEFS) {
   REQUIRE(x5 == FF(54));
 }
 
-TEMPLATE_TEST_CASE("Polynomial to string", "[math][ss]", scl::test::Mersenne61) {
+TEMPLATE_TEST_CASE("Polynomial to string",
+                   "[math][ss]",
+                   scl::test::Mersenne61) {
   using FF = TestType;
 
   Vector coeff = {FF(4), FF(5), FF(1)};
