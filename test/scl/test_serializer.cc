@@ -16,6 +16,7 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
+#include <memory>
 
 #include "scl/math/ff.h"
 #include "scl/math/mersenne61.h"
