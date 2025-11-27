@@ -17,6 +17,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "scl/simulation/channel_id.h"
 #include "scl/simulation/params.h"
 
 using namespace scl;
@@ -28,4 +29,14 @@ TEST_CASE("Network params", "[sim]") {
 
   REQUIRE(np.channel(cid).bandwidth() == np.channel(cid.flip()).bandwidth());
   REQUIRE(np.channel(cid).latency() == np.channel(cid.flip()).latency());
+}
+
+TEST_CASE("Network params create", "[sim]") {
+  auto np = NetworkParams::create(2, 100, 5, 0.5);
+
+  ChannelId cid(0, 1);
+
+  REQUIRE(np.channel(cid).bandwidth() == 100);
+  REQUIRE(np.channel(cid).latency() == 5);
+  REQUIRE(np.channel(cid).packetLoss() == 0.5);
 }

@@ -61,6 +61,7 @@ set(SCL_SOURCE_FILES_TEST
   scl/simulation/test_transport.cc
   scl/simulation/test_channel.cc
   scl/simulation/test_simulator.cc
+  scl/simulation/test_params.cc
 )
 
 Include(FetchContent)
