@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.30)
 
-set(SCL_SOURCE_FILES_TEST
+set(TEST_SOURCES
   scl/test_bitmap.cc
   scl/test_argparser.cc
   scl/test_serializer.cc
@@ -79,12 +79,44 @@ FetchContent_MakeAvailable(Catch2)
 include(CTest)
 include(Catch)
 
-add_compile_definitions(SCL_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test/data/")
+add_compile_definitions(TEST_DATA="${CMAKE_SOURCE_DIR}/test/data/")
 
-add_executable(scl_test ${SCL_SOURCE_FILES_TEST})
+add_executable(scl_test ${TEST_SOURCES})
 target_link_libraries(scl_test
   PRIVATE Catch2::Catch2WithMain
   PRIVATE scl
   PRIVATE pthread
   PRIVATE gmp)
+
+if(ASAN)
+  target_compile_options(scl_test PUBLIC "-fsanitize=address")
+  target_link_libraries(scl_test PUBLIC "-fsanitize=address")
+endif()
+
 catch_discover_tests(scl_test)
+
+if(COVERAGE)
+
+  ## stuff that SCL uses, but which we are not interested in
+  ## generating coverage of.
+  set(COVERAGE_EXCLUDES "")
+  list(APPEND COVERAGE_EXCLUDES "'/usr/*'")
+  list(APPEND COVERAGE_EXCLUDES "'${CMAKE_BINARY_DIR}/*'")
+  list(APPEND COVERAGE_EXCLUDES "'${CMAKE_SOURCE_DIR}/test/*'")
+
+  set(LCOV_CMD ${lcov} --ignore-errors negative,inconsistent,mismatch --gcov-tool ${gcov})
+  
+  add_custom_target(coverage
+    COMMAND ${LCOV_CMD} -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR} -z
+    COMMAND ${LCOV_CMD} -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR} -c -i -o cov.base
+    COMMAND scl_test
+    COMMAND ${LCOV_CMD} -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR} -c -o cov.cap
+    COMMAND ${LCOV_CMD} -a cov.base -a cov.cap -o cov.total
+    COMMAND wc -l cov.total
+    COMMAND ${LCOV_CMD} --remove cov.total ${COVERAGE_EXCLUDES} -o cov.info
+    COMMAND ${genhtml} --demangle-cpp --ignore-errors mismatch -o coverage cov.info
+
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    BYPRODUCTS cov.base cov.cap cov.total cov.info)
+
+endif()

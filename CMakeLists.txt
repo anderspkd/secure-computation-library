@@ -16,38 +16,43 @@
 
 cmake_minimum_required(VERSION 3.30)
 
-project(scl VERSION 0.2.0 DESCRIPTION "Secure Computation Library" LANGUAGES CXX)
+project(scl
+  VERSION 0.2.0
+  DESCRIPTION "Secure Computation Library"
+  LANGUAGES CXX)
 
-option(SCL_BUILD_TESTS
+set(CMAKE_CXX_STANDARD 20)
+set(CXX_STANDARD 20)
+
+option(
+  TESTS
   "Build tests for SCL"
   ON)
 
 option(
-  SCL_BUILD_WITH_ADDRESS_SANITIZATION
-  "Buid SCL with -fsanitize=address. Implies SCL_BUILD_TESTS=ON"
+  COVERAGE
+  "Enable test coverage"
   OFF)
 
 option(
-  SCL_BUILD_DOCUMENTATION
+  DOCS
   "Build documentation for SCL"
   ON)
 
-# This option is a only really here because of a github action. It might be
-# better to remove it and fix the action.
 option(
-  SCL_DOXYGEN_BIN
-  "Optional location of doxygen binary"
-  "")
+  ASAN
+  "Enable address sanitization"
+  OFF)
 
 option(
-  SCL_EXPORT_COMPILE_COMMANDS
+  EXPORT_COMPILE_COMMANDS
   "Generate compile_commands.json"
   ON)
 
 find_library(GMP gmp libgmp REQUIRED)
 
-set(SCL_HEADERS "${CMAKE_SOURCE_DIR}/include")
-set(SCL_SOURCE_FILES
+set(HEADERS "${CMAKE_SOURCE_DIR}/include")
+set(SOURCES
   src/scl/argparser.cc
   src/scl/hex.cc
 
@@ -79,54 +84,52 @@ set(SCL_SOURCE_FILES
   src/scl/simulation/runtime.cc
 )
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ${SCL_EXPORT_COMPILE_COMMANDS})
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug)
+endif()
 
-set(CMAKE_CXX_STANDARD 20)
-set(CXX_STANDARD 20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ${EXPORT_COMPILE_COMMANDS})
 
-add_library(scl STATIC ${SCL_SOURCE_FILES})
-target_include_directories(scl PUBLIC "${SCL_HEADERS}")
+add_library(scl STATIC ${SOURCES})
+target_include_directories(scl PUBLIC "${HEADERS}")
 target_compile_options(scl PUBLIC "-march=native")
 target_compile_options(scl PUBLIC "-Wall")
 target_compile_options(scl PUBLIC "-Wextra")
 target_compile_options(scl PUBLIC "-pedantic")
 
-if(CMAKE_BUILD_TYPE MATCHES Release)
-  set(SCL_SPECIAL_BUILD OFF)
-else()
-  ## indicates that SCL is being built with some extra flags that will
-  ## produce a non-optimal build.
-  set(SCL_SPECIAL_BUILD ON)
-endif()
-
-if(SCL_BUILD_WITH_ADDRESS_SANITIZATION)
+if(ASAN)
   target_compile_options(scl PUBLIC "-fsanitize=address")
   target_link_libraries(scl PUBLIC "-fsanitize=address")
-  set(SCL_SPECIAL_BUILD ON)
 endif()
 
-if (SCL_SPECIAL_BUILD MATCHES OFF)
-  target_compile_options(scl PRIVATE "-O3")
+set_target_properties(scl
+  PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 
-  set_target_properties(scl
-    PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+install(TARGETS scl
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib)
 
-  ## only make installation possible if build is not special.
-  install(TARGETS scl
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib)
+install(DIRECTORY "${HEADERS}/"
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.h")
 
-  install(DIRECTORY "${SCL_HEADERS}/"
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.h")
+if(TESTS)
+  if(COVERAGE)
+      find_program(gcov gcov REQUIRED)
+      find_program(lcov lcov REQUIRED)
+      find_program(genhtml genhtml REQUIRED)
 
-endif()
-
-if(SCL_BUILD_TESTS)
+     target_compile_options(scl PUBLIC "-O0")
+     target_compile_options(scl PUBLIC "-g")
+     target_compile_options(scl PUBLIC "--coverage")
+     target_compile_options(scl PUBLIC "-fno-inline")
+     target_link_libraries(scl PUBLIC gcov)
+  endif()
+  
   enable_testing()
   add_subdirectory(test)
 endif()
 
-if(SCL_BUILD_DOCUMENTATION)
+if(DOCS)
   add_subdirectory(doc)
 endif()

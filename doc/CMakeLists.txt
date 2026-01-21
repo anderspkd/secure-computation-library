@@ -16,15 +16,7 @@
 
 cmake_minimum_required(VERSION 3.30)
 
-if (NOT SCL_DOXYGEN_BIN)
-  find_program(doxygen doxygen REQUIRED)
-else()
-  if (EXISTS ${SCL_DOXYGEN_BIN} AND (NOT IS_DIRECTORY ${SCL_DOXYGEN_BIN}))
-    set(doxygen ${SCL_DOXYGEN_BIN})
-  else()
-    message(FATAL_ERROR "\"${SCL_DOXYGEN_BIN}\" not a valid argument for doxygen binary.")
-  endif()
-endif()
+find_program(doxygen doxygen REQUIRED)
 
 add_custom_target(
   documentation

@@ -45,7 +45,7 @@ TEST_CASE("Event write tests", "[sim]") {
   evl.add<SleepEvent>(123s, 5s);
 
   std::string line;
-  std::ifstream expected(SCL_TEST_DATA_DIR "events_write.json");
+  std::ifstream expected(TEST_DATA "events_write.json");
 
   if (!expected.is_open()) {
     throw std::runtime_error("could not open file");

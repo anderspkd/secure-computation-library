@@ -24,7 +24,7 @@
 using namespace scl;
 
 TEST_CASE("Config read from file", "[net]") {
-  const auto* filename = SCL_TEST_DATA_DIR "3_parties.txt";
+  const auto* filename = TEST_DATA "3_parties.txt";
   auto cfg = NetworkConfig::load(0, filename);
 
   REQUIRE(cfg.networkSize() == 3);
@@ -37,17 +37,17 @@ TEST_CASE("Config read from file", "[net]") {
   REQUIRE(parties[2].hostname == "192.0.2.3");
   REQUIRE(parties[2].port == 3000);
 
-  std::string invalid_empty = SCL_TEST_DATA_DIR "invalid_no_entries.txt";
+  std::string invalid_empty = TEST_DATA "invalid_no_entries.txt";
   REQUIRE_THROWS_MATCHES(NetworkConfig::load(0, invalid_empty),
                          std::invalid_argument,
                          Catch::Matchers::Message("invalid id"));
 
-  std::string valid = SCL_TEST_DATA_DIR "3_parties.txt";
+  std::string valid = TEST_DATA "3_parties.txt";
   REQUIRE_THROWS_MATCHES(NetworkConfig::load(4, valid),
                          std::invalid_argument,
                          Catch::Matchers::Message("invalid id"));
 
-  std::string invalid_entry = SCL_TEST_DATA_DIR "invalid_entry.txt";
+  std::string invalid_entry = TEST_DATA "invalid_entry.txt";
   REQUIRE_THROWS_MATCHES(
       NetworkConfig::load(0, invalid_entry),
       std::invalid_argument,
