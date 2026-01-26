@@ -115,15 +115,15 @@ install(DIRECTORY "${HEADERS}/"
 
 if(TESTS)
   if(COVERAGE)
-      find_program(gcov gcov REQUIRED)
-      find_program(lcov lcov REQUIRED)
-      find_program(genhtml genhtml REQUIRED)
+    find_program(gcov gcov REQUIRED)
+    find_program(lcov lcov REQUIRED)
+    find_program(genhtml genhtml REQUIRED)
 
-     target_compile_options(scl PUBLIC "-O0")
-     target_compile_options(scl PUBLIC "-g")
-     target_compile_options(scl PUBLIC "--coverage")
-     target_compile_options(scl PUBLIC "-fno-inline")
-     target_link_libraries(scl PUBLIC gcov)
+    target_compile_options(scl PUBLIC "-O0")
+    target_compile_options(scl PUBLIC "-g")
+    target_compile_options(scl PUBLIC "--coverage")
+    target_compile_options(scl PUBLIC "-fno-inline")
+    target_link_libraries(scl PUBLIC gcov)
   endif()
   
   enable_testing()
