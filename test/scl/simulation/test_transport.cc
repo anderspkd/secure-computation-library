@@ -29,7 +29,7 @@ using namespace std::chrono_literals;
 
 TEST_CASE("Transport send", "[sim]") {
   auto nd = NetworkParams::create(2);
-  auto ctx = details::SimulatorContext::create(2, nd, {});
+  auto ctx = details::SimulatorContext::create(2, nd, {}, {});
   ChannelId id{0, 1};
 
   details::Transport transport(ctx);
@@ -53,7 +53,7 @@ TEST_CASE("Transport send", "[sim]") {
 
 TEST_CASE("Transport ready w. limit", "[sim]") {
   auto nd = NetworkParams::create(2);
-  auto ctx = details::SimulatorContext::create(2, nd, {});
+  auto ctx = details::SimulatorContext::create(2, nd, {}, {});
   ChannelId id{0, 1};
   auto sid = id.flip();
 

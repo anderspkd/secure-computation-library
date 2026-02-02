@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <type_traits>
 
 #include "scl/simulation/event.h"
@@ -40,7 +41,8 @@ class SimulatorContext final {
   static SimulatorContext create(
       std::size_t number_of_parties,
       NetworkParams network_params,
-      std::vector<Simulator::SimulationHook>&& hooks);
+      std::vector<Simulator::SimulationHook>&& hooks,
+      std::optional<Simulator::OutputHandler>&& output_handler);
 
   /**
    * @brief Get the context of a particular party in the simulation.
@@ -59,6 +61,15 @@ class SimulatorContext final {
     // don't run hooks for TRANSIENT events
     if (latest->type() != EventType::TRANSIENT) {
       runHooks(pid, latest);
+    }
+  }
+
+  /**
+   * @brief Handle a protocol output.
+   */
+  void handleOutput(std::size_t pid, std::any output) {
+    if (m_output_handler.has_value()) {
+      m_output_handler.value()(pid, output);
     }
   }
 
@@ -97,6 +108,9 @@ class SimulatorContext final {
     return m_number_of_parties;
   }
 
+  /**
+   * @brief Extract result of a simulation.
+   */
   Simulator::Result toResult() {
     return Simulator::Result{std::move(m_events)};
   }
@@ -107,6 +121,8 @@ class SimulatorContext final {
   std::vector<EventList> m_events;
   std::vector<Time::TimePoint> m_clocks;
   std::vector<Simulator::SimulationHook> m_hooks;
+  std::optional<Simulator::OutputHandler> m_output_handler;
+  std::vector<bool> m_cancellation_map;
 
   SimulatorContext(NetworkParams network_params)
       : m_network_params(network_params) {}
@@ -146,6 +162,13 @@ class Context {
    */
   void startClock() {
     m_ctx.startClock(m_id);
+  }
+
+  /**
+   * @brief Handle a protocol output.
+   */
+  void output(std::any output) {
+    m_ctx.handleOutput(m_id, output);
   }
 
   /**

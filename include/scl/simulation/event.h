@@ -32,6 +32,10 @@ namespace scl {
 /**
  * @brief Event types.
  * @ingroup eval-sim
+ *
+ * EventType denotes the different types of events that can be spawned by
+ * simulation. All event types, with the exception of TRANSIENT, arrise due to
+ * protocol actions of one form of another.
  */
 enum class EventType {
   /**
@@ -97,7 +101,12 @@ enum class EventType {
   /**
    * @brief Event emitted when a protocol sleeps.
    */
-  SLEEP
+  SLEEP,
+
+  /**
+   * @brief Event emitted when a protocol outputs something.
+   */
+  OUTPUT
 };
 
 /**
@@ -417,6 +426,19 @@ class SleepEvent final : public Event {
 
  private:
   Time::Duration m_duration;
+};
+
+/**
+ * @brief Event issued when a protocol has an output.
+ * @ingroup eval-sim
+ */
+class OutputEvent final : public Event {
+ public:
+  using Event::Event;
+  void write(std::ostream& stream) override;
+  EventType type() const override {
+    return EventType::OUTPUT;
+  }
 };
 
 /**

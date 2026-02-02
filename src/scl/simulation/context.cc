@@ -25,13 +25,16 @@ using namespace scl;
 details::SimulatorContext details::SimulatorContext::create(
     std::size_t number_of_parties,
     NetworkParams network_params,
-    std::vector<Simulator::SimulationHook>&& hooks) {
+    std::vector<Simulator::SimulationHook>&& hooks,
+    std::optional<Simulator::OutputHandler>&& output_handler) {
   SimulatorContext ctx{network_params};
 
   ctx.m_number_of_parties = number_of_parties;
   ctx.m_events.resize(number_of_parties);
   ctx.m_clocks.resize(number_of_parties);
   ctx.m_hooks = std::move(hooks);
+  ctx.m_output_handler = std::move(output_handler);
+  ctx.m_cancellation_map.resize(number_of_parties, false);
 
   return ctx;
 }

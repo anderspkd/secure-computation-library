@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <any>
 #include <concepts>
 #include <functional>
 #include <memory>
@@ -103,6 +104,11 @@ class Simulator final {
   };
 
   /**
+   * @brief Type for functions that can be used to process protocol outputs.
+   */
+  using OutputHandler = std::function<void(std::size_t, std::any)>;
+
+  /**
    * @brief Run the simulation.
    */
   template <ProtocolBuilder BUILDER>
@@ -129,8 +135,18 @@ class Simulator final {
     m_hooks.emplace_back(SimulationHook{.trigger = {}, .hook = hook});
   }
 
+  /**
+   * @brief Instruct the simulator how to handler protocol outputs.
+   */
+  template <typename HANDLER>
+    requires(std::convertible_to<HANDLER, OutputHandler>)
+  void addOutputHandler(HANDLER handler) {
+    m_output_handler = handler;
+  }
+
  private:
   std::vector<SimulationHook> m_hooks;
+  std::optional<OutputHandler> m_output_handler;
 
   Result run(std::vector<std::unique_ptr<Protocol>>&& protocols,
              NetworkParams network_params);

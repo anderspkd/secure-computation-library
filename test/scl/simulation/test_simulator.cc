@@ -15,8 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <any>
 #include <catch2/catch_test_macros.hpp>
 #include <initializer_list>
+#include <memory>
 
 #include "scl/coro.h"
 #include "scl/protocol.h"
@@ -97,4 +99,36 @@ TEST_CASE("Simulator test", "[sim]") {
                 EventType::CHANNEL_SEND,
                 EventType::END,
                 EventType::STOP});
+}
+
+namespace {
+
+struct OutputProtocol final : public Protocol {
+  Task<Result> run(Env& /* ignored */) const override {
+    co_return Result::done(123);
+  }
+};
+
+}  // namespace
+
+TEST_CASE("Simulator handle output", "[sim]") {
+  auto nd = NetworkParams::create(1);
+  Simulator sim;
+
+  bool called = false;
+
+  sim.addOutputHandler([&called](std::size_t pid, std::any output) {
+    called = (pid == 0) && (output.has_value()) &&
+             (std::any_cast<int>(output) == 123);
+  });
+
+  auto res = sim.run(
+      []() {
+        std::vector<std::unique_ptr<Protocol>> p;
+        p.emplace_back(std::make_unique<OutputProtocol>());
+        return p;
+      },
+      nd);
+
+  REQUIRE(called);
 }

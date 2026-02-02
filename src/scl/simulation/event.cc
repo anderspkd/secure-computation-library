@@ -176,6 +176,14 @@ void SleepEvent::write(std::ostream& stream) {
   JSON_OBJ_END;
 }
 
+void OutputEvent::write(std::ostream& stream) {
+  JSON_OBJ_START;
+  writeString(stream, "type", "OUTPUT");
+  JSON_COMMA;
+  writeTimestamp(stream, time());
+  JSON_OBJ_END;
+}
+
 #undef JSON_OBJ_START
 #undef JSON_OBJ_END
 #undef JSON_COMMA

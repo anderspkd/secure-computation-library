@@ -31,7 +31,7 @@ using namespace std::chrono_literals;
 
 TEST_CASE("SimulatedChannel send", "[sim]") {
   auto nd = NetworkParams::create(2);
-  auto ctx = details::SimulatorContext::create(2, nd, {});
+  auto ctx = details::SimulatorContext::create(2, nd, {}, {});
 
   auto transport = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
@@ -70,7 +70,7 @@ TEST_CASE("SimulatedChannel send", "[sim]") {
 
 TEST_CASE("SimulatedChannel recv", "[sim]") {
   auto nd = NetworkParams::create(2);
-  auto ctx = details::SimulatorContext::create(2, nd, {});
+  auto ctx = details::SimulatorContext::create(2, nd, {}, {});
   auto tp = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
   auto channel = details::SimulatedChannel::create(id, ctx.getContext(0), tp);
@@ -106,7 +106,7 @@ TEST_CASE("SimulatedChannel recv timeout") {
   using namespace std::chrono_literals;
 
   auto nd = NetworkParams::create(2);
-  auto ctx = details::SimulatorContext::create(2, nd, {});
+  auto ctx = details::SimulatorContext::create(2, nd, {}, {});
   auto tp = std::make_shared<details::Transport>(ctx);
   ChannelId id{0, 1};
 

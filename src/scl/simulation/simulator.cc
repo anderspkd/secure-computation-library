@@ -111,7 +111,7 @@ Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
       ctx.addEvent<EndEvent>(et, protocol->name());
 
       if (next.output.has_value()) {
-        // TODO: handle output
+        ctx.output(next.output);
       }
 
       // This will suspend this party, allowing someone else to run. It's not
@@ -125,6 +125,10 @@ Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
     }
 
     ctx.addEvent<StopEvent>(ctx.lastEvent()->time());
+
+  } catch (CancelledEvent&) {
+    // this party was stopped by a user supplied hook.
+    ctx.addEvent<CancelledEvent>(ctx.lastEvent()->time());
 
   } catch (std::exception& e) {
     // all exceptions are caught and discarded, but we make sure to record an
@@ -209,9 +213,11 @@ Simulator::Result Simulator::run(
     std::vector<std::unique_ptr<Protocol>>&& protocols,
     NetworkParams network_params) {
   if (!protocols.empty()) {
-    auto sim_ctx = details::SimulatorContext::create(protocols.size(),
-                                                     network_params,
-                                                     std::move(m_hooks));
+    auto sim_ctx =
+        details::SimulatorContext::create(protocols.size(),
+                                          network_params,
+                                          std::move(m_hooks),
+                                          std::move(m_output_handler));
     auto runtime = std::make_unique<details::SimulatorRuntime>(sim_ctx);
 
     runtime->run(simulate(std::move(protocols), sim_ctx));
