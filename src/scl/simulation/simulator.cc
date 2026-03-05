@@ -22,6 +22,7 @@
 
 #include "scl/net/loopback.h"
 #include "scl/protocol.h"
+#include "scl/simulation/cancellation.h"
 #include "scl/simulation/channel.h"
 #include "scl/simulation/context.h"
 #include "scl/simulation/event.h"
@@ -111,29 +112,25 @@ Task<void> runProtocol(std::unique_ptr<Protocol> protocol,
       ctx.addEvent<EndEvent>(et, protocol->name());
 
       if (next.output.has_value()) {
+        ctx.addEvent<OutputEvent>(et);
         ctx.output(next.output);
       }
-
-      // This will suspend this party, allowing someone else to run. It's not
-      // really needed, but (hopefully) it ensures a more "fair" execution
-      // order.
-      //
-      // TODO: Is this needed?
-      co_await []() { return true; };
 
       protocol = std::move(next.next);
     }
 
     ctx.addEvent<StopEvent>(ctx.lastEvent()->time());
 
-  } catch (CancelledEvent&) {
+  } catch (details::CancellationException& /* ignored */) {
     // this party was stopped by a user supplied hook.
     ctx.addEvent<CancelledEvent>(ctx.lastEvent()->time());
+    co_return;
 
   } catch (std::exception& e) {
     // all exceptions are caught and discarded, but we make sure to record an
     // event.
     ctx.addEvent<KilledEvent>(ctx.lastEvent()->time(), e.what());
+    co_return;
   }
 }
 

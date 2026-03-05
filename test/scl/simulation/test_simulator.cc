@@ -17,11 +17,12 @@
 
 #include <any>
 #include <catch2/catch_test_macros.hpp>
-#include <initializer_list>
+#include <iostream>
 #include <memory>
 
 #include "scl/coro.h"
 #include "scl/protocol.h"
+#include "scl/simulation/cancellation.h"
 #include "scl/simulation/event.h"
 #include "scl/simulation/params.h"
 #include "scl/simulation/simulator.h"
@@ -103,7 +104,7 @@ TEST_CASE("Simulator test", "[sim]") {
 
 namespace {
 
-struct OutputProtocol final : public Protocol {
+struct SimpleProtocol final : public Protocol {
   Task<Result> run(Env& /* ignored */) const override {
     co_return Result::done(123);
   }
@@ -125,10 +126,89 @@ TEST_CASE("Simulator handle output", "[sim]") {
   auto res = sim.run(
       []() {
         std::vector<std::unique_ptr<Protocol>> p;
-        p.emplace_back(std::make_unique<OutputProtocol>());
+        p.emplace_back(std::make_unique<SimpleProtocol>());
         return p;
       },
       nd);
 
   REQUIRE(called);
+}
+
+TEST_CASE("Simulator hooks no trigger", "[sim]") {
+  auto nd = NetworkParams::create(1);
+
+  std::size_t num_called = 0;
+
+  Simulator sim;
+  sim.addHook([&num_called](std::size_t /* ignored*/, Event* /* ignored*/) {
+    num_called++;
+  });
+
+  auto res = sim.run(
+      []() {
+        std::vector<std::unique_ptr<Protocol>> p;
+        p.emplace_back(std::make_unique<SimpleProtocol>());
+        return p;
+      },
+      nd);
+
+  REQUIRE(num_called == res[0].size());
+}
+
+TEST_CASE("Simulator hooks with trigger", "[sim]") {
+  auto nd = NetworkParams::create(1);
+
+  bool start_hook_called = false;
+  bool send_hook_called = false;
+
+  Simulator sim;
+
+  // should be called
+  sim.addHook(EventType::START,
+              [&start_hook_called](std::size_t pid, Event* evt) {
+                start_hook_called =
+                    (pid == 0) && (evt->type() == EventType::START);
+              });
+
+  // should not be called
+  sim.addHook(
+      EventType::CHANNEL_SEND,
+      [&send_hook_called](std::size_t /* ignored*/, Event* /* ignored*/) {
+        send_hook_called = true;
+      });
+
+  auto res = sim.run(
+      []() {
+        std::vector<std::unique_ptr<Protocol>> p;
+        p.emplace_back(std::make_unique<SimpleProtocol>());
+        return p;
+      },
+      nd);
+
+  REQUIRE(start_hook_called);
+  REQUIRE_FALSE(send_hook_called);
+}
+
+TEST_CASE("Simulator cancellation", "[sim]") {
+  auto nd = NetworkParams::create(2);
+
+  Simulator sim;
+
+  sim.addHook(EventType::START,
+              [](std::size_t /* ignored */, Event* /* ignored */) {
+                forceStopProtocol();
+              });
+
+  auto res = sim.run(
+      []() {
+        std::vector<std::unique_ptr<Protocol>> p;
+        p.emplace_back(std::make_unique<SimpleProtocol>());
+        p.emplace_back(std::make_unique<SimpleProtocol>());
+        return p;
+      },
+      nd);
+
+  REQUIRE(res.numberOfParties() == 2);
+
+  assertEvents(res[0], {EventType::START, EventType::CANCELLED});
 }
